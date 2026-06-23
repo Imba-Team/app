@@ -1,0 +1,122 @@
+name: mimir
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mimir-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mimir}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mimir}
+      POSTGRES_DB: ${POSTGRES_DB:-mimir}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mimir} -d ${POSTGRES_DB:-mimir}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mimir-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: mimir-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mimir-net
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: mimir-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health | grep -vq '\"status\":\"red\"'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    networks:
+      - mimir-net
+
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    container_name: mimir-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mimir-net
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8-alpine
+    container_name: mimir-clickhouse
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-mimir_analytics}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-mimir}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-mimir}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "${CLICKHOUSE_HTTP_PORT:-8123}:8123"
+      - "${CLICKHOUSE_NATIVE_PORT:-9009}:9000"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mimir-net
+
+volumes:
+  postgres-data:
+  redis-data:
+  elasticsearch-data:
+  minio-data:
+  clickhouse-data:
+
+networks:
+  mimir-net:
+    driver: bridge

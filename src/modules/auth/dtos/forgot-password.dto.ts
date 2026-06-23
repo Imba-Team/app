@@ -5,5 +5,5 @@ export class ForgotPasswordRequestDto {
   @ApiProperty({ description: 'Email address' })
   @IsString()
   @IsNotEmpty()
-  email: string;
+  email!: string;
 }

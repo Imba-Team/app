@@ -10,11 +10,11 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 export class LoginRequestDto {
   @ApiPropertyOptional({ example: 'john@example.com' })
   @IsEmail()
-  email: string;
+  email!: string;
 
   @ApiPropertyOptional({ example: 'password123' })
   @IsString()
   @MinLength(6)
   @MaxLength(32)
-  password: string;
+  password!: string;
 }

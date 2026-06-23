@@ -1,0 +1,260 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  user
+  admin
+}
+
+enum StudySetVisibility {
+  PUBLIC
+  PRIVATE
+  UNLISTED
+}
+
+enum StudySessionMode {
+  FLASHCARD
+  LEARN
+  TEST
+  MATCH
+}
+
+enum CollaboratorRole {
+  EDITOR
+  VIEWER
+}
+
+model User {
+  id                 String                 @id(map: "PK_cace4a159ff9f2512dd42373760") @default(uuid()) @db.Uuid
+  email              String                 @unique(map: "UQ_e12875dfb3b1d92d7d7c5377e22") @db.VarChar
+  username           String?                @unique(map: "UQ_78a916df40e02a9deb1c4b75edb") @db.VarChar
+  password           String
+  status             String?                @db.VarChar
+  role               String                 @default("user") @db.VarChar
+  profilePicture     String?
+  createdAt          DateTime               @default(now()) @db.Timestamp(6)
+  updatedAt          DateTime               @default(now()) @updatedAt @db.Timestamp(6)
+  studySets          StudySet[]
+  comments           Comment[]
+  studySessions      StudySession[]
+  favouriteStudySets FavouriteStudySet[]
+  collaborators      StudySetCollaborator[]
+  folders            Folder[]
+  testAttempts       TestAttempt[]
+  flashcardUserState FlashcardUserState[]
+  magicLinks         MagicLink[]
+
+  @@map("user")
+}
+
+model StudySet {
+  id                 String                 @id(map: "PK_9ffbc0a95bdd09c53487260fba9") @default(uuid()) @db.Uuid
+  slug               String                 @unique
+  title              String
+  description        String?
+  visibility         StudySetVisibility     @default(PUBLIC)
+  language           String?
+  ownerId            String                 @db.Uuid
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  owner              User                   @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  flashcards         Flashcard[]
+  comments           Comment[]
+  studySessions      StudySession[]
+  favourites         FavouriteStudySet[]
+  collaborators      StudySetCollaborator[]
+  folderStudySets    FolderStudySet[]
+  tags               StudySetTag[]
+  testAttempts       TestAttempt[]
+
+  @@map("study_set")
+}
+
+model Flashcard {
+  id                   String               @id(map: "PK_e0aba0501d3bc532951efc9f791") @default(uuid()) @db.Uuid
+  term                 String
+  definition           String
+  orderIndex           Int                  @default(0)
+  imageUrl             String?
+  hint                 String?
+  status               String?
+  studySetId           String               @db.Uuid
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  studySet             StudySet             @relation(fields: [studySetId], references: [id], onDelete: Restrict)
+  userStates           FlashcardUserState[]
+  testQuestionAttempts TestQuestionAttempt[]
+
+  @@map("flashcard")
+}
+
+model FlashcardUserState {
+  id             String    @id(map: "PK_616340a0e26f88788bcf446b11b") @default(uuid()) @db.Uuid
+  userId         String    @db.Uuid
+  flashcardId    String    @db.Uuid
+  nextReviewAt   DateTime?
+  intervalDays   Int       @default(1)
+  easeFactor     Float     @default(2.5)
+  isStarred      Boolean   @default(false)
+  correctCount   Int       @default(0)
+  incorrectCount Int       @default(0)
+  confidenceLevel Float    @default(0)
+  lastReviewedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  flashcard      Flashcard @relation(fields: [flashcardId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, flashcardId])
+  @@map("flashcard_user_state")
+}
+
+model StudySession {
+  id               String           @id(map: "PK_d09225f8e9d2b6682e3b13c46e0") @default(uuid()) @db.Uuid
+  userId           String           @db.Uuid
+  studySetId       String           @db.Uuid
+  cardsStudied     Int              @default(0)
+  correctAnswers   Int              @default(0)
+  incorrectAnswers Int              @default(0)
+  durationSeconds  Int              @default(0)
+  mode             StudySessionMode
+  startedAt        DateTime
+  completedAt      DateTime?
+  user             User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  studySet         StudySet         @relation(fields: [studySetId], references: [id], onDelete: Restrict)
+
+  @@map("study_session")
+}
+
+model FavouriteStudySet {
+  id         String   @id(map: "PK_3f3f685650d3229b9517ebdc278") @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  studySetId String   @db.Uuid
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  studySet   StudySet @relation(fields: [studySetId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, studySetId])
+  @@map("favorite_study_set")
+}
+
+model Comment {
+  id              String    @id(map: "PK_0b0e4bbc8415ec426f87f3a88e2") @default(uuid()) @db.Uuid
+  userId          String    @db.Uuid
+  studySetId      String    @db.Uuid
+  parentCommentId String?   @db.Uuid
+  isDeleted       Boolean   @default(false)
+  content         String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  studySet        StudySet  @relation(fields: [studySetId], references: [id], onDelete: Restrict)
+  parentComment   Comment?  @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: SetNull)
+  replies         Comment[] @relation("CommentReplies")
+
+  @@map("comment")
+}
+
+model StudySetCollaborator {
+  id         String           @id(map: "PK_60ff544bfe147cbe883f4aa87de") @default(uuid()) @db.Uuid
+  userId     String           @db.Uuid
+  studySetId String           @db.Uuid
+  role       CollaboratorRole @default(VIEWER)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  studySet   StudySet         @relation(fields: [studySetId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, studySetId])
+  @@map("study_set_collaborator")
+}
+
+model Folder {
+  id             String           @id(map: "PK_6278a41a706740c94c02e288df8") @default(uuid()) @db.Uuid
+  userId         String           @db.Uuid
+  name           String           @default("Untitled folder")
+  description    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  user           User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  folderStudySet FolderStudySet[]
+
+  @@map("folder")
+}
+
+model FolderStudySet {
+  id         String   @id(map: "PK_9553258bfa14b6f6cae98bac7c5") @default(uuid()) @db.Uuid
+  folderId   String   @db.Uuid
+  studySetId String   @db.Uuid
+  folder     Folder   @relation(fields: [folderId], references: [id], onDelete: Restrict)
+  studySet   StudySet @relation(fields: [studySetId], references: [id], onDelete: Restrict)
+
+  @@unique([folderId, studySetId])
+  @@map("folder_study_set")
+}
+
+model Tag {
+  id          String        @id(map: "PK_8e4052373c579afc1471f526760") @default(uuid()) @db.Uuid
+  name        String        @unique
+  slug        String        @unique
+  createdAt   DateTime      @default(now())
+  studySetTag StudySetTag[]
+
+  @@map("tag")
+}
+
+model StudySetTag {
+  id         String   @id(map: "PK_64842c32f244afa237bbc2ce4c8") @default(uuid()) @db.Uuid
+  studySetId String   @db.Uuid
+  tagId      String   @db.Uuid
+  studySet   StudySet @relation(fields: [studySetId], references: [id], onDelete: Restrict)
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Restrict)
+
+  @@unique([studySetId, tagId])
+  @@map("study_set_tag")
+}
+
+model TestAttempt {
+  id                   String                @id(map: "PK_e9fb46f732ef63877b65484637a") @default(uuid()) @db.Uuid
+  userId               String                @db.Uuid
+  studySetId           String                @db.Uuid
+  score                Float                 @default(0)
+  totalQuestions       Int
+  createdAt            DateTime              @default(now())
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  studySet             StudySet              @relation(fields: [studySetId], references: [id], onDelete: Restrict)
+  testQuestionAttempts TestQuestionAttempt[]
+
+  @@map("test_attempt")
+}
+
+model TestQuestionAttempt {
+  id            String      @id(map: "PK_4b0beed24cd6196f6c6905183e2") @default(uuid()) @db.Uuid
+  testAttemptId String      @db.Uuid
+  flashcardId   String      @db.Uuid
+  userAnswer    String?
+  isCorrect     Boolean     @default(false)
+  testAttempt   TestAttempt @relation(fields: [testAttemptId], references: [id], onDelete: Restrict)
+  flashcard     Flashcard   @relation(fields: [flashcardId], references: [id], onDelete: Restrict)
+
+  @@map("test_question_attempt")
+}
+
+model MagicLink {
+  id        String   @id(map: "PK_6c609d48037f164e7ae5b744b18") @default(uuid()) @db.Uuid
+  key       String   @unique
+  userId    String   @db.Uuid
+  purpose   String
+  expiresAt DateTime
+  createdBy String
+  updatedBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("magic_links")
+}

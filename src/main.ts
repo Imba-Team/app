@@ -5,19 +5,30 @@ import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
 import { join } from 'path';
+import { PrismaService } from './common/prisma/prisma.service';
 
 import 'reflect-metadata';
 import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const prismaService = app.get(PrismaService);
+  prismaService.enableShutdownHooks(app);
 
   app.use(cookieParser());
   // Use Helmet for security headers
   app.use(helmet());
 
   // Enable CORS if needed
-  app.enableCors();
+  app.enableCors({
+    // Explicit origins without trailing slashes to match browser Origin header
+    origin: [
+      'http://localhost:3000',
+      'https://quizlet-taupe.vercel.app',
+      'https://imba-learn.vercel.app',
+    ],
+    credentials: true,
+  });
 
   // Enable global validation pipe
   app.useGlobalPipes(
@@ -26,7 +37,7 @@ async function bootstrap() {
 
   // Swagger setup
   const config = new DocumentBuilder()
-    .setTitle('Imba Quizlet API')
+    .setTitle('Imba Learn API')
     .setDescription('The API description for your starter template')
     .setVersion('1.0')
     .addBearerAuth() // Enables JWT token usage in Swagger UI

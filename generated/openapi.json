@@ -1,0 +1,2224 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/metrics": {
+      "get": {
+        "operationId": "PrometheusController_index",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Prometheus"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "HealthController_rootHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceHealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/users/me": {
+      "get": {
+        "operationId": "UsersController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "User profile returned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get current authenticated user",
+        "tags": [
+          "Users"
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_updateMe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update current user",
+        "tags": [
+          "Users"
+        ]
+      },
+      "delete": {
+        "operationId": "UsersController_deleteMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "User deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete current user",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/me/profile-picture": {
+      "patch": {
+        "operationId": "UsersController_uploadProfilePicture",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "file"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Upload / update user's profile picture",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/me/change-password": {
+      "patch": {
+        "operationId": "UsersController_updatePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "ok": true,
+                    "message": "Password updated successfully",
+                    "data": null
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update current user password",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "ok": true,
+                    "message": "Registration successful",
+                    "data": null
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email already in use"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "ok": true,
+                    "message": "Login successful",
+                    "data": null
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        },
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "operationId": "AuthController_forgotPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification link sent to your email",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "ok": true,
+                    "message": "Password reset link sent to your email",
+                    "data": null
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Request password reset link",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "operationId": "AuthController_resetPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "ok": true,
+                    "message": "Password has been reset successfully",
+                    "data": null
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reset user password",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "ok": true,
+                    "message": "Logout successful",
+                    "data": null
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/auth/google": {
+      "get": {
+        "operationId": "AuthController_auth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Redirects to Google login"
+          }
+        },
+        "summary": "Initiate Google OAuth2 login flow",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/auth/google/callback": {
+      "get": {
+        "operationId": "AuthController_googleAuthCallback",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successfully authenticated with Google",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "ok": true,
+                    "message": "Authentication successful",
+                    "data": null
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Google OAuth2 callback handler",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/services/auth/health": {
+      "get": {
+        "operationId": "AuthHealthController_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceHealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/study-sets": {
+      "post": {
+        "operationId": "StudySetController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudySetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a study set",
+        "tags": [
+          "Study Sets"
+        ]
+      }
+    },
+    "/study-sets/{id}": {
+      "patch": {
+        "operationId": "StudySetController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateStudySetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update own study set",
+        "tags": [
+          "Study Sets"
+        ]
+      },
+      "get": {
+        "operationId": "StudySetController_getOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get study set details",
+        "tags": [
+          "Study Sets"
+        ]
+      }
+    },
+    "/study-sets/{id}/visibility": {
+      "patch": {
+        "operationId": "StudySetController_updateVisibility",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVisibilityDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Make study set public/private",
+        "tags": [
+          "Study Sets"
+        ]
+      }
+    },
+    "/study-sets/me": {
+      "get": {
+        "operationId": "StudySetController_myStudySets",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List study sets I created",
+        "tags": [
+          "Study Sets"
+        ]
+      }
+    },
+    "/study-sets/collection": {
+      "get": {
+        "operationId": "StudySetController_myCollection",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List study sets in my collection",
+        "tags": [
+          "Study Sets"
+        ]
+      }
+    },
+    "/study-sets/public": {
+      "get": {
+        "operationId": "StudySetController_publicStudySets",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Searches title or description",
+            "schema": {
+              "example": "biology",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Search public study sets",
+        "tags": [
+          "Study Sets"
+        ]
+      }
+    },
+    "/study-sets/{id}/collect": {
+      "post": {
+        "operationId": "StudySetController_collect",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a public study set to my collection",
+        "tags": [
+          "Study Sets"
+        ]
+      }
+    },
+    "/study-sets/{id}/uncollect": {
+      "post": {
+        "operationId": "StudySetController_uncollect",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a study set from my collection",
+        "tags": [
+          "Study Sets"
+        ]
+      }
+    },
+    "/services/study/health": {
+      "get": {
+        "operationId": "StudyHealthController_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceHealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "study"
+        ]
+      }
+    },
+    "/flashcards/{id}/progress": {
+      "patch": {
+        "operationId": "FlashcardProgressController_updateProgress",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFlashcardProgressDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update my progress for a flashcard",
+        "tags": [
+          "Flashcards"
+        ]
+      },
+      "get": {
+        "operationId": "FlashcardProgressController_getProgress",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get my progress for a flashcard",
+        "tags": [
+          "Flashcards"
+        ]
+      }
+    },
+    "/flashcards/{id}/update-status": {
+      "post": {
+        "operationId": "FlashcardProgressController_updateStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "properties": {
+                  "success": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update the status of a flashcard by ID",
+        "tags": [
+          "Flashcards"
+        ]
+      }
+    },
+    "/me/library/{studySetId}": {
+      "post": {
+        "operationId": "FavouriteStudySetController_addToLibrary",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Save a study set to my library",
+        "tags": [
+          "Library"
+        ]
+      },
+      "delete": {
+        "operationId": "FavouriteStudySetController_removeFromLibrary",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a study set from my library",
+        "tags": [
+          "Library"
+        ]
+      }
+    },
+    "/me/library": {
+      "get": {
+        "operationId": "LibraryController_getLibrary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get my library",
+        "tags": [
+          "Library"
+        ]
+      }
+    },
+    "/tags": {
+      "post": {
+        "operationId": "TagController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTagDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a tag",
+        "tags": [
+          "Tags"
+        ]
+      },
+      "get": {
+        "operationId": "TagController_findAll",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all tags with pagination",
+        "tags": [
+          "Tags"
+        ]
+      }
+    },
+    "/tags/{id}": {
+      "get": {
+        "operationId": "TagController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a tag by ID",
+        "tags": [
+          "Tags"
+        ]
+      },
+      "patch": {
+        "operationId": "TagController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTagDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a tag by ID",
+        "tags": [
+          "Tags"
+        ]
+      },
+      "delete": {
+        "operationId": "TagController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a tag by ID",
+        "tags": [
+          "Tags"
+        ]
+      }
+    },
+    "/study-set-tags": {
+      "post": {
+        "operationId": "StudySetTagController_addTagToStudySet",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStudySetTagDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a tag to a study set",
+        "tags": [
+          "Study Set Tags"
+        ]
+      }
+    },
+    "/study-set-tags/{studySetId}/{tagId}": {
+      "delete": {
+        "operationId": "StudySetTagController_removeTagFromStudySet",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a tag from a study set",
+        "tags": [
+          "Study Set Tags"
+        ]
+      }
+    },
+    "/study-set-tags/study-sets/{studySetId}/tags": {
+      "get": {
+        "operationId": "StudySetTagController_listTagsForStudySet",
+        "parameters": [
+          {
+            "name": "studySetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List tags for a given study set",
+        "tags": [
+          "Study Set Tags"
+        ]
+      }
+    },
+    "/study-set-tags/tags/{tagId}/study-sets": {
+      "get": {
+        "operationId": "StudySetTagController_listStudySetsForTag",
+        "parameters": [
+          {
+            "name": "tagId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List study sets for a given tag",
+        "tags": [
+          "Study Set Tags"
+        ]
+      }
+    },
+    "/folders": {
+      "get": {
+        "operationId": "FolderController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all folders of the current user",
+        "tags": [
+          "Folders"
+        ]
+      },
+      "post": {
+        "operationId": "FolderController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFolderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new folder",
+        "tags": [
+          "Folders"
+        ]
+      }
+    },
+    "/folders/{id}": {
+      "get": {
+        "operationId": "FolderController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get folder by id with its study sets",
+        "tags": [
+          "Folders"
+        ]
+      },
+      "patch": {
+        "operationId": "FolderController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFolderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update folder name or description",
+        "tags": [
+          "Folders"
+        ]
+      },
+      "delete": {
+        "operationId": "FolderController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a folder without deleting study sets",
+        "tags": [
+          "Folders"
+        ]
+      }
+    },
+    "/folders/{id}/study-sets": {
+      "post": {
+        "operationId": "FolderStudySetController_addStudySetsToFolder",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Folder id",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddFolderStudySetsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add study set(s) to folder",
+        "tags": [
+          "Folder Study Sets"
+        ]
+      },
+      "get": {
+        "operationId": "FolderStudySetController_listStudySetsInFolder",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Folder id",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List all study sets in a folder",
+        "tags": [
+          "Folder Study Sets"
+        ]
+      }
+    },
+    "/folders/{id}/study-sets/{studySetId}": {
+      "delete": {
+        "operationId": "FolderStudySetController_removeStudySetFromFolder",
+        "parameters": [
+          {
+            "name": "studySetId",
+            "required": true,
+            "in": "path",
+            "description": "Study set id",
+            "schema": {
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Folder id",
+            "schema": {
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a study set from folder",
+        "tags": [
+          "Folder Study Sets"
+        ]
+      }
+    },
+    "/study-sets/{studySetId}/comments": {
+      "post": {
+        "operationId": "StudySetCommentController_createComment",
+        "parameters": [
+          {
+            "name": "studySetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a top-level comment",
+        "tags": [
+          "Comments"
+        ]
+      },
+      "get": {
+        "operationId": "StudySetCommentController_listComments",
+        "parameters": [
+          {
+            "name": "studySetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List top-level comments for a study set",
+        "tags": [
+          "Comments"
+        ]
+      }
+    },
+    "/study-sets/{studySetId}/comments/{commentId}/replies": {
+      "post": {
+        "operationId": "StudySetCommentController_createReply",
+        "parameters": [
+          {
+            "name": "studySetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reply to a comment",
+        "tags": [
+          "Comments"
+        ]
+      },
+      "get": {
+        "operationId": "StudySetCommentController_listReplies",
+        "parameters": [
+          {
+            "name": "studySetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 100,
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List replies for a comment",
+        "tags": [
+          "Comments"
+        ]
+      }
+    },
+    "/comments/{commentId}": {
+      "patch": {
+        "operationId": "CommentController_updateComment",
+        "parameters": [
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCommentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Edit own comment",
+        "tags": [
+          "Comments"
+        ]
+      },
+      "delete": {
+        "operationId": "CommentController_deleteComment",
+        "parameters": [
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Soft-delete a comment",
+        "tags": [
+          "Comments"
+        ]
+      }
+    },
+    "/services/learning/health": {
+      "get": {
+        "operationId": "LearningController_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceHealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "learning"
+        ]
+      }
+    },
+    "/services/srs/health": {
+      "get": {
+        "operationId": "SrsController_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceHealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "srs"
+        ]
+      }
+    },
+    "/services/ai/health": {
+      "get": {
+        "operationId": "AiController_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceHealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ai"
+        ]
+      }
+    },
+    "/services/classroom/health": {
+      "get": {
+        "operationId": "ClassroomController_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceHealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "classroom"
+        ]
+      }
+    },
+    "/services/search/health": {
+      "get": {
+        "operationId": "SearchController_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceHealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "search"
+        ]
+      }
+    },
+    "/services/notification/health": {
+      "get": {
+        "operationId": "NotificationController_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceHealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "notification"
+        ]
+      }
+    },
+    "/services/analytics/health": {
+      "get": {
+        "operationId": "AnalyticsController_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceHealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "analytics"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Mimir API",
+    "description": "Auto-generated OpenAPI specification for the Mimir backend. This file is the source of truth for the frontend type pipeline.",
+    "version": "0.0.1",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [
+    {
+      "url": "http://localhost:9090",
+      "description": "Local development"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      },
+      "cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "jwt"
+      }
+    },
+    "schemas": {
+      "ServiceHealthResponseDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "ok"
+          },
+          "service": {
+            "type": "string",
+            "example": "learning"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-06-23T12:00:00.000Z"
+          },
+          "uptimeSeconds": {
+            "type": "number",
+            "example": 12345
+          }
+        },
+        "required": [
+          "status",
+          "service",
+          "timestamp",
+          "uptimeSeconds"
+        ]
+      },
+      "UserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name (maps from username)"
+          },
+          "status": {
+            "type": "object"
+          },
+          "role": {
+            "type": "object"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "profilePicture": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "status",
+          "role",
+          "createdAt",
+          "updatedAt",
+          "profilePicture"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "email": {
+            "type": "string",
+            "example": "john@example.com"
+          },
+          "status": {
+            "type": "object",
+            "example": "active"
+          },
+          "profilePicture": {
+            "type": "string",
+            "example": "/uploads/profile-pictures/abc.jpg"
+          }
+        }
+      },
+      "ChangePasswordDto": {
+        "type": "object",
+        "properties": {
+          "oldPassword": {
+            "type": "string",
+            "description": "Old password"
+          },
+          "newPassword": {
+            "type": "string",
+            "description": "New password"
+          },
+          "confirmPassword": {
+            "type": "string",
+            "description": "Confirm new password"
+          }
+        },
+        "required": [
+          "oldPassword",
+          "newPassword",
+          "confirmPassword"
+        ]
+      },
+      "RegisterRequestDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "example": "John"
+          },
+          "email": {
+            "type": "string",
+            "example": "john@example.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123"
+          }
+        },
+        "required": [
+          "username",
+          "email",
+          "password"
+        ]
+      },
+      "LoginRequestDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "john@example.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123"
+          }
+        }
+      },
+      "ForgotPasswordRequestDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "Email address"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "ResetPasswordRequestDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Verification token"
+          },
+          "password": {
+            "type": "string",
+            "description": "New password"
+          },
+          "confirmPassword": {
+            "type": "string",
+            "description": "Confirm new password"
+          }
+        },
+        "required": [
+          "token",
+          "password",
+          "confirmPassword"
+        ]
+      },
+      "CreateStudySetDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Advanced Biology"
+          },
+          "description": {
+            "type": "string",
+            "example": "Notes and flashcards for bio exams"
+          },
+          "language": {
+            "type": "string",
+            "example": "German"
+          },
+          "isPrivate": {
+            "type": "boolean",
+            "example": false,
+            "description": "true = private, false = public"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "UpdateStudySetDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Advanced Biology"
+          },
+          "description": {
+            "type": "string",
+            "example": "Notes and flashcards for bio exams"
+          },
+          "language": {
+            "type": "string",
+            "example": "German"
+          },
+          "isPrivate": {
+            "type": "boolean",
+            "example": false,
+            "description": "true = private, false = public"
+          }
+        }
+      },
+      "UpdateVisibilityDto": {
+        "type": "object",
+        "properties": {
+          "isPrivate": {
+            "type": "boolean",
+            "example": false,
+            "description": "Set to false to make the study set public"
+          }
+        },
+        "required": [
+          "isPrivate"
+        ]
+      },
+      "UpdateFlashcardProgressDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "not_started",
+              "in_progress",
+              "completed"
+            ]
+          },
+          "isStarred": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "CreateTagDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "biology"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateTagDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "biology"
+          }
+        }
+      },
+      "CreateStudySetTagDto": {
+        "type": "object",
+        "properties": {
+          "studySetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tagName": {
+            "type": "string",
+            "example": "JavaScrript"
+          }
+        },
+        "required": [
+          "studySetId",
+          "tagName"
+        ]
+      },
+      "CreateFolderDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Backend Revision"
+          },
+          "description": {
+            "type": "string",
+            "example": "Study sets for backend interview prep"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateFolderDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Backend Revision"
+          },
+          "description": {
+            "type": "string",
+            "example": "Study sets for backend interview prep"
+          }
+        }
+      },
+      "AddFolderStudySetsDto": {
+        "type": "object",
+        "properties": {
+          "studySetIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "studySetIds"
+        ]
+      },
+      "CreateCommentDto": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "example": "Great set, helped me with revision.",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "parentCommentId": {
+            "type": "string",
+            "description": "Parent comment id when creating a reply",
+            "example": "d1939ef4-f714-42ce-acf5-9dbe8260f2f2"
+          }
+        },
+        "required": [
+          "content"
+        ]
+      },
+      "UpdateCommentDto": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "example": "Updated comment text",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "content"
+        ]
+      }
+    }
+  }
+}

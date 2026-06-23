@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
+import { Expose, Transform } from 'class-transformer';
 import { Role } from 'src/common/decorators/roles.decorator';
 import { UserStatus } from 'src/common/interfaces/user.interface';
 
@@ -13,11 +13,16 @@ export class UserResponseDto {
   email: string;
 
   @Expose()
-  @ApiProperty()
+  @ApiProperty({ description: 'Display name (maps from username)' })
+  @Transform(({ obj }) => (obj as { username?: string }).username ?? '')
   name: string;
 
   @Expose()
   @ApiProperty()
+  @Transform(({ obj }) => {
+    const s = (obj as { status?: string | null }).status;
+    return s === 'inactive' ? 'inactive' : 'active';
+  })
   status: UserStatus;
 
   @Expose()

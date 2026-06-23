@@ -21,7 +21,7 @@ import { JwtGuard } from 'src/guards/jwt.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
 import { Role, Roles } from 'src/common/decorators/roles.decorator';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
-import { User } from './user.entity';
+import { User } from '@prisma/client';
 
 @ApiTags('Admin - Users')
 @ApiBearerAuth()

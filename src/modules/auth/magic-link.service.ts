@@ -10,10 +10,8 @@ import { UsersService } from '../users/user.service';
 import { MailService } from 'src/common/mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
-import { MoreThan, Repository } from 'typeorm';
-import { MagicLink } from './magic-link.entity';
-import { InjectRepository } from '@nestjs/typeorm';
 import { LoggerService } from 'src/common/logger/logger.service';
+import { PrismaService } from 'src/common/prisma/prisma.service';
 
 interface SendVerificationParams {
   to: string;
@@ -26,8 +24,7 @@ export class MagicLinkService {
   constructor(
     private readonly userService: UsersService,
     private readonly logger: LoggerService,
-    @InjectRepository(MagicLink)
-    private readonly magicLinkRepository: Repository<MagicLink>,
+    private readonly prisma: PrismaService,
     @Inject(forwardRef(() => MailService))
     private readonly mailService: MailService,
     private readonly config: ConfigService,
@@ -42,30 +39,20 @@ export class MagicLinkService {
     const baseUrl: string =
       this.config.get<string>('BASE_URL') || 'http://localhost:3000';
 
-    await this.magicLinkRepository.delete({
-      userId,
-      purpose,
+    await this.prisma.magicLink.deleteMany({
+      where: { userId, purpose },
     });
 
-    const magicLink = this.magicLinkRepository.create({
-      key: token,
-      userId,
-      purpose,
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
-      createdBy: userId,
-      updatedBy: userId,
+    const magicLink = await this.prisma.magicLink.create({
+      data: {
+        key: token,
+        userId,
+        purpose,
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+        createdBy: userId,
+        updatedBy: userId,
+      },
     });
-
-    if (!magicLink) {
-      throw new HttpException(
-        {
-          ok: false,
-          message: 'Failed to create verification token',
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-    await this.magicLinkRepository.save(magicLink);
 
     const verificationLink = `${baseUrl}/auth/${purpose.toLowerCase()}/verify?token=${token}`;
 
@@ -93,10 +80,8 @@ export class MagicLinkService {
   }
 
   async getToken(token: string, purpose?: string) {
-    const verificationToken = await this.magicLinkRepository.findOne({
-      where: {
-        key: token,
-      },
+    const verificationToken = await this.prisma.magicLink.findUnique({
+      where: { key: token },
     });
 
     if (!verificationToken) {
@@ -138,9 +123,7 @@ export class MagicLinkService {
     // TODO: Instead, consider scheduling cleanup or a cron job for expired tokens rather than doing it inside a request
     if (verificationToken.expiresAt < new Date()) {
       if (expirationDate < new Date()) {
-        await this.magicLinkRepository.delete({
-          key: token,
-        });
+        await this.prisma.magicLink.deleteMany({ where: { key: token } });
       }
 
       throw new HttpException(
@@ -168,18 +151,13 @@ export class MagicLinkService {
   async verifyToken(token: string, purpose: string) {
     this.logger.debug(`Verifying token: ${token} for purpose: ${purpose}`);
 
-    const verificationToken = await this.magicLinkRepository.findOne({
+    const verificationToken = await this.prisma.magicLink.findFirst({
       where: {
         key: token,
         purpose,
-        expiresAt: MoreThan(new Date()),
+        expiresAt: { gt: new Date() },
       },
     });
-
-    const allTokens = await this.magicLinkRepository.find();
-
-    console.log('TOKENNN - ', verificationToken);
-    console.log('ALLLLL - ', allTokens);
 
     if (!verificationToken) {
       this.logger.warn('Token not found or expired');
@@ -192,7 +170,7 @@ export class MagicLinkService {
       );
     }
 
-    await this.magicLinkRepository.delete({ key: token });
+    await this.prisma.magicLink.deleteMany({ where: { key: token } });
 
     return {
       ok: true,

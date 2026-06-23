@@ -10,58 +10,66 @@ export class LoggerService implements NestLoggerService {
   constructor(private readonly configService: ConfigService) {
     const environment =
       this.configService.get<string>('NODE_ENV') ?? 'development';
+    const service =
+      this.configService.get<string>('SERVICE_NAME') ?? 'mimir-api';
+    const isProduction = environment === 'production';
 
-    const logFormat = winston.format.combine(
-      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    const jsonFormat = winston.format.combine(
+      winston.format.timestamp(),
       winston.format.errors({ stack: true }),
       winston.format.printf(
-        ({ timestamp, level, message, context, trace, ...meta }) => {
-          return JSON.stringify({
+        ({ timestamp, level, message, context, trace, stack, ...meta }) =>
+          JSON.stringify({
             timestamp,
             level,
+            service,
             context: context || this.context,
             message,
-            trace,
+            stack: stack ?? trace,
             ...meta,
-          });
-        },
+          }),
       ),
     );
 
-    const transports: winston.transport[] = [];
-
-    // Console transport
-    transports.push(
-      new winston.transports.Console({
-        format: winston.format.combine(
-          winston.format.colorize({ all: true }),
-          logFormat,
-        ),
+    const prettyFormat = winston.format.combine(
+      winston.format.colorize({ all: true }),
+      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+      winston.format.printf((info) => {
+        const ctx =
+          typeof info.context === 'string'
+            ? info.context
+            : (this.context ?? service);
+        return `${String(info.timestamp)} ${info.level} [${ctx}] ${String(info.message)}`;
       }),
     );
 
-    // File transports for production
-    if (environment === 'production') {
+    const transports: winston.transport[] = [
+      new winston.transports.Console({
+        format: isProduction ? jsonFormat : prettyFormat,
+      }),
+    ];
+
+    if (isProduction) {
       transports.push(
         new winston.transports.File({
           filename: 'logs/error.log',
           level: 'error',
           maxsize: 5 * 1024 * 1024,
           maxFiles: 5,
-          format: logFormat,
+          format: jsonFormat,
         }),
         new winston.transports.File({
           filename: 'logs/combined.log',
           level: 'info',
           maxsize: 5 * 1024 * 1024,
           maxFiles: 5,
-          format: logFormat,
+          format: jsonFormat,
         }),
       );
     }
 
     this.logger = winston.createLogger({
-      level: environment === 'production' ? 'info' : 'debug',
+      level: isProduction ? 'info' : 'debug',
       transports,
     });
   }
