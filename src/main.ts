@@ -13,7 +13,7 @@ import helmet from 'helmet';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const prismaService = app.get(PrismaService);
-  await prismaService.enableShutdownHooks(app);
+  prismaService.enableShutdownHooks(app);
 
   app.use(cookieParser());
   // Use Helmet for security headers

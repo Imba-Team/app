@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { FlashcardUserState } from '@prisma/client';
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { StudySetService } from 'src/modules/study-set/study-set.service';

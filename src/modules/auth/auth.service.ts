@@ -93,7 +93,6 @@ export class AuthService {
       throw new NotFoundException('User not found');
     }
 
-    this.logger.log(`USER PASSWORD: ${user.password} : ${data.password}`);
     const passwordMatch = await bcrypt.compare(data.password, user.password);
 
     if (!passwordMatch) {

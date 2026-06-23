@@ -16,6 +16,14 @@ import { CommentModule } from './modules/comment/comment.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { PrismaModule } from './common/prisma/prisma.module';
+import { HealthModule } from './common/health/health.module';
+import { LearningModule } from './modules/learning/learning.module';
+import { SrsModule } from './modules/srs/srs.module';
+import { AiModule } from './modules/ai/ai.module';
+import { ClassroomModule } from './modules/classroom/classroom.module';
+import { SearchModule } from './modules/search/search.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -33,6 +41,7 @@ import { PrismaModule } from './common/prisma/prisma.module';
     }),
     LoggerModule,
     PrismaModule,
+    HealthModule,
     UsersModule,
     AuthModule,
     StudySetModule,
@@ -44,6 +53,13 @@ import { PrismaModule } from './common/prisma/prisma.module';
     FolderModule,
     FolderStudySetModule,
     CommentModule,
+    LearningModule,
+    SrsModule,
+    AiModule,
+    ClassroomModule,
+    SearchModule,
+    NotificationModule,
+    AnalyticsModule,
     ConfigModule.forRoot({ isGlobal: true }),
   ],
 })

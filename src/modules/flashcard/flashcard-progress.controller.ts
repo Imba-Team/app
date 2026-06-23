@@ -26,7 +26,9 @@ import { plainToInstance } from 'class-transformer';
 @Roles(Role.USER, Role.ADMIN)
 @Controller('flashcards')
 export class FlashcardProgressController {
-  constructor(private readonly flashcardProgressService: FlashcardProgressService) {}
+  constructor(
+    private readonly flashcardProgressService: FlashcardProgressService,
+  ) {}
 
   @Patch(':id/progress')
   @HttpCode(200)
@@ -75,7 +77,10 @@ export class FlashcardProgressController {
     @CurrentUser() user: IUser,
     @Param('id') id: string,
   ): Promise<ResponseDto<FlashcardWithProgressDto>> {
-    const flashcard = await this.flashcardProgressService.getProgress(user.id, id);
+    const flashcard = await this.flashcardProgressService.getProgress(
+      user.id,
+      id,
+    );
     const data = plainToInstance(FlashcardWithProgressDto, flashcard, {
       excludeExtraneousValues: true,
     });
