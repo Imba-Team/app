@@ -39,7 +39,10 @@ jobs:
         run: pnpm run lint
 
       - name: Unit tests
-        run: pnpm test -- --passWithNoTests
+        run: pnpm exec jest --passWithNoTests
 
       - name: Build
         run: pnpm run build
+
+      - name: Verify OpenAPI artifacts are up to date
+        run: pnpm run openapi:check

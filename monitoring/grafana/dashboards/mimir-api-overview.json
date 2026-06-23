@@ -1,0 +1,66 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Up",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "mappings": [{ "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } }, "type": "value" }], "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] } } },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "targets": [{ "expr": "up{job=\"mimir-api\"}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP Request Rate (req/s)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 4, "y": 0 },
+      "targets": [{ "expr": "sum by (method, route) (rate(mimir_http_request_duration_seconds_count[5m]))", "refId": "A", "legendFormat": "{{method}} {{route}}" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP p95 Latency (s)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le, route) (rate(mimir_http_request_duration_seconds_bucket[5m])))", "refId": "A", "legendFormat": "p95 {{route}}" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP 5xx Error Rate",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [{ "expr": "sum by (route) (rate(mimir_http_request_duration_seconds_count{status_code=~\"5..\"}[5m]))", "refId": "A", "legendFormat": "5xx {{route}}" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Node.js Process Memory (RSS)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [{ "expr": "process_resident_memory_bytes{job=\"mimir-api\"}", "refId": "A", "legendFormat": "RSS bytes" }]
+    },
+    {
+      "type": "logs",
+      "title": "Recent Errors (Loki)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 16 },
+      "options": { "showTime": true, "wrapLogMessage": true, "dedupStrategy": "none" },
+      "targets": [{ "expr": "{compose_project=~\".+\"} | json | level=~\"error|warn\"", "refId": "A" }]
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["mimir"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Mimir API Overview",
+  "uid": "mimir-api-overview",
+  "version": 1,
+  "weekStart": ""
+}
