@@ -311,10 +311,10 @@ export class AuthController {
     },
   })
   async googleAuthCallback(
-    @Req() req: Request & { user: LoginRequestDto },
+    @Req() req: Request & { user: { id: string; email: string } },
     @Res({ passthrough: true }) res: Response,
   ): Promise<ResponseDto<null>> {
-    const session = await this.authService.login(req.user, req);
+    const session = await this.authService.loginViaGoogle(req.user, req);
     this.authService.finalizeLogin(res, session);
 
     return {

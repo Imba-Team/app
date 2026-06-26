@@ -306,6 +306,93 @@ export class AuthService {
   //                          Auth flows
   // ============================================================
 
+  /**
+   * Resolve a Google OAuth profile to a local User row, creating or
+   * linking as needed. Called from GoogleStrategy.validate().
+   *
+   * Three branches:
+   *   - googleProviderId already on file → reuse that user.
+   *   - email matches an existing local user → silently link Google.
+   *     The email is already verified by Google itself, so we accept
+   *     this without a confirmation step.
+   *   - neither matches → create a new account, password is a random
+   *     unguessable placeholder (the user can set one later via the
+   *     reset-password flow).
+   */
+  async resolveGoogleUser(profile: {
+    providerId: string;
+    email: string;
+    displayName?: string;
+    picture?: string;
+  }) {
+    const byProvider = await this.prisma.user.findUnique({
+      where: { googleProviderId: profile.providerId },
+    });
+    if (byProvider) {
+      return byProvider;
+    }
+
+    const byEmail = await this.usersService.findByEmail(profile.email);
+    if (byEmail) {
+      if (
+        byEmail.googleProviderId &&
+        byEmail.googleProviderId !== profile.providerId
+      ) {
+        // Two different Google subjects somehow claim the same email —
+        // refuse rather than silently overwriting the link.
+        throw new ConflictException({
+          ok: false,
+          message:
+            'This email is already linked to a different Google account.',
+          code: 'GOOGLE_LINK_CONFLICT',
+        });
+      }
+
+      this.logger.log(
+        `Linking Google providerId=${profile.providerId} to existing user ${byEmail.email}`,
+      );
+      return this.prisma.user.update({
+        where: { id: byEmail.id },
+        data: {
+          googleProviderId: profile.providerId,
+          emailVerified: true,
+          verifiedAt: byEmail.verifiedAt ?? new Date(),
+          profilePicture: byEmail.profilePicture ?? profile.picture,
+        },
+      });
+    }
+
+    this.logger.log(`Creating new Google-only user for ${profile.email}`);
+    const placeholderPassword = crypto.randomBytes(48).toString('base64url');
+    const created = await this.usersService.create({
+      email: profile.email,
+      name: profile.displayName ?? profile.email.split('@')[0],
+      password: placeholderPassword,
+    });
+    return this.prisma.user.update({
+      where: { id: created.id },
+      data: {
+        googleProviderId: profile.providerId,
+        emailVerified: true,
+        verifiedAt: new Date(),
+        profilePicture: profile.picture,
+      },
+    });
+  }
+
+  /**
+   * Finalise a Google login: the user is already resolved by the
+   * strategy, so we just need to issue a session and set cookies.
+   */
+  async loginViaGoogle(
+    user: { id: string; email: string },
+    req: Request,
+  ): Promise<IssuedSession & { email: string }> {
+    const session = await this.issueSession(user.id, readMeta(req));
+    this.logger.log(`User ${user.email} logged in via Google`);
+    return { ...session, email: user.email };
+  }
+
   async login(
     data: LoginRequestDto,
     req: Request,

@@ -1,57 +1,76 @@
-import { Injectable } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, VerifyCallback } from 'passport-google-oauth2';
-import { UsersService } from 'src/modules/users/user.service';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { PassportStrategy } from '@nestjs/passport';
+import { Profile, Strategy, VerifyCallback } from 'passport-google-oauth20';
+import { AuthService } from '../auth.service';
+
+export interface GoogleProfilePayload {
+  providerId: string;
+  email: string;
+  displayName?: string;
+  picture?: string;
+}
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
-    private readonly configService: ConfigService,
-    private readonly userService: UsersService,
+    cfg: ConfigService,
+    @Inject(forwardRef(() => AuthService))
+    private readonly authService: AuthService,
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    // passport-google-oauth20 throws at construction time if any of the
+    // three options are falsy. We tolerate missing env (so the app can
+    // boot for dev / OpenAPI generation / tests without a Google
+    // project) by passing harmless placeholders; the GoogleOauthGuard
+    // would still bounce real requests to a non-existent Google app
+    // gracefully.
     super({
-      clientID: configService.get<string>('GOOGLE_CLIENT_ID'),
-      clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET'),
-      callbackURL: configService.get<string>('GOOGLE_CALLBACK_URL'),
+      clientID: cfg.get<string>('GOOGLE_CLIENT_ID') || 'disabled',
+      clientSecret: cfg.get<string>('GOOGLE_CLIENT_SECRET') || 'disabled',
+      callbackURL:
+        cfg.get<string>('GOOGLE_CALLBACK_URL') ||
+        'http://localhost/auth/google/callback',
       scope: ['profile', 'email'],
     });
   }
 
-  validate(
+  /**
+   * Passport calls this with the Google profile. We resolve / link / create
+   * the local user here so the rest of the auth flow can treat Google
+   * sessions identically to password sessions.
+   *
+   * Edge cases handled:
+   *  - First-ever Google sign-in: creates a user, marks email verified.
+   *  - Existing email/password account, no linked Google id: silently
+   *    links Google to that account (the email is verified by Google).
+   *  - Existing Google id: re-uses the same user.
+   */
+  async validate(
     _accessToken: string,
     _refreshToken: string,
-    profile: {
-      id: string;
-      name?: { givenName?: string; familyName?: string };
-      emails?: { value?: string }[];
-      photos?: { value?: string }[];
-    },
+    profile: Profile,
     done: VerifyCallback,
-  ): any {
-    const { id, name, emails, photos } = profile;
+  ): Promise<void> {
+    try {
+      const email = profile.emails?.[0]?.value;
+      if (!email) {
+        return done(
+          new Error('Google profile did not include an email address'),
+          false,
+        );
+      }
 
-    const email =
-      Array.isArray(emails) && emails[0] && typeof emails[0].value === 'string'
-        ? emails[0].value
-        : null;
-    const picture =
-      Array.isArray(photos) && photos[0] && typeof photos[0].value === 'string'
-        ? photos[0].value
-        : null;
-    const givenName = name?.givenName ?? '';
-    const familyName = name?.familyName ?? '';
+      const payload: GoogleProfilePayload = {
+        providerId: profile.id,
+        email,
+        displayName: profile.displayName,
+        picture: profile.photos?.[0]?.value,
+      };
 
-    const user = {
-      provider: 'google',
-      providerId: id,
-      email,
-      name: `${givenName} ${familyName}`.trim(),
-      picture,
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    done(null, user);
+      const user = await this.authService.resolveGoogleUser(payload);
+      done(null, user);
+    } catch (err) {
+      done(err as Error, false);
+    }
   }
 }
