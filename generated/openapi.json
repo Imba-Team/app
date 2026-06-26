@@ -368,6 +368,25 @@
         ]
       }
     },
+    "/auth/refresh": {
+      "post": {
+        "description": "Reads the refresh_token cookie, validates it, marks it used, issues a fresh access + refresh pair and sets both cookies. Implements single-use rotation: if the same refresh token is presented twice, the entire token family is revoked and the caller must reauthenticate.",
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Tokens rotated"
+          },
+          "401": {
+            "description": "Refresh token missing, expired, replayed, or revoked"
+          }
+        },
+        "summary": "Rotate the refresh token and issue a new access token",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
     "/auth/forgot-password": {
       "post": {
         "operationId": "AuthController_forgotPassword",

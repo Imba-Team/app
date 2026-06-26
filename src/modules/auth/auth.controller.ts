@@ -150,15 +150,44 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @ApiResponse({ status: 500, description: 'Server error' })
   async login(
+    @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
     @Body() data: LoginRequestDto,
   ): Promise<ResponseDto<null>> {
-    const token = await this.authService.login(data);
-    this.authService.generateResponseTokens(response, token);
+    const session = await this.authService.login(data, request);
+    this.authService.finalizeLogin(response, session);
 
     return {
       ok: true,
       message: 'Login successful',
+      data: null,
+    };
+  }
+
+  @Post('refresh')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Rotate the refresh token and issue a new access token',
+    description:
+      'Reads the refresh_token cookie, validates it, marks it used, ' +
+      'issues a fresh access + refresh pair and sets both cookies. ' +
+      'Implements single-use rotation: if the same refresh token is ' +
+      'presented twice, the entire token family is revoked and the ' +
+      'caller must reauthenticate.',
+  })
+  @ApiResponse({ status: 200, description: 'Tokens rotated' })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token missing, expired, replayed, or revoked',
+  })
+  async refresh(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<ResponseDto<null>> {
+    await this.authService.refresh(request, response);
+    return {
+      ok: true,
+      message: 'Tokens refreshed',
       data: null,
     };
   }
@@ -228,8 +257,11 @@ export class AuthController {
       },
     },
   })
-  logout(@Res({ passthrough: true }) res: Response): ResponseDto<null> {
-    this.authService.logout(res);
+  async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<ResponseDto<null>> {
+    await this.authService.logout(req, res);
 
     return {
       ok: true,
@@ -264,14 +296,8 @@ export class AuthController {
     @Req() req: Request & { user: LoginRequestDto },
     @Res({ passthrough: true }) res: Response,
   ): Promise<ResponseDto<null>> {
-    const token = await this.authService.login(req.user);
-
-    res.cookie('access_token', token, {
-      maxAge: 2592000000,
-      httpOnly: true,
-      sameSite: true,
-      secure: this.configService.get('NODE_ENV') === 'production',
-    });
+    const session = await this.authService.login(req.user, req);
+    this.authService.finalizeLogin(res, session);
 
     return {
       ok: true,

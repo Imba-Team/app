@@ -12,8 +12,9 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Response, CookieOptions } from 'express';
+import { Request, Response, CookieOptions } from 'express';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { LoggerService } from 'src/common/logger/logger.service';
 import { UsersService } from '../users/user.service';
 import { LoginRequestDto } from './dtos/login.dto';
@@ -22,6 +23,23 @@ import { ForgotPasswordRequestDto } from './dtos/forgot-password.dto';
 import { MagicLinkService, MagicLinkPurpose } from './magic-link.service';
 import { ResetPasswordRequestDto } from './dtos/reset-password.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+
+export const ACCESS_COOKIE = 'token';
+export const REFRESH_COOKIE = 'refresh_token';
+export const HINT_COOKIE = 'isLoggedIn';
+export const REFRESH_COOKIE_PATH = '/auth/refresh';
+
+interface IssuedSession {
+  accessToken: string;
+  refreshToken: string;
+  refreshExpiresAt: Date;
+  userId: string;
+}
+
+interface RequestMeta {
+  userAgent?: string;
+  ipAddress?: string;
+}
 
 @Global()
 @Injectable()
@@ -40,53 +58,257 @@ export class AuthService {
     this.logger.setContext(this.context);
   }
 
-  private getCookieSettings(): Record<string, CookieOptions> {
-    // const isProduction = this.configService.get('NODE_ENV') === 'production';
-    // const cookieDomain = isProduction ? process.env.COOKIE_DOMAIN : undefined;
+  // ============================================================
+  //                       Cookie strategy
+  // ============================================================
+
+  private isProduction(): boolean {
+    return this.configService.get<string>('NODE_ENV') === 'production';
+  }
+
+  private accessCookieOptions(): CookieOptions {
+    return {
+      httpOnly: true,
+      path: '/',
+      maxAge: this.accessTtlMs(),
+      sameSite: this.isProduction() ? 'none' : 'lax',
+      secure: this.isProduction(),
+    };
+  }
+
+  private refreshCookieOptions(): CookieOptions {
+    return {
+      httpOnly: true,
+      // Restrict the refresh cookie to the refresh endpoint to minimise
+      // CSRF surface — it is never sent on any other request.
+      path: REFRESH_COOKIE_PATH,
+      maxAge: this.refreshTtlMs(),
+      sameSite: this.isProduction() ? 'none' : 'lax',
+      secure: this.isProduction(),
+    };
+  }
+
+  private hintCookieOptions(): CookieOptions {
+    return {
+      httpOnly: false,
+      path: '/',
+      maxAge: this.refreshTtlMs(),
+      sameSite: this.isProduction() ? 'none' : 'lax',
+      secure: this.isProduction(),
+    };
+  }
+
+  private setSessionCookies(res: Response, session: IssuedSession): void {
+    res.cookie(ACCESS_COOKIE, session.accessToken, this.accessCookieOptions());
+    res.cookie(
+      REFRESH_COOKIE,
+      session.refreshToken,
+      this.refreshCookieOptions(),
+    );
+    res.cookie(HINT_COOKIE, 'true', this.hintCookieOptions());
+  }
+
+  clearSessionCookies(res: Response): void {
+    res.clearCookie(ACCESS_COOKIE, this.accessCookieOptions());
+    res.clearCookie(REFRESH_COOKIE, this.refreshCookieOptions());
+    res.clearCookie(HINT_COOKIE, this.hintCookieOptions());
+  }
+
+  // ============================================================
+  //                      Token issuance
+  // ============================================================
+
+  private accessTtlMs(): number {
+    return parseDurationToMs(
+      this.configService.get<string>('JWT_ACCESS_TTL') ?? '15m',
+    );
+  }
+
+  private refreshTtlMs(): number {
+    const days =
+      Number(this.configService.get<string>('JWT_REFRESH_TTL_DAYS')) || 30;
+    return days * 24 * 60 * 60 * 1000;
+  }
+
+  /** Sign an RS256 access token. Key + algorithm come from JwtModule. */
+  issueAccessToken(userId: string): string {
+    return this.jwt.sign({ sub: userId });
+  }
+
+  /**
+   * Mint a brand-new opaque refresh token, store the hash in the DB, and
+   * return the raw value to the caller. The raw value is the only copy
+   * that ever leaves this process — once the user logs out (or the row
+   * is revoked) it cannot be reconstructed.
+   */
+  private async issueRefreshToken(
+    userId: string,
+    familyId: string,
+    parentId: string | null,
+    meta: RequestMeta,
+  ): Promise<{ raw: string; expiresAt: Date }> {
+    const raw = crypto.randomBytes(32).toString('base64url');
+    const tokenHash = sha256Hex(raw);
+    const expiresAt = new Date(Date.now() + this.refreshTtlMs());
+
+    await this.prisma.refreshToken.create({
+      data: {
+        userId,
+        familyId,
+        parentId,
+        tokenHash,
+        expiresAt,
+        userAgent: meta.userAgent,
+        ipAddress: meta.ipAddress,
+      },
+    });
+
+    return { raw, expiresAt };
+  }
+
+  /** Issue a fresh access + refresh pair for a new login. */
+  private async issueSession(
+    userId: string,
+    meta: RequestMeta,
+  ): Promise<IssuedSession> {
+    const familyId = crypto.randomUUID();
+    const { raw, expiresAt } = await this.issueRefreshToken(
+      userId,
+      familyId,
+      null,
+      meta,
+    );
+    return {
+      userId,
+      accessToken: this.issueAccessToken(userId),
+      refreshToken: raw,
+      refreshExpiresAt: expiresAt,
+    };
+  }
+
+  // ============================================================
+  //                      Token verification
+  // ============================================================
+
+  /** Verify an RS256 access token. Throws if invalid/expired/wrong issuer. */
+  verifyAccessToken(token: string): Record<string, string> {
+    return this.jwt.verify(token);
+  }
+
+  /** Backwards-compat alias for the old JwtGuard call site. */
+  verifyToken(token: string): Record<string, string> {
+    return this.verifyAccessToken(token);
+  }
+
+  /** Backwards-compat alias for the old signToken() call sites. */
+  signToken(userId: string): string {
+    return this.issueAccessToken(userId);
+  }
+
+  // ============================================================
+  //                  Refresh-token rotation
+  // ============================================================
+
+  /**
+   * Consume a refresh token and produce a new access + refresh pair.
+   *
+   * Replay protection:
+   *  - Tokens are single-use. The matching DB row is revoked on every
+   *    consumption.
+   *  - If a token is presented that is already revoked, the entire token
+   *    family is invalidated (this is the canonical "rotation detected
+   *    on replay" pattern). The caller is treated as compromised and
+   *    must re-authenticate.
+   */
+  async rotateRefreshToken(
+    rawRefreshToken: string,
+    meta: RequestMeta,
+  ): Promise<IssuedSession> {
+    const tokenHash = sha256Hex(rawRefreshToken);
+    const existing = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+    });
+
+    if (!existing) {
+      this.logger.warn('Refresh failed: token not found');
+      throw new UnauthorizedException({
+        ok: false,
+        message: 'Refresh token invalid or expired',
+        code: 'REFRESH_INVALID',
+      });
+    }
+
+    if (existing.revokedAt) {
+      this.logger.error(
+        `Refresh-token replay detected — revoking family ${existing.familyId} ` +
+          `for user ${existing.userId}`,
+      );
+      await this.revokeRefreshTokenFamily(existing.familyId);
+      throw new UnauthorizedException({
+        ok: false,
+        message:
+          'Refresh token replay detected. All sessions have been revoked.',
+        code: 'REFRESH_REPLAY',
+      });
+    }
+
+    if (existing.expiresAt <= new Date()) {
+      this.logger.warn('Refresh failed: token expired');
+      throw new UnauthorizedException({
+        ok: false,
+        message: 'Refresh token invalid or expired',
+        code: 'REFRESH_INVALID',
+      });
+    }
+
+    // Issue the new refresh token first so we can record its id on the
+    // outgoing row in a single transaction.
+    const { raw: newRaw, expiresAt: newExpiresAt } =
+      await this.issueRefreshToken(
+        existing.userId,
+        existing.familyId,
+        existing.id,
+        meta,
+      );
+    const newRow = await this.prisma.refreshToken.findUniqueOrThrow({
+      where: { tokenHash: sha256Hex(newRaw) },
+    });
+
+    await this.prisma.refreshToken.update({
+      where: { id: existing.id },
+      data: {
+        revokedAt: new Date(),
+        replacedByTokenId: newRow.id,
+      },
+    });
+
+    this.logger.log(
+      `Rotated refresh token family=${existing.familyId} user=${existing.userId}`,
+    );
 
     return {
-      token: {
-        httpOnly: true,
-        path: '/',
-        maxAge: this.configService.get('COOKIE_EXPIRES_IN') || 604800000,
-        sameSite: 'none',
-        secure: true,
-      },
-      isLoggedIn: {
-        httpOnly: false,
-        path: '/',
-        maxAge: this.configService.get('COOKIE_EXPIRES_IN') || 604800000,
-        sameSite: 'none',
-        secure: true,
-      },
+      userId: existing.userId,
+      accessToken: this.issueAccessToken(existing.userId),
+      refreshToken: newRaw,
+      refreshExpiresAt: newExpiresAt,
     };
   }
 
-  generateResponseTokens(response: Response, token: string) {
-    const cookieSettings = this.getCookieSettings();
-    response.cookie('token', token, cookieSettings.token);
-    response.cookie('isLoggedIn', 'true', cookieSettings.isLoggedIn);
-  }
-
-  signToken(userId: string): string {
-    this.logger.debug(`Generating JWT token for user ID: ${userId}`);
-    const payload = {
-      sub: userId,
-    };
-
-    return this.jwt.sign(payload, {
-      secret: this.configService.get('JWT_SECRET'),
-      expiresIn: this.configService.get('JWT_EXPIRES_IN'),
+  async revokeRefreshTokenFamily(familyId: string): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { familyId, revokedAt: null },
+      data: { revokedAt: new Date() },
     });
   }
 
-  verifyToken(token: string): Record<string, string> {
-    return this.jwt.verify(token, {
-      secret: this.configService.get('JWT_SECRET'),
-    });
-  }
+  // ============================================================
+  //                          Auth flows
+  // ============================================================
 
-  async login(data: LoginRequestDto) {
+  async login(
+    data: LoginRequestDto,
+    req: Request,
+  ): Promise<IssuedSession & { email: string }> {
     this.logger.log(`Login attempt for user: ${data.email}`);
 
     const user = await this.usersService.findByEmail(data.email);
@@ -97,7 +319,6 @@ export class AuthService {
     }
 
     const passwordMatch = await bcrypt.compare(data.password, user.password);
-
     if (!passwordMatch) {
       this.logger.warn(`Login failed: Invalid password for user ${data.email}`);
       throw new UnauthorizedException('Invalid password');
@@ -114,16 +335,46 @@ export class AuthService {
       });
     }
 
+    const session = await this.issueSession(user.id, readMeta(req));
     this.logger.log(`User ${data.email} logged in successfully`);
-    const token = this.signToken(user.id);
-
-    return token;
+    return { ...session, email: user.email };
   }
 
-  logout(res: Response) {
-    res.clearCookie('token', this.getCookieSettings().token);
-    res.clearCookie('isLoggedIn', this.getCookieSettings().isLoggedIn);
+  finalizeLogin(res: Response, session: IssuedSession): void {
+    this.setSessionCookies(res, session);
   }
+
+  async refresh(req: Request, res: Response): Promise<IssuedSession> {
+    const raw = readRefreshCookie(req);
+    if (!raw) {
+      throw new UnauthorizedException({
+        ok: false,
+        message: 'No refresh token presented',
+        code: 'REFRESH_MISSING',
+      });
+    }
+
+    const session = await this.rotateRefreshToken(raw, readMeta(req));
+    this.setSessionCookies(res, session);
+    return session;
+  }
+
+  async logout(req: Request, res: Response): Promise<void> {
+    const raw = readRefreshCookie(req);
+    if (raw) {
+      const existing = await this.prisma.refreshToken.findUnique({
+        where: { tokenHash: sha256Hex(raw) },
+      });
+      if (existing && !existing.revokedAt) {
+        await this.revokeRefreshTokenFamily(existing.familyId);
+      }
+    }
+    this.clearSessionCookies(res);
+  }
+
+  // ============================================================
+  //                     Registration + verify
+  // ============================================================
 
   async register(dto: RegisterRequestDto): Promise<{ email: string }> {
     const existingUser = await this.usersService.findByEmail(dto.email);
@@ -185,8 +436,6 @@ export class AuthService {
   async resendVerification(email: string): Promise<void> {
     const user = await this.usersService.findByEmail(email);
 
-    // Silently no-op for unknown emails / already-verified users to avoid
-    // user-enumeration via timing or response-shape differences.
     if (!user || user.emailVerified) {
       this.logger.debug(
         `Resend verification: no-op for email=${email} (` +
@@ -203,6 +452,10 @@ export class AuthService {
 
     this.logger.log(`Re-dispatched verification email to ${user.email}`);
   }
+
+  // ============================================================
+  //                      Password reset
+  // ============================================================
 
   async requestForgotPassword(data: ForgotPasswordRequestDto) {
     const user = await this.usersService.findByEmail(data.email);
@@ -221,9 +474,6 @@ export class AuthService {
       );
     }
 
-    // Always return the same response regardless of whether the user
-    // exists, to avoid email enumeration. We also never include the
-    // token here — it must only be transmitted via the email channel.
     return {
       ok: true,
       message:
@@ -233,26 +483,15 @@ export class AuthService {
   }
 
   async resetPassword(data: ResetPasswordRequestDto) {
-    this.logger.debug(`Reset token received: ${data.token}`);
-
     const verificationToken = await this.magicLinkService.verifyToken(
       data.token,
       MagicLinkPurpose.FORGOT_PASSWORD,
     );
 
-    if (!verificationToken.ok) {
-      this.logger.warn(`Reset password failed: Invalid or expired token`);
-      throw new HttpException(
-        { ok: false, message: 'Invalid or expired token' },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
     const user = await this.usersService.findById(
       verificationToken.data.userId,
     );
     if (!user) {
-      this.logger.warn(`Reset password failed: User not found for token`);
       throw new HttpException(
         { ok: false, message: 'User not found' },
         HttpStatus.NOT_FOUND,
@@ -266,15 +505,63 @@ export class AuthService {
       );
     }
 
-    // Optionally add password strength check here
-
     await this.usersService.updatePassword(user.id, data.password);
 
-    this.logger.log(`Password reset successful for user: ${user.email}`);
+    // Password change is a credential rotation event — invalidate every
+    // active refresh-token family for the user.
+    await this.prisma.refreshToken.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
 
-    return {
-      ok: true,
-      message: 'Password reset successful',
-    };
+    this.logger.log(`Password reset successful for user: ${user.email}`);
+    return { ok: true, message: 'Password reset successful' };
+  }
+}
+
+// ============================================================
+//                      Module-private helpers
+// ============================================================
+
+function sha256Hex(input: string): string {
+  return crypto.createHash('sha256').update(input).digest('hex');
+}
+
+function readRefreshCookie(req: Request): string | undefined {
+  const cookies = req.cookies as Record<string, string> | undefined;
+  return cookies?.[REFRESH_COOKIE];
+}
+
+function readMeta(req: Request): RequestMeta {
+  const ua = req.get('user-agent') ?? undefined;
+  const fwd = req.get('x-forwarded-for');
+  const ip = (fwd?.split(',')[0]?.trim() || req.ip) ?? undefined;
+  return { userAgent: ua, ipAddress: ip };
+}
+
+/**
+ * Parse short duration strings like '15m', '2h', '7d', '900s' into
+ * milliseconds. Falls back to 15 minutes on any parse failure to avoid
+ * a misconfigured value silently issuing infinite-life tokens.
+ */
+function parseDurationToMs(input: string): number {
+  const FIFTEEN_MIN = 15 * 60 * 1000;
+  const match = /^\s*(\d+)\s*(ms|s|m|h|d)?\s*$/.exec(input);
+  if (!match) return FIFTEEN_MIN;
+  const value = Number(match[1]);
+  const unit = match[2] ?? 's';
+  switch (unit) {
+    case 'ms':
+      return value;
+    case 's':
+      return value * 1000;
+    case 'm':
+      return value * 60 * 1000;
+    case 'h':
+      return value * 60 * 60 * 1000;
+    case 'd':
+      return value * 24 * 60 * 60 * 1000;
+    default:
+      return FIFTEEN_MIN;
   }
 }
