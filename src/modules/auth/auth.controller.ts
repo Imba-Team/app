@@ -9,6 +9,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Response, Request } from 'express';
 
 import { ConfigService } from '@nestjs/config';
@@ -22,6 +23,16 @@ import { VerifyEmailRequestDto } from './dtos/verify-email.dto';
 import { ResendVerificationRequestDto } from './dtos/resend-verification.dto';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
 
+// Sensitive auth endpoints are rate-limited per IP. The values here are
+// conservative starting points — they sit on top of the per-account
+// lockout in LoginAttemptsService for login, and provide standalone
+// bot-spam protection for the email-dispatching routes.
+const RATE_LOGIN = { default: { limit: 5, ttl: 60_000 } } as const;
+const RATE_REFRESH = { default: { limit: 30, ttl: 60_000 } } as const;
+const RATE_REGISTER = { default: { limit: 5, ttl: 60_000 } } as const;
+const RATE_MAIL_DISPATCH = { default: { limit: 3, ttl: 60_000 } } as const;
+const RATE_TOKEN_CONSUME = { default: { limit: 10, ttl: 60_000 } } as const;
+
 @Controller('auth')
 @ApiTags('Authentication')
 export class AuthController {
@@ -31,6 +42,7 @@ export class AuthController {
   ) {}
 
   @Post('register')
+  @Throttle(RATE_REGISTER)
   @HttpCode(202)
   @ApiOperation({
     summary: 'Register a new user',
@@ -65,6 +77,7 @@ export class AuthController {
   }
 
   @Post('verify-email')
+  @Throttle(RATE_TOKEN_CONSUME)
   @HttpCode(200)
   @ApiOperation({
     summary: 'Confirm a registration via the email link token',
@@ -98,6 +111,7 @@ export class AuthController {
   }
 
   @Post('resend-verification')
+  @Throttle(RATE_MAIL_DISPATCH)
   @HttpCode(200)
   @ApiOperation({
     summary: 'Re-dispatch the email verification link',
@@ -135,6 +149,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Throttle(RATE_LOGIN)
   @HttpCode(200)
   @ApiResponse({
     status: 200,
@@ -165,6 +180,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @Throttle(RATE_REFRESH)
   @HttpCode(200)
   @ApiOperation({
     summary: 'Rotate the refresh token and issue a new access token',
@@ -193,6 +209,7 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @Throttle(RATE_MAIL_DISPATCH)
   @HttpCode(200)
   @ApiOperation({ summary: 'Request password reset link' })
   @ApiResponse({
@@ -219,6 +236,7 @@ export class AuthController {
   }
 
   @Post('reset-password')
+  @Throttle(RATE_TOKEN_CONSUME)
   @HttpCode(200)
   @ApiOperation({ summary: 'Reset user password' })
   @ApiResponse({

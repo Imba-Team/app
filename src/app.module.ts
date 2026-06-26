@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from './modules/users/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { LoggerModule } from './common/logger/logger.module';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { StudySetModule } from './modules/study-set/study-set.module';
 import { FlashcardModule } from './modules/flashcard/flashcard-progress.module';
 import { FavouriteStudySetModule } from './modules/favourite-study-set/favourite-study-set.module';
@@ -20,6 +21,7 @@ import { HealthModule } from './common/health/health.module';
 import { MetricsModule } from './common/metrics/metrics.module';
 import { QueueModule } from './common/queue/queue.module';
 import { MailModule } from './common/mail/mail.module';
+import { RedisModule } from './common/redis/redis.module';
 import { LearningModule } from './modules/learning/learning.module';
 import { SrsModule } from './modules/srs/srs.module';
 import { AiModule } from './modules/ai/ai.module';
@@ -34,17 +36,28 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
       rootPath: join(__dirname, '..', 'uploads'), // folder on disk
       serveRoot: '/uploads', // public URL path root
     }),
-    ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          ttl: 60000,
-          limit: 10,
-        },
-      ],
+    // Single global throttler. Auth-sensitive routes opt into a stricter
+    // limit via @Throttle({ default: { limit, ttl } }) — applying multiple
+    // named throttlers globally would force every non-auth route to also
+    // be capped at the auth limit, which is not what we want.
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (cfg: ConfigService) => ({
+        throttlers: [
+          {
+            name: 'default',
+            ttl:
+              (Number(cfg.get<string>('DEFAULT_THROTTLE_TTL_SECONDS')) || 60) *
+              1000,
+            limit: Number(cfg.get<string>('DEFAULT_THROTTLE_LIMIT')) || 100,
+          },
+        ],
+      }),
     }),
     LoggerModule,
     PrismaModule,
     MetricsModule,
+    RedisModule,
     QueueModule,
     MailModule,
     HealthModule,
@@ -67,6 +80,12 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     NotificationModule,
     AnalyticsModule,
     ConfigModule.forRoot({ isGlobal: true }),
+  ],
+  providers: [
+    // Globally enforce the named throttlers. Per-route decorators can
+    // opt into a specific named throttler (e.g. the stricter `auth` one)
+    // via @Throttle({ auth: { ... } }).
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}

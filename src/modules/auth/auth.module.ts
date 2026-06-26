@@ -6,6 +6,7 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthHealthController } from './auth-health.controller';
 import { MagicLinkService } from './magic-link.service';
+import { LoginAttemptsService } from './login-attempts.service';
 import { MailModule } from 'src/common/mail/mail.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from '../users/user.module';
@@ -39,7 +40,7 @@ import { loadJwtKeyPair } from 'src/common/jwt/key-loader';
     }),
   ],
   controllers: [AuthController, AuthHealthController],
-  providers: [AuthService, MagicLinkService],
+  providers: [AuthService, MagicLinkService, LoginAttemptsService],
   exports: [AuthService, MagicLinkService],
 })
 export class AuthModule {}

@@ -7,7 +7,6 @@ import {
   HttpStatus,
   Inject,
   Injectable,
-  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -23,6 +22,7 @@ import { ForgotPasswordRequestDto } from './dtos/forgot-password.dto';
 import { MagicLinkService, MagicLinkPurpose } from './magic-link.service';
 import { ResetPasswordRequestDto } from './dtos/reset-password.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { LoginAttemptsService } from './login-attempts.service';
 
 export const ACCESS_COOKIE = 'token';
 export const REFRESH_COOKIE = 'refresh_token';
@@ -54,6 +54,7 @@ export class AuthService {
     private readonly logger: LoggerService,
     private readonly usersService: UsersService,
     private readonly prisma: PrismaService,
+    private readonly loginAttempts: LoginAttemptsService,
   ) {
     this.logger.setContext(this.context);
   }
@@ -311,19 +312,43 @@ export class AuthService {
   ): Promise<IssuedSession & { email: string }> {
     this.logger.log(`Login attempt for user: ${data.email}`);
 
+    // 1) Lockout check — throws 429 ACCOUNT_LOCKED if the account is
+    //    currently in cooldown. Done before any DB / bcrypt work so
+    //    locked accounts cannot be probed cheaply.
+    await this.loginAttempts.assertNotLocked(data.email);
+
     const user = await this.usersService.findByEmail(data.email);
 
+    // 2) Unify "user not found" and "wrong password" under one error
+    //    response to avoid user-enumeration via login.
     if (!user) {
-      this.logger.warn(`Login failed: User not found - ${data.email}`);
-      throw new NotFoundException('User not found');
+      await this.loginAttempts.recordFailure(data.email);
+      this.logger.warn(
+        `Login failed: invalid credentials (unknown email) - ${data.email}`,
+      );
+      throw new UnauthorizedException({
+        ok: false,
+        message: 'Invalid email or password.',
+        code: 'INVALID_CREDENTIALS',
+      });
     }
 
     const passwordMatch = await bcrypt.compare(data.password, user.password);
     if (!passwordMatch) {
-      this.logger.warn(`Login failed: Invalid password for user ${data.email}`);
-      throw new UnauthorizedException('Invalid password');
+      await this.loginAttempts.recordFailure(data.email);
+      this.logger.warn(
+        `Login failed: invalid credentials (bad password) - ${data.email}`,
+      );
+      throw new UnauthorizedException({
+        ok: false,
+        message: 'Invalid email or password.',
+        code: 'INVALID_CREDENTIALS',
+      });
     }
 
+    // Email-not-verified is a *successful* auth result that is gated
+    // behind a separate workflow — not a credential failure, so it
+    // doesn't contribute to the lockout counter.
     if (!user.emailVerified) {
       this.logger.warn(
         `Login blocked: email not verified for user ${data.email}`,
@@ -335,6 +360,7 @@ export class AuthService {
       });
     }
 
+    await this.loginAttempts.recordSuccess(data.email);
     const session = await this.issueSession(user.id, readMeta(req));
     this.logger.log(`User ${data.email} logged in successfully`);
     return { ...session, email: user.email };
