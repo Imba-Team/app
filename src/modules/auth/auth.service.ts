@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   forwardRef,
   Global,
   HttpException,
@@ -18,8 +19,9 @@ import { UsersService } from '../users/user.service';
 import { LoginRequestDto } from './dtos/login.dto';
 import { RegisterRequestDto } from './dtos/register.dto';
 import { ForgotPasswordRequestDto } from './dtos/forgot-password.dto';
-import { MagicLinkService } from './magic-link.service';
+import { MagicLinkService, MagicLinkPurpose } from './magic-link.service';
 import { ResetPasswordRequestDto } from './dtos/reset-password.dto';
+import { PrismaService } from 'src/common/prisma/prisma.service';
 
 @Global()
 @Injectable()
@@ -33,6 +35,7 @@ export class AuthService {
     private readonly magicLinkService: MagicLinkService,
     private readonly logger: LoggerService,
     private readonly usersService: UsersService,
+    private readonly prisma: PrismaService,
   ) {
     this.logger.setContext(this.context);
   }
@@ -100,6 +103,17 @@ export class AuthService {
       throw new UnauthorizedException('Invalid password');
     }
 
+    if (!user.emailVerified) {
+      this.logger.warn(
+        `Login blocked: email not verified for user ${data.email}`,
+      );
+      throw new ForbiddenException({
+        ok: false,
+        message: 'Please verify your email before logging in.',
+        code: 'EMAIL_NOT_VERIFIED',
+      });
+    }
+
     this.logger.log(`User ${data.email} logged in successfully`);
     const token = this.signToken(user.id);
 
@@ -111,7 +125,7 @@ export class AuthService {
     res.clearCookie('isLoggedIn', this.getCookieSettings().isLoggedIn);
   }
 
-  async register(dto: RegisterRequestDto): Promise<string> {
+  async register(dto: RegisterRequestDto): Promise<{ email: string }> {
     const existingUser = await this.usersService.findByEmail(dto.email);
 
     this.logger.log(`Register attempt for user: ${dto.email}`);
@@ -128,40 +142,92 @@ export class AuthService {
       password: dto.password,
     });
 
-    this.logger.log(`User ${user.email} registered successfully`);
+    await this.magicLinkService.sendVerificationLink({
+      to: user.email,
+      userId: user.id,
+      purpose: MagicLinkPurpose.EMAIL_VERIFICATION,
+    });
 
-    const token = this.signToken(user.id);
+    this.logger.log(
+      `User ${user.email} registered; verification email dispatched`,
+    );
 
-    return token;
+    return { email: user.email };
+  }
+
+  async verifyEmail(token: string): Promise<{ email: string }> {
+    const result = await this.magicLinkService.verifyToken(
+      token,
+      MagicLinkPurpose.EMAIL_VERIFICATION,
+    );
+
+    const user = await this.usersService.findById(result.data.userId);
+
+    if (user.emailVerified) {
+      this.logger.log(
+        `Email re-verification for already-verified user ${user.email}`,
+      );
+      return { email: user.email };
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: true,
+        verifiedAt: new Date(),
+      },
+    });
+
+    this.logger.log(`Email verified for user ${user.email}`);
+    return { email: user.email };
+  }
+
+  async resendVerification(email: string): Promise<void> {
+    const user = await this.usersService.findByEmail(email);
+
+    // Silently no-op for unknown emails / already-verified users to avoid
+    // user-enumeration via timing or response-shape differences.
+    if (!user || user.emailVerified) {
+      this.logger.debug(
+        `Resend verification: no-op for email=${email} (` +
+          `${!user ? 'unknown' : 'already verified'})`,
+      );
+      return;
+    }
+
+    await this.magicLinkService.sendVerificationLink({
+      to: user.email,
+      userId: user.id,
+      purpose: MagicLinkPurpose.EMAIL_VERIFICATION,
+    });
+
+    this.logger.log(`Re-dispatched verification email to ${user.email}`);
   }
 
   async requestForgotPassword(data: ForgotPasswordRequestDto) {
     const user = await this.usersService.findByEmail(data.email);
 
     if (user) {
-      const result = await this.magicLinkService.sendVerificationLink({
+      await this.magicLinkService.sendVerificationLink({
         to: user.email,
         userId: user.id,
-        purpose: 'forgot-password',
+        purpose: MagicLinkPurpose.FORGOT_PASSWORD,
       });
 
-      this.logger.log(`Verification link sent to ${user.email}`);
-
-      return {
-        ok: true,
-        message: 'Verification link sent successfully',
-        data: result.data, // contains token and expiresAt
-      };
+      this.logger.log(`Password reset link queued for ${user.email}`);
+    } else {
+      this.logger.warn(
+        `Forgot password request for non-existing email: ${data.email}`,
+      );
     }
 
-    this.logger.warn(
-      `Forgot password request for non-existing email: ${data.email}`,
-    );
-
+    // Always return the same response regardless of whether the user
+    // exists, to avoid email enumeration. We also never include the
+    // token here — it must only be transmitted via the email channel.
     return {
       ok: true,
       message:
-        'If a user with this email exists, a verification link has been sent.',
+        'If an account exists for this email, a password reset link has been sent.',
       data: null,
     };
   }
@@ -171,7 +237,7 @@ export class AuthService {
 
     const verificationToken = await this.magicLinkService.verifyToken(
       data.token,
-      'forgot-password',
+      MagicLinkPurpose.FORGOT_PASSWORD,
     );
 
     if (!verificationToken.ok) {

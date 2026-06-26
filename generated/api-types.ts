@@ -96,7 +96,31 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Register a new user
+         * @description Creates an unverified user and dispatches a verification email. The response is 202 Accepted with no session — the caller must verify their email and then log in.
+         */
         post: operations["AuthController_register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/resend-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Re-dispatch the email verification link
+         * @description Always returns 200 with a generic message regardless of whether the email exists or is already verified, to avoid user enumeration.
+         */
+        post: operations["AuthController_resendVerification"];
         delete?: never;
         options?: never;
         head?: never;
@@ -114,6 +138,26 @@ export interface paths {
         put?: never;
         /** Reset user password */
         post: operations["AuthController_resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm a registration via the email link token
+         * @description The frontend extracts the token from the URL query string of the email link and submits it here. On success the user is marked as verified and can subsequently log in.
+         */
+        post: operations["AuthController_verifyEmail"];
         delete?: never;
         options?: never;
         head?: never;
@@ -858,6 +902,10 @@ export interface components {
             /** @example John */
             username: string;
         };
+        ResendVerificationRequestDto: {
+            /** @example john@example.com */
+            email: string;
+        };
         ResetPasswordRequestDto: {
             /** @description Confirm new password */
             confirmPassword: string;
@@ -939,6 +987,13 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        VerifyEmailRequestDto: {
+            /**
+             * @description Verification token from the email link. The frontend extracts this from the URL query string and posts it here.
+             * @example email-verification-1719158400000-abc123...
+             */
+            token: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -956,6 +1011,7 @@ export type SchemaCreateTagDto = components['schemas']['CreateTagDto'];
 export type SchemaForgotPasswordRequestDto = components['schemas']['ForgotPasswordRequestDto'];
 export type SchemaLoginRequestDto = components['schemas']['LoginRequestDto'];
 export type SchemaRegisterRequestDto = components['schemas']['RegisterRequestDto'];
+export type SchemaResendVerificationRequestDto = components['schemas']['ResendVerificationRequestDto'];
 export type SchemaResetPasswordRequestDto = components['schemas']['ResetPasswordRequestDto'];
 export type SchemaServiceHealthResponseDto = components['schemas']['ServiceHealthResponseDto'];
 export type SchemaUpdateCommentDto = components['schemas']['UpdateCommentDto'];
@@ -966,6 +1022,7 @@ export type SchemaUpdateTagDto = components['schemas']['UpdateTagDto'];
 export type SchemaUpdateUserDto = components['schemas']['UpdateUserDto'];
 export type SchemaUpdateVisibilityDto = components['schemas']['UpdateVisibilityDto'];
 export type SchemaUserResponseDto = components['schemas']['UserResponseDto'];
+export type SchemaVerifyEmailRequestDto = components['schemas']['VerifyEmailRequestDto'];
 export type $defs = Record<string, never>;
 export interface operations {
     AuthController_forgotPassword: {
@@ -1101,8 +1158,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description User registered successfully */
-            201: {
+            /** @description Registration accepted; verification email dispatched */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1123,6 +1180,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    AuthController_resendVerification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResendVerificationRequestDto"];
+            };
+        };
+        responses: {
+            /** @description If a matching unverified account exists, a new verification email was dispatched. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
             };
         };
     };
@@ -1147,6 +1228,37 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
+            };
+        };
+    };
+    AuthController_verifyEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyEmailRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Email verified */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Invalid or expired token */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

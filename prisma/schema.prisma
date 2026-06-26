@@ -38,6 +38,8 @@ model User {
   status             String?                @db.VarChar
   role               String                 @default("user") @db.VarChar
   profilePicture     String?
+  emailVerified      Boolean                @default(false)
+  verifiedAt         DateTime?              @db.Timestamp(6)
   createdAt          DateTime               @default(now()) @db.Timestamp(6)
   updatedAt          DateTime               @default(now()) @updatedAt @db.Timestamp(6)
   studySets          StudySet[]

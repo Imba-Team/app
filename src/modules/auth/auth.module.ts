@@ -6,7 +6,6 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthHealthController } from './auth-health.controller';
 import { MagicLinkService } from './magic-link.service';
-import { MailService } from 'src/common/mail/mail.service';
 import { MailModule } from 'src/common/mail/mail.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from '../users/user.module';
@@ -28,7 +27,7 @@ import { UsersModule } from '../users/user.module';
     }),
   ],
   controllers: [AuthController, AuthHealthController],
-  providers: [AuthService, MagicLinkService, MailService, MailModule],
-  exports: [AuthService, MailModule, MagicLinkService],
+  providers: [AuthService, MagicLinkService],
+  exports: [AuthService, MagicLinkService],
 })
 export class AuthModule {}

@@ -18,6 +18,8 @@ import { RegisterRequestDto } from './dtos/register.dto';
 import { GoogleOauthGuard } from 'src/guards/google.guard';
 import { ForgotPasswordRequestDto } from './dtos/forgot-password.dto';
 import { ResetPasswordRequestDto } from './dtos/reset-password.dto';
+import { VerifyEmailRequestDto } from './dtos/verify-email.dto';
+import { ResendVerificationRequestDto } from './dtos/resend-verification.dto';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
 
 @Controller('auth')
@@ -29,30 +31,105 @@ export class AuthController {
   ) {}
 
   @Post('register')
-  @HttpCode(201)
+  @HttpCode(202)
+  @ApiOperation({
+    summary: 'Register a new user',
+    description:
+      'Creates an unverified user and dispatches a verification email. ' +
+      'The response is 202 Accepted with no session — the caller must ' +
+      'verify their email and then log in.',
+  })
   @ApiResponse({
-    status: 201,
-    description: 'User registered successfully',
+    status: 202,
+    description: 'Registration accepted; verification email dispatched',
     schema: {
       example: {
         ok: true,
-        message: 'Registration successful',
-        data: null,
+        message: 'Verification email sent. Please check your inbox.',
+        data: { email: 'john@example.com' },
       },
     },
   })
   @ApiResponse({ status: 409, description: 'Email already in use' })
   @ApiResponse({ status: 500, description: 'Server error' })
   async register(
-    @Res({ passthrough: true }) response: Response,
     @Body() dto: RegisterRequestDto,
-  ): Promise<ResponseDto<null>> {
-    const authTokens = await this.authService.register(dto);
-    this.authService.generateResponseTokens(response, authTokens);
+  ): Promise<ResponseDto<{ email: string }>> {
+    const result = await this.authService.register(dto);
 
     return {
       ok: true,
-      message: 'Registration successful',
+      message: 'Verification email sent. Please check your inbox.',
+      data: result,
+    };
+  }
+
+  @Post('verify-email')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Confirm a registration via the email link token',
+    description:
+      'The frontend extracts the token from the URL query string of the ' +
+      'email link and submits it here. On success the user is marked as ' +
+      'verified and can subsequently log in.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Email verified',
+    schema: {
+      example: {
+        ok: true,
+        message: 'Email verified successfully',
+        data: { email: 'john@example.com' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  async verifyEmail(
+    @Body() dto: VerifyEmailRequestDto,
+  ): Promise<ResponseDto<{ email: string }>> {
+    const result = await this.authService.verifyEmail(dto.token);
+
+    return {
+      ok: true,
+      message: 'Email verified successfully',
+      data: result,
+    };
+  }
+
+  @Post('resend-verification')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Re-dispatch the email verification link',
+    description:
+      'Always returns 200 with a generic message regardless of whether the ' +
+      'email exists or is already verified, to avoid user enumeration.',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'If a matching unverified account exists, a new verification email ' +
+      'was dispatched.',
+    schema: {
+      example: {
+        ok: true,
+        message:
+          'If an unverified account exists for this email, a new ' +
+          'verification link has been sent.',
+        data: null,
+      },
+    },
+  })
+  async resendVerification(
+    @Body() dto: ResendVerificationRequestDto,
+  ): Promise<ResponseDto<null>> {
+    await this.authService.resendVerification(dto.email);
+
+    return {
+      ok: true,
+      message:
+        'If an unverified account exists for this email, a new ' +
+        'verification link has been sent.',
       data: null,
     };
   }
@@ -102,13 +179,13 @@ export class AuthController {
   })
   async forgotPassword(
     @Body() data: ForgotPasswordRequestDto,
-  ): Promise<ResponseDto<any>> {
+  ): Promise<ResponseDto<null>> {
     const result = await this.authService.requestForgotPassword(data);
 
     return {
       ok: result.ok,
       message: result.message,
-      data: result.data,
+      data: null,
     };
   }
 

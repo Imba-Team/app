@@ -18,6 +18,8 @@ import { join } from 'path';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { HealthModule } from './common/health/health.module';
 import { MetricsModule } from './common/metrics/metrics.module';
+import { QueueModule } from './common/queue/queue.module';
+import { MailModule } from './common/mail/mail.module';
 import { LearningModule } from './modules/learning/learning.module';
 import { SrsModule } from './modules/srs/srs.module';
 import { AiModule } from './modules/ai/ai.module';
@@ -43,6 +45,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     LoggerModule,
     PrismaModule,
     MetricsModule,
+    QueueModule,
+    MailModule,
     HealthModule,
     UsersModule,
     AuthModule,
