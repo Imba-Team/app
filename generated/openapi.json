@@ -205,6 +205,7 @@
     },
     "/auth/register": {
       "post": {
+        "description": "Creates an unverified user and dispatches a verification email. The response is 202 Accepted with no session — the caller must verify their email and then log in.",
         "operationId": "AuthController_register",
         "parameters": [],
         "requestBody": {
@@ -218,15 +219,17 @@
           }
         },
         "responses": {
-          "201": {
-            "description": "User registered successfully",
+          "202": {
+            "description": "Registration accepted; verification email dispatched",
             "content": {
               "application/json": {
                 "schema": {
                   "example": {
                     "ok": true,
-                    "message": "Registration successful",
-                    "data": null
+                    "message": "Verification email sent. Please check your inbox.",
+                    "data": {
+                      "email": "john@example.com"
+                    }
                   }
                 }
               }
@@ -239,6 +242,86 @@
             "description": "Server error"
           }
         },
+        "summary": "Register a new user",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/auth/verify-email": {
+      "post": {
+        "description": "The frontend extracts the token from the URL query string of the email link and submits it here. On success the user is marked as verified and can subsequently log in.",
+        "operationId": "AuthController_verifyEmail",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "ok": true,
+                    "message": "Email verified successfully",
+                    "data": {
+                      "email": "john@example.com"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired token"
+          }
+        },
+        "summary": "Confirm a registration via the email link token",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/auth/resend-verification": {
+      "post": {
+        "description": "Always returns 200 with a generic message regardless of whether the email exists or is already verified, to avoid user enumeration.",
+        "operationId": "AuthController_resendVerification",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendVerificationRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "If a matching unverified account exists, a new verification email was dispatched.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "ok": true,
+                    "message": "If an unverified account exists for this email, a new verification link has been sent.",
+                    "data": null
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Re-dispatch the email verification link",
         "tags": [
           "Authentication"
         ]
@@ -280,6 +363,25 @@
             "description": "Server error"
           }
         },
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "description": "Reads the refresh_token cookie, validates it, marks it used, issues a fresh access + refresh pair and sets both cookies. Implements single-use rotation: if the same refresh token is presented twice, the entire token family is revoked and the caller must reauthenticate.",
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Tokens rotated"
+          },
+          "401": {
+            "description": "Refresh token missing, expired, replayed, or revoked"
+          }
+        },
+        "summary": "Rotate the refresh token and issue a new access token",
         "tags": [
           "Authentication"
         ]
@@ -1978,6 +2080,31 @@
           "username",
           "email",
           "password"
+        ]
+      },
+      "VerifyEmailRequestDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Verification token from the email link. The frontend extracts this from the URL query string and posts it here.",
+            "example": "email-verification-1719158400000-abc123..."
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "ResendVerificationRequestDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "john@example.com"
+          }
+        },
+        "required": [
+          "email"
         ]
       },
       "LoginRequestDto": {

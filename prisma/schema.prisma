@@ -38,6 +38,9 @@ model User {
   status             String?                @db.VarChar
   role               String                 @default("user") @db.VarChar
   profilePicture     String?
+  emailVerified      Boolean                @default(false)
+  verifiedAt         DateTime?              @db.Timestamp(6)
+  googleProviderId   String?                @unique
   createdAt          DateTime               @default(now()) @db.Timestamp(6)
   updatedAt          DateTime               @default(now()) @updatedAt @db.Timestamp(6)
   studySets          StudySet[]
@@ -49,6 +52,7 @@ model User {
   testAttempts       TestAttempt[]
   flashcardUserState FlashcardUserState[]
   magicLinks         MagicLink[]
+  refreshTokens      RefreshToken[]
 
   @@map("user")
 }
@@ -242,6 +246,27 @@ model TestQuestionAttempt {
   flashcard     Flashcard   @relation(fields: [flashcardId], references: [id], onDelete: Restrict)
 
   @@map("test_question_attempt")
+}
+
+model RefreshToken {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @db.Uuid
+  tokenHash         String    @unique
+  familyId          String    @db.Uuid
+  parentId          String?   @db.Uuid
+  expiresAt         DateTime  @db.Timestamp(6)
+  revokedAt         DateTime? @db.Timestamp(6)
+  replacedByTokenId String?   @db.Uuid
+  userAgent         String?
+  ipAddress         String?
+  createdAt         DateTime  @default(now()) @db.Timestamp(6)
+
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("refresh_token")
 }
 
 model MagicLink {

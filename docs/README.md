@@ -2,6 +2,12 @@
 
 Engineering documentation for the Mimir backend.
 
+## Features
+
+| Document | What it covers |
+|---|---|
+| [Authentication](./auth.md) | Complete operating manual: every endpoint, every cookie, the RS256 + rotating-refresh model, email verification, Google OAuth, login lockout, throttling, async mail dispatch, runbook |
+
 ## Operations & Tooling
 
 | Document | What it covers |
