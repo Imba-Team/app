@@ -3,6 +3,7 @@ import { AuthModule } from 'src/modules/auth/auth.module';
 import { StudySetModule } from 'src/modules/study-set/study-set.module';
 import { UsersModule } from 'src/modules/users/user.module';
 
+import { CsvImportService } from './csv-import.service';
 import { FlashcardController } from './flashcard.controller';
 import { FlashcardProgressController } from './flashcard-progress.controller';
 import { FlashcardProgressService } from './flashcard-progress.service';
@@ -16,7 +17,7 @@ import { SetFlashcardsController } from './set-flashcards.controller';
     SetFlashcardsController,
     FlashcardProgressController,
   ],
-  providers: [FlashcardService, FlashcardProgressService],
-  exports: [FlashcardService, FlashcardProgressService],
+  providers: [FlashcardService, FlashcardProgressService, CsvImportService],
+  exports: [FlashcardService, FlashcardProgressService, CsvImportService],
 })
 export class FlashcardModule {}

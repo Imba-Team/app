@@ -1200,6 +1200,115 @@
         ]
       }
     },
+    "/study-sets/{setId}/cards/import/preview": {
+      "post": {
+        "operationId": "SetFlashcardsController_previewCsv",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "delimiter",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Preview a CSV before importing — returns headers, first 5 data rows, and a suggested column mapping",
+        "tags": [
+          "Flashcards"
+        ]
+      }
+    },
+    "/study-sets/{setId}/cards/import": {
+      "post": {
+        "operationId": "SetFlashcardsController_importCsv",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file",
+                  "request"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "request": {
+                    "type": "string",
+                    "description": "JSON-stringified CsvImportRequestDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Import flashcards from a CSV using the supplied column mapping",
+        "tags": [
+          "Flashcards"
+        ]
+      }
+    },
     "/flashcards/{id}/progress": {
       "patch": {
         "operationId": "FlashcardProgressController_updateProgress",
