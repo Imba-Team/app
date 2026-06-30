@@ -85,6 +85,8 @@ model Flashcard {
   id                   String               @id(map: "PK_e0aba0501d3bc532951efc9f791") @default(uuid()) @db.Uuid
   term                 String
   definition           String
+  example              String?
+  phonetic             String?
   orderIndex           Int                  @default(0)
   imageUrl             String?
   hint                 String?

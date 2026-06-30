@@ -238,6 +238,24 @@ export interface paths {
         patch: operations["CommentController_updateComment"];
         trace?: never;
     };
+    "/flashcards/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a flashcard */
+        delete: operations["FlashcardController_delete"];
+        options?: never;
+        head?: never;
+        /** Update a flashcard */
+        patch: operations["FlashcardController_update"];
+        trace?: never;
+    };
     "/flashcards/{id}/progress": {
         parameters: {
             query?: never;
@@ -710,6 +728,24 @@ export interface paths {
         patch: operations["StudySetController_updateVisibility"];
         trace?: never;
     };
+    "/study-sets/{setId}/cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List flashcards in a study set */
+        get: operations["SetFlashcardsController_list"];
+        put?: never;
+        /** Create a flashcard in a study set */
+        post: operations["SetFlashcardsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/study-sets/{studySetId}/comments": {
         parameters: {
             query?: never;
@@ -928,6 +964,25 @@ export interface components {
              */
             parentCommentId?: string;
         };
+        CreateFlashcardDto: {
+            /** @example The process by which green plants convert sunlight into energy. */
+            definition: string;
+            /** @example Photosynthesis powers most life on Earth. */
+            example?: string;
+            /** @example Starts with "photo-" */
+            hint?: string;
+            /** @example https://cdn.mimir.app/cards/abc.jpg */
+            imageUrl?: string;
+            /**
+             * @description Position within the set. Auto-assigned if omitted.
+             * @example 3
+             */
+            orderIndex?: number;
+            /** @example /ˌfoʊtəˈsɪnθəsɪs/ */
+            phonetic?: string;
+            /** @example Photosynthesis */
+            term: string;
+        };
         CreateFolderDto: {
             /** @example Study sets for backend interview prep */
             description?: string;
@@ -1009,6 +1064,25 @@ export interface components {
             /** @example Updated comment text */
             content: string;
         };
+        UpdateFlashcardDto: {
+            /** @example The process by which green plants convert sunlight into energy. */
+            definition?: string;
+            /** @example Photosynthesis powers most life on Earth. */
+            example?: string;
+            /** @example Starts with "photo-" */
+            hint?: string;
+            /** @example https://cdn.mimir.app/cards/abc.jpg */
+            imageUrl?: string;
+            /**
+             * @description Position within the set. Auto-assigned if omitted.
+             * @example 3
+             */
+            orderIndex?: number;
+            /** @example /ˌfoʊtəˈsɪnθəsɪs/ */
+            phonetic?: string;
+            /** @example Photosynthesis */
+            term?: string;
+        };
         UpdateFlashcardProgressDto: {
             /** @example true */
             isStarred?: boolean;
@@ -1081,6 +1155,7 @@ export interface components {
 export type SchemaAddFolderStudySetsDto = components['schemas']['AddFolderStudySetsDto'];
 export type SchemaChangePasswordDto = components['schemas']['ChangePasswordDto'];
 export type SchemaCreateCommentDto = components['schemas']['CreateCommentDto'];
+export type SchemaCreateFlashcardDto = components['schemas']['CreateFlashcardDto'];
 export type SchemaCreateFolderDto = components['schemas']['CreateFolderDto'];
 export type SchemaCreateStudySetDto = components['schemas']['CreateStudySetDto'];
 export type SchemaCreateStudySetTagDto = components['schemas']['CreateStudySetTagDto'];
@@ -1093,6 +1168,7 @@ export type SchemaResendVerificationRequestDto = components['schemas']['ResendVe
 export type SchemaResetPasswordRequestDto = components['schemas']['ResetPasswordRequestDto'];
 export type SchemaServiceHealthResponseDto = components['schemas']['ServiceHealthResponseDto'];
 export type SchemaUpdateCommentDto = components['schemas']['UpdateCommentDto'];
+export type SchemaUpdateFlashcardDto = components['schemas']['UpdateFlashcardDto'];
 export type SchemaUpdateFlashcardProgressDto = components['schemas']['UpdateFlashcardProgressDto'];
 export type SchemaUpdateFolderDto = components['schemas']['UpdateFolderDto'];
 export type SchemaUpdateMyProfileDto = components['schemas']['UpdateMyProfileDto'];
@@ -1488,6 +1564,48 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdateCommentDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlashcardController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    FlashcardController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateFlashcardDto"];
             };
         };
         responses: {
@@ -2182,6 +2300,48 @@ export interface operations {
         };
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SetFlashcardsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SetFlashcardsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFlashcardDto"];
+            };
+        };
+        responses: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };

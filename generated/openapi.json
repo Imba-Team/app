@@ -1068,6 +1068,138 @@
         ]
       }
     },
+    "/flashcards/{id}": {
+      "patch": {
+        "operationId": "FlashcardController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFlashcardDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a flashcard",
+        "tags": [
+          "Flashcards"
+        ]
+      },
+      "delete": {
+        "operationId": "FlashcardController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a flashcard",
+        "tags": [
+          "Flashcards"
+        ]
+      }
+    },
+    "/study-sets/{setId}/cards": {
+      "post": {
+        "operationId": "SetFlashcardsController_create",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFlashcardDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a flashcard in a study set",
+        "tags": [
+          "Flashcards"
+        ]
+      },
+      "get": {
+        "operationId": "SetFlashcardsController_list",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List flashcards in a study set",
+        "tags": [
+          "Flashcards"
+        ]
+      }
+    },
     "/flashcards/{id}/progress": {
       "patch": {
         "operationId": "FlashcardProgressController_updateProgress",
@@ -2472,6 +2604,78 @@
         },
         "required": [
           "isPrivate"
+        ]
+      },
+      "UpdateFlashcardDto": {
+        "type": "object",
+        "properties": {
+          "term": {
+            "type": "string",
+            "example": "Photosynthesis"
+          },
+          "definition": {
+            "type": "string",
+            "example": "The process by which green plants convert sunlight into energy."
+          },
+          "example": {
+            "type": "string",
+            "example": "Photosynthesis powers most life on Earth."
+          },
+          "phonetic": {
+            "type": "string",
+            "example": "/ˌfoʊtəˈsɪnθəsɪs/"
+          },
+          "hint": {
+            "type": "string",
+            "example": "Starts with \"photo-\""
+          },
+          "imageUrl": {
+            "type": "string",
+            "example": "https://cdn.mimir.app/cards/abc.jpg"
+          },
+          "orderIndex": {
+            "type": "number",
+            "example": 3,
+            "description": "Position within the set. Auto-assigned if omitted."
+          }
+        }
+      },
+      "CreateFlashcardDto": {
+        "type": "object",
+        "properties": {
+          "term": {
+            "type": "string",
+            "example": "Photosynthesis"
+          },
+          "definition": {
+            "type": "string",
+            "example": "The process by which green plants convert sunlight into energy."
+          },
+          "example": {
+            "type": "string",
+            "example": "Photosynthesis powers most life on Earth."
+          },
+          "phonetic": {
+            "type": "string",
+            "example": "/ˌfoʊtəˈsɪnθəsɪs/"
+          },
+          "hint": {
+            "type": "string",
+            "example": "Starts with \"photo-\""
+          },
+          "imageUrl": {
+            "type": "string",
+            "example": "https://cdn.mimir.app/cards/abc.jpg"
+          },
+          "orderIndex": {
+            "type": "number",
+            "example": 3,
+            "description": "Position within the set. Auto-assigned if omitted."
+          }
+        },
+        "required": [
+          "term",
+          "definition"
         ]
       },
       "UpdateFlashcardProgressDto": {

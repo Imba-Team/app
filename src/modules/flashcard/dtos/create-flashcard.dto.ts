@@ -1,15 +1,7 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsUUID } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateFlashcardDto {
-  @ApiProperty({
-    example: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
-    description: 'Study set ID this flashcard belongs to',
-  })
-  @IsUUID()
-  @IsNotEmpty()
-  studySetId!: string;
-
   @ApiProperty({ example: 'Photosynthesis' })
   @IsString()
   @IsNotEmpty()
@@ -21,4 +13,37 @@ export class CreateFlashcardDto {
   @IsString()
   @IsNotEmpty()
   definition!: string;
+
+  @ApiPropertyOptional({
+    example: 'Photosynthesis powers most life on Earth.',
+  })
+  @IsString()
+  @IsOptional()
+  example?: string;
+
+  @ApiPropertyOptional({ example: '/ˌfoʊtəˈsɪnθəsɪs/' })
+  @IsString()
+  @IsOptional()
+  phonetic?: string;
+
+  @ApiPropertyOptional({ example: 'Starts with "photo-"' })
+  @IsString()
+  @IsOptional()
+  hint?: string;
+
+  @ApiPropertyOptional({
+    example: 'https://cdn.mimir.app/cards/abc.jpg',
+  })
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
+  @ApiPropertyOptional({
+    example: 3,
+    description: 'Position within the set. Auto-assigned if omitted.',
+  })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  orderIndex?: number;
 }
