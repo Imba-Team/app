@@ -125,6 +125,12 @@ export class UsersService {
     return this.ensureUsernameBackfill(user);
   }
 
+  async findByUsername(username: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: { username },
+    });
+  }
+
   async findById(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -134,6 +140,46 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
     return this.ensureUsernameBackfill(user);
+  }
+
+  /**
+   * Narrow-write self-service update used by PATCH /users/me.
+   *
+   * Only the user-visible profile fields (name, bio) are writable here.
+   * role / status / email / profilePicture are deliberately not in the
+   * input DTO and not handled here — they belong to admin, the
+   * email-change flow, and the avatar upload endpoint respectively.
+   */
+  async updateMyProfile(
+    id: string,
+    dto: { name?: string; bio?: string },
+  ): Promise<User> {
+    const existing = await this.findById(id);
+    const patch: Prisma.UserUpdateInput = {};
+
+    if (dto.name !== undefined) {
+      patch.username = await this.allocateUsername(dto.name, id);
+    }
+    if (dto.bio !== undefined) {
+      patch.bio = dto.bio;
+    }
+
+    if (Object.keys(patch).length === 0) {
+      return existing;
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: patch,
+    });
+  }
+
+  /** Set just the profilePicture URL — called from the avatar upload endpoint. */
+  async setProfilePicture(id: string, url: string | null): Promise<User> {
+    return this.prisma.user.update({
+      where: { id },
+      data: { profilePicture: url },
+    });
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {

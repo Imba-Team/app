@@ -22,6 +22,7 @@ import { MetricsModule } from './common/metrics/metrics.module';
 import { QueueModule } from './common/queue/queue.module';
 import { MailModule } from './common/mail/mail.module';
 import { RedisModule } from './common/redis/redis.module';
+import { StorageModule } from './common/storage/storage.module';
 import { LearningModule } from './modules/learning/learning.module';
 import { SrsModule } from './modules/srs/srs.module';
 import { AiModule } from './modules/ai/ai.module';
@@ -58,6 +59,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     PrismaModule,
     MetricsModule,
     RedisModule,
+    StorageModule,
     QueueModule,
     MailModule,
     HealthModule,

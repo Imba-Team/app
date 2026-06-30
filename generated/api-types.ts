@@ -4,6 +4,42 @@
  */
 
 export interface paths {
+    "/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get all users with pagination and filtering */
+        get: operations["AdminUsersController_findAll"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get user by ID */
+        get: operations["AdminUsersController_findOne"];
+        put?: never;
+        post?: never;
+        /** Delete user by ID */
+        delete: operations["AdminUsersController_delete"];
+        options?: never;
+        head?: never;
+        /** Update user by ID */
+        patch: operations["AdminUsersController_update"];
+        trace?: never;
+    };
     "/auth/forgot-password": {
         parameters: {
             query?: never;
@@ -798,6 +834,23 @@ export interface paths {
         patch: operations["TagController_update"];
         trace?: never;
     };
+    "/users/{username}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a public user profile by username */
+        get: operations["PublicUserController_getByUsername"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/me": {
         parameters: {
             query?: never;
@@ -914,6 +967,14 @@ export interface components {
             /** @example password123 */
             password?: string;
         };
+        PublicProfileDto: {
+            bio: Record<string, never> | null;
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            profilePicture: Record<string, never> | null;
+            username: string;
+        };
         RegisterRequestDto: {
             /** @example john@example.com */
             email: string;
@@ -960,6 +1021,12 @@ export interface components {
             /** @example Backend Revision */
             name?: string;
         };
+        UpdateMyProfileDto: {
+            /** @example Vocabulary nerd. Always learning. */
+            bio?: string;
+            /** @example John Doe */
+            name?: string;
+        };
         UpdateStudySetDto: {
             /** @example Notes and flashcards for bio exams */
             description?: string;
@@ -976,16 +1043,6 @@ export interface components {
         UpdateTagDto: {
             /** @example biology */
             name?: string;
-        };
-        UpdateUserDto: {
-            /** @example john@example.com */
-            email?: string;
-            /** @example John Doe */
-            name?: string;
-            /** @example /uploads/profile-pictures/abc.jpg */
-            profilePicture?: string;
-            /** @example active */
-            status?: Record<string, never>;
         };
         UpdateVisibilityDto: {
             /**
@@ -1030,6 +1087,7 @@ export type SchemaCreateStudySetTagDto = components['schemas']['CreateStudySetTa
 export type SchemaCreateTagDto = components['schemas']['CreateTagDto'];
 export type SchemaForgotPasswordRequestDto = components['schemas']['ForgotPasswordRequestDto'];
 export type SchemaLoginRequestDto = components['schemas']['LoginRequestDto'];
+export type SchemaPublicProfileDto = components['schemas']['PublicProfileDto'];
 export type SchemaRegisterRequestDto = components['schemas']['RegisterRequestDto'];
 export type SchemaResendVerificationRequestDto = components['schemas']['ResendVerificationRequestDto'];
 export type SchemaResetPasswordRequestDto = components['schemas']['ResetPasswordRequestDto'];
@@ -1037,14 +1095,106 @@ export type SchemaServiceHealthResponseDto = components['schemas']['ServiceHealt
 export type SchemaUpdateCommentDto = components['schemas']['UpdateCommentDto'];
 export type SchemaUpdateFlashcardProgressDto = components['schemas']['UpdateFlashcardProgressDto'];
 export type SchemaUpdateFolderDto = components['schemas']['UpdateFolderDto'];
+export type SchemaUpdateMyProfileDto = components['schemas']['UpdateMyProfileDto'];
 export type SchemaUpdateStudySetDto = components['schemas']['UpdateStudySetDto'];
 export type SchemaUpdateTagDto = components['schemas']['UpdateTagDto'];
-export type SchemaUpdateUserDto = components['schemas']['UpdateUserDto'];
 export type SchemaUpdateVisibilityDto = components['schemas']['UpdateVisibilityDto'];
 export type SchemaUserResponseDto = components['schemas']['UserResponseDto'];
 export type SchemaVerifyEmailRequestDto = components['schemas']['VerifyEmailRequestDto'];
 export type $defs = Record<string, never>;
 export interface operations {
+    AdminUsersController_findAll: {
+        parameters: {
+            query?: {
+                limit?: unknown;
+                page?: unknown;
+                status?: "active" | "inactive";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of users */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    AdminUsersController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    AdminUsersController_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    AdminUsersController_update: {
+        parameters: {
+            query: {
+                status: "active" | "inactive";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
     AuthController_forgotPassword: {
         parameters: {
             query?: never;
@@ -2288,6 +2438,34 @@ export interface operations {
             };
         };
     };
+    PublicUserController_getByUsername: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicProfileDto"];
+                };
+            };
+            /** @description User not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     UsersController_getMe: {
         parameters: {
             query?: never;
@@ -2337,7 +2515,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateUserDto"];
+                "application/json": components["schemas"]["UpdateMyProfileDto"];
             };
         };
         responses: {

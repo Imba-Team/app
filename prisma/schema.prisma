@@ -38,6 +38,7 @@ model User {
   status             String?                @db.VarChar
   role               String                 @default("user") @db.VarChar
   profilePicture     String?
+  bio                String?
   emailVerified      Boolean                @default(false)
   verifiedAt         DateTime?              @db.Timestamp(6)
   googleProviderId   String?                @unique

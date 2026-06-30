@@ -70,7 +70,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateUserDto"
+                "$ref": "#/components/schemas/UpdateMyProfileDto"
               }
             }
           }
@@ -198,6 +198,243 @@
           }
         ],
         "summary": "Update current user password",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "operationId": "AdminUsersController_findAll",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "active",
+                "inactive"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "ok": true,
+                    "message": "Users fetched successfully",
+                    "data": {
+                      "items": [
+                        {
+                          "id": "uuid",
+                          "email": "user@example.com",
+                          "status": "ACTIVE"
+                        }
+                      ],
+                      "total": 50,
+                      "page": 1,
+                      "limit": 10
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all users with pagination and filtering",
+        "tags": [
+          "Admin - Users"
+        ]
+      }
+    },
+    "/admin/users/{id}": {
+      "get": {
+        "operationId": "AdminUsersController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "ok": true,
+                    "message": "User fetched successfully",
+                    "data": {
+                      "id": "uuid",
+                      "email": "user@example.com",
+                      "status": "ACTIVE"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get user by ID",
+        "tags": [
+          "Admin - Users"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminUsersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "active",
+                "inactive"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "ok": true,
+                    "message": "User updated successfully",
+                    "data": {
+                      "id": "uuid",
+                      "email": "user@example.com",
+                      "status": "BANNED"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update user by ID",
+        "tags": [
+          "Admin - Users"
+        ]
+      },
+      "delete": {
+        "operationId": "AdminUsersController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "ok": true,
+                    "message": "User deleted successfully",
+                    "data": null
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete user by ID",
+        "tags": [
+          "Admin - Users"
+        ]
+      }
+    },
+    "/users/{username}": {
+      "get": {
+        "operationId": "PublicUserController_getByUsername",
+        "parameters": [
+          {
+            "name": "username",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProfileDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          }
+        },
+        "summary": "Get a public user profile by username",
         "tags": [
           "Users"
         ]
@@ -2017,24 +2254,17 @@
           "profilePicture"
         ]
       },
-      "UpdateUserDto": {
+      "UpdateMyProfileDto": {
         "type": "object",
         "properties": {
           "name": {
             "type": "string",
             "example": "John Doe"
           },
-          "email": {
+          "bio": {
             "type": "string",
-            "example": "john@example.com"
-          },
-          "status": {
-            "type": "object",
-            "example": "active"
-          },
-          "profilePicture": {
-            "type": "string",
-            "example": "/uploads/profile-pictures/abc.jpg"
+            "example": "Vocabulary nerd. Always learning.",
+            "maxLength": 280
           }
         }
       },
@@ -2058,6 +2288,36 @@
           "oldPassword",
           "newPassword",
           "confirmPassword"
+        ]
+      },
+      "PublicProfileDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "bio": {
+            "type": "object",
+            "nullable": true
+          },
+          "profilePicture": {
+            "type": "object",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "bio",
+          "profilePicture",
+          "createdAt"
         ]
       },
       "RegisterRequestDto": {

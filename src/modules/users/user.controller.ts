@@ -18,7 +18,7 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { UsersService } from './user.service';
-import { UpdateUserDto } from './dtos/update-user.dto';
+import { UpdateMyProfileDto } from './dtos/update-my-profile.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { IUser } from 'src/common/interfaces/user.interface';
 import { JwtGuard } from 'src/guards/jwt.guard';
@@ -30,56 +30,64 @@ import { UserResponseDto } from './dtos/user-response.dto';
 import { ChangePasswordDto } from './dtos/change-password.dto';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import * as fs from 'fs';
+import * as multer from 'multer';
+import { extname } from 'path';
 import { ApiConsumes } from '@nestjs/swagger';
-import type { Request } from 'express';
-import type { MulterOptions } from 'multer';
+import { StorageService } from 'src/common/storage/storage.service';
+import { StoragePrefix } from 'src/common/storage/storage.constants';
+import * as crypto from 'crypto';
 
-type MulterFile = { originalname: string; filename?: string };
+type MulterFile = {
+  originalname: string;
+  buffer: Buffer;
+  mimetype: string;
+  size: number;
+};
 
-const multerOptions: MulterOptions = {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-  storage: diskStorage({
-    destination: (
-      req: Request & { user?: { id?: string } },
-      file: MulterFile,
-      cb: (err: Error | null, destination: string) => void,
-    ) => {
-      const uploadPath = join(process.cwd(), 'uploads', 'profile-pictures');
-      if (!fs.existsSync(uploadPath)) {
-        fs.mkdirSync(uploadPath, { recursive: true });
-      }
-      cb(null, uploadPath);
-    },
-    filename: (
-      req: Request & { user?: { id?: string } },
-      file: MulterFile,
-      cb: (err: Error | null, filename: string) => void,
-    ) => {
-      const userId = req.user?.id ?? Date.now().toString();
-      const fileExt = extname(file.originalname || '');
-      const filename = `${userId}-${Date.now()}${fileExt}`;
-      cb(null, filename);
-    },
-  }),
+const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+const ALLOWED_AVATAR_MIMES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+]);
 
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
-  fileFilter: (
-    req: Request,
-    file: MulterFile,
-    cb: (err: Error | null, acceptFile: boolean) => void,
-  ) => {
-    const allowed = /\.jpeg$|\.jpg$|\.png$|\.gif$/i;
-    const ext = extname(file.originalname || '').toLowerCase();
-    if (allowed.test(ext)) {
+const avatarMulterOptions: multer.Options = {
+  storage: multer.memoryStorage(),
+  limits: { fileSize: AVATAR_MAX_BYTES },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_AVATAR_MIMES.has(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'), false);
+      // multer 2.x signals rejection by throwing; calling cb(err, false)
+      // is no longer accepted by the type signature.
+      throw new BadRequestException(
+        'Only image files are allowed (jpeg, png, gif, webp)',
+      );
     }
   },
 };
+
+function cryptoRandomId(): string {
+  // 8 hex chars is enough entropy for a per-user collision-free filename.
+  return crypto.randomBytes(4).toString('hex');
+}
+
+/**
+ * Best-effort: parse the stored profile-picture URL back into the
+ * MinIO object name so we can delete the previous file when a user
+ * uploads a replacement. Returns the trailing path after `<bucket>/`.
+ */
+function extractObjectName(url: string): string {
+  const slash = url.indexOf('/avatars/');
+  if (slash >= 0) {
+    return url.slice(slash + 1);
+  }
+  // Falls through for the old `/uploads/profile-pictures/...` URLs left
+  // over from the pre-MinIO implementation — nothing to delete in MinIO
+  // for those, so return a sentinel that storage.delete() will swallow.
+  return url;
+}
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -87,7 +95,10 @@ const multerOptions: MulterOptions = {
 @Roles(Role.USER, Role.ADMIN)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly storage: StorageService,
+  ) {}
 
   @Get('me')
   @ApiOperation({ summary: 'Get current authenticated user' })
@@ -122,9 +133,9 @@ export class UsersController {
   })
   async updateMe(
     @CurrentUser() user: IUser,
-    @Body() dto: UpdateUserDto,
+    @Body() dto: UpdateMyProfileDto,
   ): Promise<ResponseDto<UserResponseDto | null>> {
-    const updatedUser = await this.usersService.update(user.id, dto);
+    const updatedUser = await this.usersService.updateMyProfile(user.id, dto);
 
     return {
       ok: true,
@@ -139,7 +150,7 @@ export class UsersController {
 
   @Patch('me/profile-picture')
   @HttpCode(200)
-  @UseInterceptors(FileInterceptor('file', multerOptions as any))
+  @UseInterceptors(FileInterceptor('file', avatarMulterOptions))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -161,20 +172,42 @@ export class UsersController {
     if (!file) {
       throw new BadRequestException('File is required');
     }
+    if (!ALLOWED_AVATAR_MIMES.has(file.mimetype)) {
+      throw new BadRequestException(
+        'Only image files are allowed (jpeg, png, gif, webp)',
+      );
+    }
 
-    const relativePath = `/uploads/profile-pictures/${file.filename}`;
-    const updatedUser = await this.usersService.update(user.id, {
-      profilePicture: relativePath,
-    } as unknown as UpdateUserDto);
+    // Object key includes the userId so it's auditable + sorts by user
+    // in MinIO console, but also a UUID so concurrent uploads from the
+    // same user never collide.
+    const ext = extname(file.originalname).toLowerCase();
+    const result = await this.storage.upload({
+      prefix: StoragePrefix.AVATARS,
+      key: `${user.id}/${cryptoRandomId()}${ext}`,
+      body: file.buffer,
+      originalName: file.originalname,
+      mimeType: file.mimetype,
+    });
+
+    // Look up the previous URL so we can delete the old object after a
+    // successful new upload. Best-effort — storage.delete() swallows
+    // missing-object errors so this never blocks the request.
+    const before = await this.usersService.findById(user.id);
+    const updatedUser = await this.usersService.setProfilePicture(
+      user.id,
+      result.url,
+    );
+    if (before.profilePicture) {
+      await this.storage.delete(extractObjectName(before.profilePicture));
+    }
 
     return {
       ok: true,
       message: 'Profile picture updated successfully',
-      data: updatedUser
-        ? plainToInstance(UserResponseDto, updatedUser, {
-            excludeExtraneousValues: true,
-          })
-        : null,
+      data: plainToInstance(UserResponseDto, updatedUser, {
+        excludeExtraneousValues: true,
+      }),
     };
   }
 
