@@ -20,6 +20,7 @@ import { plainToInstance } from 'class-transformer';
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { slugify } from 'src/common/utils/sligify';
+import { SearchSyncService } from 'src/modules/search/search-sync.service';
 import { UsersService } from 'src/modules/users/user.service';
 
 // DTOs
@@ -43,6 +44,7 @@ export class StudySetService {
     private readonly logger: LoggerService,
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
+    private readonly searchSync: SearchSyncService,
   ) {
     this.logger.setContext(StudySetService.name);
   }
@@ -92,6 +94,8 @@ export class StudySetService {
 
     this.logger.log(`Study set created: id=${saved.id}, userId=${userId}`);
 
+    await this.searchSync.enqueueIndex(saved.id);
+
     return this.buildStudySetForUser(saved.id, userId);
   }
 
@@ -113,6 +117,7 @@ export class StudySetService {
         data: patch,
       });
       this.logger.log(`Study set updated: id=${studySetId}, userId=${userId}`);
+      await this.searchSync.enqueueIndex(studySetId);
     }
     return this.buildStudySetForUser(studySetId, userId);
   }
@@ -137,6 +142,13 @@ export class StudySetService {
     this.logger.log(
       `Study set visibility updated: id=${studySetId}, private=${visibilityDto.isPrivate}`,
     );
+
+    // Going private removes the doc from the index; going public re-adds it.
+    if (visibilityDto.isPrivate) {
+      await this.searchSync.enqueueDelete(studySetId);
+    } else {
+      await this.searchSync.enqueueIndex(studySetId);
+    }
 
     return this.buildStudySetForUser(studySetId, userId);
   }

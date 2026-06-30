@@ -430,6 +430,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/search/sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search public study sets via Elasticsearch (title^3 + tags^2 + description, fuzziness AUTO). */
+        get: operations["SearchController_searchSets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/services/ai/health": {
         parameters: {
             query?: never;
@@ -1956,6 +1973,30 @@ export interface operations {
     PrometheusController_index: {
         parameters: {
             query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SearchController_searchSets: {
+        parameters: {
+            query?: {
+                language?: string;
+                /** @description Page size. */
+                limit?: number;
+                /** @description 1-based page index. */
+                page?: number;
+                q?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;

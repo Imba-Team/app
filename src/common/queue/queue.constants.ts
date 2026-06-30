@@ -13,3 +13,17 @@ export interface MailJobPayload {
   /** Free-form tag for log/Prometheus correlation. */
   context?: string;
 }
+
+export const SEARCH_SYNC_QUEUE = 'search-sync';
+
+export const SearchSyncJob = {
+  INDEX_SET: 'search.index_set',
+  DELETE_SET: 'search.delete_set',
+} as const;
+
+export type SearchSyncJobName =
+  (typeof SearchSyncJob)[keyof typeof SearchSyncJob];
+
+export interface SearchSyncJobPayload {
+  setId: string;
+}

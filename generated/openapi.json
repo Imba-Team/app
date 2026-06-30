@@ -1068,6 +1068,88 @@
         ]
       }
     },
+    "/services/search/health": {
+      "get": {
+        "operationId": "SearchController_health",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceHealthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/search/sets": {
+      "get": {
+        "operationId": "SearchController_searchSets",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "photosynthesis",
+              "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "English",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "1-based page index.",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Page size.",
+            "schema": {
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Search public study sets via Elasticsearch (title^3 + tags^2 + description, fuzziness AUTO).",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
     "/flashcards/{id}": {
       "patch": {
         "operationId": "FlashcardController_update",
@@ -2331,27 +2413,6 @@
         },
         "tags": [
           "classroom"
-        ]
-      }
-    },
-    "/services/search/health": {
-      "get": {
-        "operationId": "SearchController_health",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServiceHealthResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "tags": [
-          "search"
         ]
       }
     },
