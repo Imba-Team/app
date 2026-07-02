@@ -4,21 +4,19 @@ import {
   Get,
   HttpCode,
   Param,
-  Patch,
-  Post,
+  Put,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { Role, Roles } from 'src/common/decorators/roles.decorator';
+import { ResponseDto } from 'src/common/interfaces/response.dto';
+import { IUser } from 'src/common/interfaces/user.interface';
 import { JwtGuard } from 'src/guards/jwt.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
-import { Roles, Role } from 'src/common/decorators/roles.decorator';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { IUser } from 'src/common/interfaces/user.interface';
-import { FlashcardProgressService } from './flashcard-progress.service';
-import { UpdateFlashcardProgressDto } from './dtos/update-flashcard-progress.dto';
-import { ResponseDto } from 'src/common/interfaces/response.dto';
 import { FlashcardWithProgressDto } from './dtos/flashcard-with-progress.dto';
-import { plainToInstance } from 'class-transformer';
+import { ToggleStarDto } from './dtos/toggle-star.dto';
+import { FlashcardProgressService } from './flashcard-progress.service';
 
 @ApiTags('Flashcards')
 @ApiBearerAuth()
@@ -30,60 +28,30 @@ export class FlashcardProgressController {
     private readonly flashcardProgressService: FlashcardProgressService,
   ) {}
 
-  @Patch(':id/progress')
-  @HttpCode(200)
-  @ApiOperation({ summary: 'Update my progress for a flashcard' })
-  @ApiBody({ type: UpdateFlashcardProgressDto })
-  async updateProgress(
-    @CurrentUser() user: IUser,
-    @Param('id') id: string,
-    @Body() dto: UpdateFlashcardProgressDto,
-  ): Promise<ResponseDto<FlashcardWithProgressDto>> {
-    const flashcard = await this.flashcardProgressService.updateProgress(
-      user.id,
-      id,
-      dto,
-    );
-    const data = plainToInstance(FlashcardWithProgressDto, flashcard, {
-      excludeExtraneousValues: true,
-    });
-    return { ok: true, message: 'Progress updated', data };
-  }
-
-  @Post(':id/update-status')
-  @HttpCode(200)
-  @ApiOperation({ summary: 'Update the status of a flashcard by ID' })
-  @ApiBody({ schema: { properties: { success: { type: 'boolean' } } } })
-  async updateStatus(
-    @CurrentUser() user: IUser,
-    @Param('id') id: string,
-    @Body('success') success: boolean,
-  ): Promise<ResponseDto<FlashcardWithProgressDto>> {
-    const flashcard = await this.flashcardProgressService.updateStatus(
-      user.id,
-      id,
-      success,
-    );
-    const data = plainToInstance(FlashcardWithProgressDto, flashcard, {
-      excludeExtraneousValues: true,
-    });
-    return { ok: true, message: 'Flashcard status updated successfully', data };
-  }
-
   @Get(':id/progress')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Get my progress for a flashcard' })
+  @ApiOperation({ summary: 'Read my mastery progress for a flashcard' })
   async getProgress(
     @CurrentUser() user: IUser,
     @Param('id') id: string,
   ): Promise<ResponseDto<FlashcardWithProgressDto>> {
-    const flashcard = await this.flashcardProgressService.getProgress(
+    const data = await this.flashcardProgressService.getProgress(user.id, id);
+    return { ok: true, message: 'Progress retrieved', data };
+  }
+
+  @Put(':id/star')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Toggle the star flag on a flashcard' })
+  async toggleStar(
+    @CurrentUser() user: IUser,
+    @Param('id') id: string,
+    @Body() dto: ToggleStarDto,
+  ): Promise<ResponseDto<FlashcardWithProgressDto>> {
+    const data = await this.flashcardProgressService.setStarred(
       user.id,
       id,
+      dto.isStarred,
     );
-    const data = plainToInstance(FlashcardWithProgressDto, flashcard, {
-      excludeExtraneousValues: true,
-    });
-    return { ok: true, message: 'Progress retrieved', data };
+    return { ok: true, message: 'Star updated', data };
   }
 }

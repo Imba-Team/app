@@ -104,12 +104,6 @@ export class FlashcardService {
     const flashcard = await this.findFlashcardOrFail(flashcardId);
     await this.ensureCanEdit(userId, flashcard.studySetId);
 
-    // Per-user progress rows reference the card with onDelete: Restrict, so clear
-    // them first to keep the API contract simple: removing a card removes its
-    // progress trail.
-    await this.prisma.flashcardUserState.deleteMany({
-      where: { flashcardId },
-    });
     await this.prisma.flashcard.delete({ where: { id: flashcardId } });
 
     this.logger.log(`Flashcard deleted: id=${flashcardId}`);
