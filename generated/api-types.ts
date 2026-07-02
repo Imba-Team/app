@@ -263,18 +263,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get my progress for a flashcard */
+        /** Read my mastery progress for a flashcard */
         get: operations["FlashcardProgressController_getProgress"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** Update my progress for a flashcard */
-        patch: operations["FlashcardProgressController_updateProgress"];
+        patch?: never;
         trace?: never;
     };
-    "/flashcards/{id}/update-status": {
+    "/flashcards/{id}/star": {
         parameters: {
             query?: never;
             header?: never;
@@ -282,9 +281,9 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
-        /** Update the status of a flashcard by ID */
-        post: operations["FlashcardProgressController_updateStatus"];
+        /** Toggle the star flag on a flashcard */
+        put: operations["FlashcardProgressController_toggleStar"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -591,6 +590,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a new study session */
+        post: operations["SessionController_start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/{id}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit an answer within a session
+         * @description Applies the outcome to the card mastery engine and returns the updated card + set progress.
+         */
+        post: operations["SessionController_answer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a session complete and return the summary */
+        post: operations["SessionController_complete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/study-set-tags": {
         parameters: {
             query?: never;
@@ -791,6 +844,26 @@ export interface paths {
         put?: never;
         /** Preview a CSV before importing — returns headers, first 5 data rows, and a suggested column mapping */
         post: operations["SetFlashcardsController_previewCsv"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/study-sets/{setId}/my-progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read my mastery rollup for a study set
+         * @description Returns { totalCards, newCount, learningCount, masteredCount }. Cache-aside via Redis (5-min TTL, invalidated on every answer).
+         */
+        get: operations["SetProgressController_getMine"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1111,6 +1184,33 @@ export interface components {
             /** @example 12345 */
             uptimeSeconds: number;
         };
+        StartSessionDto: {
+            /** @enum {string} */
+            mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "MATCH" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
+            /** Format: uuid */
+            studySetId: string;
+        };
+        SubmitAnswerDto: {
+            /**
+             * Format: uuid
+             * @description Client-generated UUID used to make retries idempotent. Second submit with the same attemptId returns the first result without re-applying it.
+             */
+            attemptId: string;
+            /** Format: uuid */
+            cardId: string;
+            /** @example false */
+            hintUsed: boolean;
+            /** @enum {string} */
+            outcome: "CORRECT" | "INCORRECT" | "SKIPPED";
+            /** @description The learner-typed response for written modes. Used to echo back on the client; not stored on the mastery row. */
+            response?: string;
+            /** @enum {string} */
+            studyMode: "FLASHCARD" | "LEARN_MC" | "LEARN_WRITTEN" | "WRITE" | "SPELL" | "TEST_WRITTEN" | "TEST_MC" | "TEST_TF" | "AI_FILL_BLANK" | "AI_GUESS_WORD" | "MATCH";
+        };
+        ToggleStarDto: {
+            /** @example true */
+            isStarred: boolean;
+        };
         UpdateCommentDto: {
             /** @example Updated comment text */
             content: string;
@@ -1133,12 +1233,6 @@ export interface components {
             phonetic?: string;
             /** @example Photosynthesis */
             term?: string;
-        };
-        UpdateFlashcardProgressDto: {
-            /** @example true */
-            isStarred?: boolean;
-            /** @enum {string} */
-            status?: "not_started" | "in_progress" | "completed";
         };
         UpdateFolderDto: {
             /** @example Study sets for backend interview prep */
@@ -1218,9 +1312,11 @@ export type SchemaRegisterRequestDto = components['schemas']['RegisterRequestDto
 export type SchemaResendVerificationRequestDto = components['schemas']['ResendVerificationRequestDto'];
 export type SchemaResetPasswordRequestDto = components['schemas']['ResetPasswordRequestDto'];
 export type SchemaServiceHealthResponseDto = components['schemas']['ServiceHealthResponseDto'];
+export type SchemaStartSessionDto = components['schemas']['StartSessionDto'];
+export type SchemaSubmitAnswerDto = components['schemas']['SubmitAnswerDto'];
+export type SchemaToggleStarDto = components['schemas']['ToggleStarDto'];
 export type SchemaUpdateCommentDto = components['schemas']['UpdateCommentDto'];
 export type SchemaUpdateFlashcardDto = components['schemas']['UpdateFlashcardDto'];
-export type SchemaUpdateFlashcardProgressDto = components['schemas']['UpdateFlashcardProgressDto'];
 export type SchemaUpdateFolderDto = components['schemas']['UpdateFolderDto'];
 export type SchemaUpdateMyProfileDto = components['schemas']['UpdateMyProfileDto'];
 export type SchemaUpdateStudySetDto = components['schemas']['UpdateStudySetDto'];
@@ -1687,7 +1783,7 @@ export interface operations {
             };
         };
     };
-    FlashcardProgressController_updateProgress: {
+    FlashcardProgressController_toggleStar: {
         parameters: {
             query?: never;
             header?: never;
@@ -1698,32 +1794,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateFlashcardProgressDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    FlashcardProgressController_updateStatus: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    success?: boolean;
-                };
+                "application/json": components["schemas"]["ToggleStarDto"];
             };
         };
         responses: {
@@ -2182,6 +2253,69 @@ export interface operations {
             };
         };
     };
+    SessionController_start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartSessionDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SessionController_answer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitAnswerDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SessionController_complete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     StudySetTagController_addTagToStudySet: {
         parameters: {
             query?: never;
@@ -2471,6 +2605,25 @@ export interface operations {
                 };
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SetProgressController_getMine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {

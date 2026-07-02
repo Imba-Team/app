@@ -677,7 +677,9 @@ Sprints 1–12 cover the MVP build (Weeks 1–24). Sprints 13–20 are summarise
 - US-012: As a learner, I can slow down audio playback to 0.5×.
 
 **Technical Tasks**
-- Build Learning Service: `POST /sessions`, `POST /sessions/:id/answer`, `POST /sessions/:id/complete`.
+- Build Learning Service: `POST /sessions`, `POST /sessions/:id/answer`, `POST /sessions/:id/complete` — the answer endpoint ingests every study-mode outcome through the mastery engine (§8a).
+- Ship the mastery engine end-to-end: `UserCardProgress` / `UserSetProgress` / `SrsCard` tables, the pure `applyAttempt` algorithm with weighted-streak scoring, transactional persistence with Redis idempotency, and the first-mastery graduation trigger that seeds each `SrsCard` row for Sprint 7.
+- Read path for the "12/30 mastered" progress bar: `GET /study-sets/:setId/my-progress` with Redis cache-aside, invalidated on every answer.
 - Implement TTS Controller in Study Service: `GET /tts?term=&language=&speed=` proxying Google TTS. Add Redis rate limiter (200 calls / 30 m per user).
 - Build Flashcard Mode UI: full-screen card with 3D flip animation (CSS), shuffle, Star / Know It / Still Learning.
 - Build `AudioButton` component using `useTts` hook.
@@ -687,7 +689,7 @@ Sprints 1–12 cover the MVP build (Weeks 1–24). Sprints 13–20 are summarise
 **Deliverables**
 - Flashcard Mode fully playable end-to-end.
 - TTS plays correct pronunciation within 1 second.
-- Session results persisted to DB.
+- Session + mastery progress persisted to DB; `masteredCount / totalCards` visible on the set page.
 
 **Key Risk:** TTS cold start — first request can take 2–3 s. Implement a brief loading state on the AudioButton; do not block card flip.
 
@@ -704,12 +706,12 @@ Sprints 1–12 cover the MVP build (Weeks 1–24). Sprints 13–20 are summarise
 - US-014: As a learner, I can type my answers in Write Mode.
 
 **Technical Tasks**
-- Implement Learn Mode algorithm: batch of 7–10 cards, mixed MC/written, confidence scoring, mastery threshold 0.85+.
-- Implement Write Mode evaluation: exact match, case-insensitive, Levenshtein distance ≤ 1 for 6+ char words, partial credit.
+- Implement Learn Mode session shape: batch of 7–10 cards, mixed MC/written selection; each answer submitted through `POST /sessions/:id/answer` with the appropriate `studyMode` (`LEARN_MC` / `LEARN_WRITTEN`) so the mastery engine (§8a, shipped in Sprint 5) does the weighting.
+- Implement Write Mode evaluation: exact match, case-insensitive, Levenshtein distance ≤ 1 for 6+ char words, partial credit; controller normalizes the result into a `CardAttemptEvent` before submitting.
 - Build Write Mode frontend: text input, diff display on wrong answer, hint button (reveals first letter).
-- Build Learn Mode frontend: MC buttons, text input for written questions, mastery progress bar.
-- Implement progress tracking: mastery per set, accuracy rate, session history.
-- Write unit tests for Levenshtein evaluation and confidence scoring.
+- Build Learn Mode frontend: MC buttons, text input for written questions, mastery progress bar backed by `GET /study-sets/:setId/my-progress`.
+- Session history read endpoint: paginated `GET /sessions?studySetId=…` for the set page's activity list.
+- Write unit tests for Levenshtein evaluation and MC distractor selection.
 
 **Deliverables**
 - Learn Mode session completes; mastery % updates.

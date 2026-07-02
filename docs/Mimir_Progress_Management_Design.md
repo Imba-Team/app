@@ -211,4 +211,4 @@ The mode weights and the 3.0 mastery threshold are a reasonable starting point, 
 
 ---
 
-*This design slots naturally after Section 8 (SRS Algorithm Implementation) in the Mimir Technical Design Document, and corresponds to the existing Progress Tracking epic in the development roadmap.*
+*This design slots in as Section 8a of the Mimir Technical Design Document — immediately before Section 8 (SRS Algorithm Implementation), since the mastery engine's first-time `Mastered` transition is what creates each `SrsCard` row that SM-2 then schedules. In the development roadmap it lands in Sprint 5 alongside the Learning Service and Flashcard Mode, not in the standalone "Progress Tracking" line originally sketched for Sprint 6.*

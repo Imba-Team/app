@@ -1392,43 +1392,6 @@
       }
     },
     "/flashcards/{id}/progress": {
-      "patch": {
-        "operationId": "FlashcardProgressController_updateProgress",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateFlashcardProgressDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Update my progress for a flashcard",
-        "tags": [
-          "Flashcards"
-        ]
-      },
       "get": {
         "operationId": "FlashcardProgressController_getProgress",
         "parameters": [
@@ -1451,15 +1414,15 @@
             "bearer": []
           }
         ],
-        "summary": "Get my progress for a flashcard",
+        "summary": "Read my mastery progress for a flashcard",
         "tags": [
           "Flashcards"
         ]
       }
     },
-    "/flashcards/{id}/update-status": {
-      "post": {
-        "operationId": "FlashcardProgressController_updateStatus",
+    "/flashcards/{id}/star": {
+      "put": {
+        "operationId": "FlashcardProgressController_toggleStar",
         "parameters": [
           {
             "name": "id",
@@ -1475,11 +1438,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "properties": {
-                  "success": {
-                    "type": "boolean"
-                  }
-                }
+                "$ref": "#/components/schemas/ToggleStarDto"
               }
             }
           }
@@ -1494,7 +1453,7 @@
             "bearer": []
           }
         ],
-        "summary": "Update the status of a flashcard by ID",
+        "summary": "Toggle the star flag on a flashcard",
         "tags": [
           "Flashcards"
         ]
@@ -2353,6 +2312,135 @@
         ]
       }
     },
+    "/sessions": {
+      "post": {
+        "operationId": "SessionController_start",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start a new study session",
+        "tags": [
+          "Learning"
+        ]
+      }
+    },
+    "/sessions/{id}/answer": {
+      "post": {
+        "description": "Applies the outcome to the card mastery engine and returns the updated card + set progress.",
+        "operationId": "SessionController_answer",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitAnswerDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Submit an answer within a session",
+        "tags": [
+          "Learning"
+        ]
+      }
+    },
+    "/sessions/{id}/complete": {
+      "post": {
+        "operationId": "SessionController_complete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Mark a session complete and return the summary",
+        "tags": [
+          "Learning"
+        ]
+      }
+    },
+    "/study-sets/{setId}/my-progress": {
+      "get": {
+        "description": "Returns { totalCards, newCount, learningCount, masteredCount }. Cache-aside via Redis (5-min TTL, invalidated on every answer).",
+        "operationId": "SetProgressController_getMine",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Read my mastery rollup for a study set",
+        "tags": [
+          "Learning"
+        ]
+      }
+    },
     "/services/srs/health": {
       "get": {
         "operationId": "SrsController_health",
@@ -2848,22 +2936,17 @@
           "definition"
         ]
       },
-      "UpdateFlashcardProgressDto": {
+      "ToggleStarDto": {
         "type": "object",
         "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "not_started",
-              "in_progress",
-              "completed"
-            ]
-          },
           "isStarred": {
             "type": "boolean",
             "example": true
           }
-        }
+        },
+        "required": [
+          "isStarred"
+        ]
       },
       "CreateTagDto": {
         "type": "object",
@@ -2978,6 +3061,86 @@
         },
         "required": [
           "content"
+        ]
+      },
+      "StartSessionDto": {
+        "type": "object",
+        "properties": {
+          "studySetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "FLASHCARD",
+              "LEARN",
+              "WRITE",
+              "SPELL",
+              "TEST",
+              "MATCH",
+              "AI_FILL_BLANK",
+              "AI_GUESS_WORD"
+            ]
+          }
+        },
+        "required": [
+          "studySetId",
+          "mode"
+        ]
+      },
+      "SubmitAnswerDto": {
+        "type": "object",
+        "properties": {
+          "attemptId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Client-generated UUID used to make retries idempotent. Second submit with the same attemptId returns the first result without re-applying it."
+          },
+          "cardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studyMode": {
+            "type": "string",
+            "enum": [
+              "FLASHCARD",
+              "LEARN_MC",
+              "LEARN_WRITTEN",
+              "WRITE",
+              "SPELL",
+              "TEST_WRITTEN",
+              "TEST_MC",
+              "TEST_TF",
+              "AI_FILL_BLANK",
+              "AI_GUESS_WORD",
+              "MATCH"
+            ]
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "CORRECT",
+              "INCORRECT",
+              "SKIPPED"
+            ]
+          },
+          "hintUsed": {
+            "type": "boolean",
+            "example": false
+          },
+          "response": {
+            "type": "string",
+            "description": "The learner-typed response for written modes. Used to echo back on the client; not stored on the mastery row.",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "attemptId",
+          "cardId",
+          "studyMode",
+          "outcome",
+          "hintUsed"
         ]
       }
     }
