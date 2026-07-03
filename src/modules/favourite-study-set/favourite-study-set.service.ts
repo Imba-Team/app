@@ -46,12 +46,18 @@ export class FavouriteStudySetService {
       throw new ConflictException('Study set is already saved in your library');
     }
 
-    return this.prisma.favouriteStudySet.create({
+    await this.prisma.favouriteStudySet.create({
       data: {
         userId: currentUserId,
         studySetId,
       },
     });
+
+    this.logger.log(
+      `Study set saved to library: studySetId=${studySetId}, userId=${currentUserId}`,
+    );
+
+    return this.studySetService.getById(currentUserId, studySetId);
   }
 
   async removeFromLibrary(
@@ -72,5 +78,9 @@ export class FavouriteStudySetService {
         studySetId,
       },
     });
+
+    this.logger.log(
+      `Study set removed from library: studySetId=${studySetId}, userId=${currentUserId}`,
+    );
   }
 }

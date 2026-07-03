@@ -989,64 +989,6 @@
         ]
       }
     },
-    "/study-sets/{id}/collect": {
-      "post": {
-        "operationId": "StudySetController_collect",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Add a public study set to my collection",
-        "tags": [
-          "Study Sets"
-        ]
-      }
-    },
-    "/study-sets/{id}/uncollect": {
-      "post": {
-        "operationId": "StudySetController_uncollect",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Remove a study set from my collection",
-        "tags": [
-          "Study Sets"
-        ]
-      }
-    },
     "/services/study/health": {
       "get": {
         "operationId": "StudyHealthController_health",

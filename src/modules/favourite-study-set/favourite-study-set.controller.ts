@@ -7,12 +7,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { plainToInstance } from 'class-transformer';
 
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { IUser } from 'src/common/interfaces/user.interface';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
 import { JwtGuard } from 'src/guards/jwt.guard';
-import { FavouriteStudySet } from '@prisma/client';
+import { StudySetResponseDto } from 'src/modules/study-set/dtos/study-set-response.dto';
 
 import { CreateFavouriteStudySetDto } from './dto/create-favourite-study-set.dto';
 import { FavouriteStudySetService } from './favourite-study-set.service';
@@ -32,11 +33,14 @@ export class FavouriteStudySetController {
   async addToLibrary(
     @CurrentUser() user: IUser,
     @Param() params: CreateFavouriteStudySetDto,
-  ): Promise<ResponseDto<FavouriteStudySet>> {
-    const data = await this.favouriteStudySetService.addToLibrary(
+  ): Promise<ResponseDto<StudySetResponseDto>> {
+    const studySet = await this.favouriteStudySetService.addToLibrary(
       user.id,
       params.studySetId,
     );
+    const data = plainToInstance(StudySetResponseDto, studySet, {
+      excludeExtraneousValues: true,
+    });
     return { ok: true, message: 'Study set saved to library', data };
   }
 

@@ -747,40 +747,6 @@ export interface paths {
         patch: operations["StudySetController_update"];
         trace?: never;
     };
-    "/study-sets/{id}/collect": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Add a public study set to my collection */
-        post: operations["StudySetController_collect"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/study-sets/{id}/uncollect": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Remove a study set from my collection */
-        post: operations["StudySetController_uncollect"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/study-sets/{id}/visibility": {
         parameters: {
             query?: never;
@@ -2446,44 +2412,6 @@ export interface operations {
                 "application/json": components["schemas"]["UpdateStudySetDto"];
             };
         };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    StudySetController_collect: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    StudySetController_uncollect: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
         responses: {
             200: {
                 headers: {

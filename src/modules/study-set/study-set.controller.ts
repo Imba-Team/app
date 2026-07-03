@@ -140,37 +140,6 @@ export class StudySetController {
     return { ok: true, message: 'Public study sets retrieved', data };
   }
 
-  @Post(':id/collect')
-  @HttpCode(200)
-  @ApiOperation({ summary: 'Add a public study set to my collection' })
-  async collect(
-    @CurrentUser() user: IUser,
-    @Param('id') id: string,
-  ): Promise<ResponseDto<StudySetResponseDto>> {
-    const studySet = await this.studySetService.addToCollection(user.id, id);
-    const data = plainToInstance(StudySetResponseDto, studySet, {
-      excludeExtraneousValues: true,
-    });
-    return { ok: true, message: 'Study set added to collection', data };
-  }
-
-  @Post(':id/uncollect')
-  @HttpCode(200)
-  @ApiOperation({ summary: 'Remove a study set from my collection' })
-  async uncollect(
-    @CurrentUser() user: IUser,
-    @Param('id') id: string,
-  ): Promise<ResponseDto<StudySetResponseDto>> {
-    const studySet = await this.studySetService.removeFromCollection(
-      user.id,
-      id,
-    );
-    const data = plainToInstance(StudySetResponseDto, studySet, {
-      excludeExtraneousValues: true,
-    });
-    return { ok: true, message: 'Study set removed from collection', data };
-  }
-
   @Get(':id')
   @HttpCode(200)
   @ApiOperation({ summary: 'Get study set details' })

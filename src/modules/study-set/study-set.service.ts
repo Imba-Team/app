@@ -216,59 +216,6 @@ export class StudySetService {
     return this.buildStudySetsForUserBatch(sorted, userId);
   }
 
-  // Section: Collection membership operations
-
-  async addToCollection(userId: string, studySetId: string) {
-    this.logger.debug(
-      `Adding study set to collection: studySetId=${studySetId}, userId=${userId}`,
-    );
-    const studySet = await this.findStudySetOrFail(studySetId);
-    await this.ensureCanAccess(userId, studySet.id);
-
-    if (studySet.ownerId !== userId) {
-      const exists = await this.prisma.favouriteStudySet.findUnique({
-        where: {
-          userId_studySetId: { userId, studySetId },
-        },
-      });
-      if (!exists) {
-        await this.prisma.favouriteStudySet.create({
-          data: { userId, studySetId },
-        });
-        this.logger.log(
-          `Study set collected: studySetId=${studySetId}, userId=${userId}`,
-        );
-      }
-    }
-    return this.buildStudySetForUser(studySetId, userId);
-  }
-
-  async removeFromCollection(userId: string, studySetId: string) {
-    this.logger.debug(
-      `Removing study set from collection: studySetId=${studySetId}, userId=${userId}`,
-    );
-    const studySet = await this.findStudySetOrFail(studySetId);
-    await this.ensureCanAccess(userId, studySet.id);
-
-    if (studySet.ownerId === userId) {
-      this.logger.warn(
-        `Owner attempted to uncollect own study set: studySetId=${studySetId}, userId=${userId}`,
-      );
-      throw new ForbiddenException(
-        'Cannot remove your own study set from collection',
-      );
-    }
-
-    await this.prisma.favouriteStudySet.deleteMany({
-      where: { userId, studySetId },
-    });
-    this.logger.log(
-      `Study set uncollected: studySetId=${studySetId}, userId=${userId}`,
-    );
-
-    return this.buildStudySetForUser(studySetId, userId, false);
-  }
-
   // Section: Single study set retrieval
 
   async getById(userId: string, studySetId: string) {
