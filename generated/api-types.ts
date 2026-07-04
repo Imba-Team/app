@@ -597,7 +597,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List my study session history
+         * @description Paginated. Optionally filter by studySetId to power the set page's activity list. Ordered newest-first by startedAt.
+         */
+        get: operations["SessionController_list"];
         put?: never;
         /** Start a new study session */
         post: operations["SessionController_start"];
@@ -627,6 +631,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sessions/{id}/answer-written": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a typed answer — server evaluates and applies to mastery
+         * @description For Write / Learn-written / Test-written / AI-generated modes. The server runs the Levenshtein-tolerant evaluator against the card's canonical definition, translates the result into a mastery-engine outcome, and returns both the applied progress and the evaluation details (matchType, similarity, edit distance, normalized strings) so the frontend can render a diff and helpful feedback.
+         */
+        post: operations["SessionController_answerWritten"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions/{id}/complete": {
         parameters: {
             query?: never;
@@ -638,6 +662,26 @@ export interface paths {
         put?: never;
         /** Mark a session complete and return the summary */
         post: operations["SessionController_complete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/{id}/next-batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fetch the next batch of Learn Mode cards
+         * @description Returns 7–10 non-mastered cards mixed between multiple-choice (recognition) and free-text (recall) prompts based on each card's current weighted streak. Only supported for sessions started with mode LEARN.
+         */
+        get: operations["SessionController_nextBatch"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1173,6 +1217,24 @@ export interface components {
             /** @enum {string} */
             studyMode: "FLASHCARD" | "LEARN_MC" | "LEARN_WRITTEN" | "WRITE" | "SPELL" | "TEST_WRITTEN" | "TEST_MC" | "TEST_TF" | "AI_FILL_BLANK" | "AI_GUESS_WORD" | "MATCH";
         };
+        SubmitWrittenAnswerDto: {
+            /**
+             * Format: uuid
+             * @description Client-generated UUID used to make retries idempotent. Second submit with the same attemptId returns the first result without re-applying it.
+             */
+            attemptId: string;
+            /** Format: uuid */
+            cardId: string;
+            /** @example false */
+            hintUsed: boolean;
+            /**
+             * @description Which written mode produced this answer. Must be one of the recall-oriented modes; the multiple-choice / self-report modes go through POST /sessions/:id/answer directly.
+             * @enum {string}
+             */
+            studyMode: "WRITE" | "LEARN_WRITTEN" | "TEST_WRITTEN" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
+            /** @description The learner-typed answer, exactly as entered. */
+            userAnswer: string;
+        };
         ToggleStarDto: {
             /** @example true */
             isStarred: boolean;
@@ -1280,6 +1342,7 @@ export type SchemaResetPasswordRequestDto = components['schemas']['ResetPassword
 export type SchemaServiceHealthResponseDto = components['schemas']['ServiceHealthResponseDto'];
 export type SchemaStartSessionDto = components['schemas']['StartSessionDto'];
 export type SchemaSubmitAnswerDto = components['schemas']['SubmitAnswerDto'];
+export type SchemaSubmitWrittenAnswerDto = components['schemas']['SubmitWrittenAnswerDto'];
 export type SchemaToggleStarDto = components['schemas']['ToggleStarDto'];
 export type SchemaUpdateCommentDto = components['schemas']['UpdateCommentDto'];
 export type SchemaUpdateFlashcardDto = components['schemas']['UpdateFlashcardDto'];
@@ -2219,6 +2282,28 @@ export interface operations {
             };
         };
     };
+    SessionController_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                /** @description Optional — restrict history to sessions on this study set. Omit to return all of the user's sessions across sets. */
+                studySetId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     SessionController_start: {
         parameters: {
             query?: never;
@@ -2263,9 +2348,54 @@ export interface operations {
             };
         };
     };
+    SessionController_answerWritten: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitWrittenAnswerDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     SessionController_complete: {
         parameters: {
             query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SessionController_nextBatch: {
+        parameters: {
+            query?: {
+                /** @description Target number of cards to include in the batch. */
+                size?: number;
+            };
             header?: never;
             path: {
                 id: string;

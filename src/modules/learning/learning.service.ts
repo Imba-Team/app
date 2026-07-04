@@ -5,7 +5,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CardMasteryStatus, Prisma } from '@prisma/client';
+import {
+  CardMasteryStatus,
+  Prisma,
+  StudySession,
+  StudySessionMode,
+} from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { Redis } from 'ioredis';
 import { LoggerService } from 'src/common/logger/logger.service';
@@ -21,6 +26,8 @@ import {
   CardProgressSummaryDto,
   SetProgressSummaryDto,
 } from './dtos/answer-response.dto';
+import { ListSessionsQueryDto } from './dtos/list-sessions-query.dto';
+import { SessionHistoryItemDto } from './dtos/session-history-item.dto';
 import { SessionSummaryDto } from './dtos/session-summary.dto';
 import {
   ApplyResult,
@@ -28,10 +35,43 @@ import {
   ProgressState,
   applyAttempt,
 } from './domain/apply-attempt';
+import { AttemptOutcome, StudyMode } from './domain/card-attempt-event';
+import { shuffle } from './domain/shuffle';
 import { granularToCoarse } from './domain/study-mode-mapper';
+import { evaluateWrittenAnswer } from './domain/write-evaluator';
+import { SubmitWrittenAnswerDto } from './dtos/submit-written-answer.dto';
+import {
+  WriteEvaluationDto,
+  WrittenAnswerResponseDto,
+} from './dtos/written-answer-response.dto';
+import {
+  LearnBatchCardDto,
+  LearnBatchResponseDto,
+  LearnPromptType,
+} from './dtos/learn-batch-response.dto';
 
 const IDEMPOTENCY_TTL_SECONDS = 300;
 const SET_PROGRESS_CACHE_TTL_SECONDS = 300;
+
+interface AnswerRawResult {
+  correct: boolean;
+  correctAnswer: string;
+  graduated: boolean;
+  demoted: boolean;
+  cardProgress: {
+    status: CardMasteryStatus;
+    weightedStreak: string;
+    correctCount: number;
+    incorrectCount: number;
+    masteredAt: Date | null;
+  };
+  setProgress: {
+    totalCards: number;
+    newCount: number;
+    learningCount: number;
+    masteredCount: number;
+  };
+}
 
 @Injectable()
 export class LearningService {
@@ -82,9 +122,110 @@ export class LearningService {
     sessionId: string,
     dto: SubmitAnswerDto,
   ): Promise<AnswerResponseDto> {
-    const cached = await this.readIdempotentResponse(dto.attemptId);
+    const cached = await this.readIdempotentResponse<AnswerResponseDto>(
+      dto.attemptId,
+      AnswerResponseDto,
+    );
     if (cached) return cached;
 
+    const { session, card } = await this.loadSessionAndCard(
+      userId,
+      sessionId,
+      dto.cardId,
+    );
+
+    const raw = await this.applyAndPersistAnswer(userId, session, card, {
+      attemptId: dto.attemptId,
+      studyMode: dto.studyMode,
+      outcome: dto.outcome,
+      hintUsed: dto.hintUsed,
+    });
+
+    const response = plainToInstance(
+      AnswerResponseDto,
+      {
+        ...raw,
+        cardProgress: plainToInstance(
+          CardProgressSummaryDto,
+          raw.cardProgress,
+          { excludeExtraneousValues: true },
+        ),
+        setProgress: plainToInstance(SetProgressSummaryDto, raw.setProgress, {
+          excludeExtraneousValues: true,
+        }),
+      },
+      { excludeExtraneousValues: true },
+    );
+
+    await this.storeIdempotentResponse(dto.attemptId, response);
+    return response;
+  }
+
+  async evaluateAndSubmitWritten(
+    userId: string,
+    sessionId: string,
+    dto: SubmitWrittenAnswerDto,
+  ): Promise<WrittenAnswerResponseDto> {
+    const cached = await this.readIdempotentResponse<WrittenAnswerResponseDto>(
+      dto.attemptId,
+      WrittenAnswerResponseDto,
+    );
+    if (cached) return cached;
+
+    const { session, card } = await this.loadSessionAndCard(
+      userId,
+      sessionId,
+      dto.cardId,
+    );
+
+    const evaluation = evaluateWrittenAnswer(dto.userAnswer, card.definition);
+
+    const raw = await this.applyAndPersistAnswer(userId, session, card, {
+      attemptId: dto.attemptId,
+      studyMode: dto.studyMode,
+      outcome: evaluation.outcome,
+      hintUsed: dto.hintUsed,
+    });
+
+    const response = plainToInstance(
+      WrittenAnswerResponseDto,
+      {
+        ...raw,
+        cardProgress: plainToInstance(
+          CardProgressSummaryDto,
+          raw.cardProgress,
+          { excludeExtraneousValues: true },
+        ),
+        setProgress: plainToInstance(SetProgressSummaryDto, raw.setProgress, {
+          excludeExtraneousValues: true,
+        }),
+        evaluation: plainToInstance(
+          WriteEvaluationDto,
+          {
+            matchType: evaluation.matchType,
+            similarity: Number(evaluation.similarity.toFixed(4)),
+            editDistance: evaluation.editDistance,
+            normalizedInput: evaluation.normalizedInput,
+            normalizedExpected: evaluation.normalizedExpected,
+          },
+          { excludeExtraneousValues: true },
+        ),
+      },
+      { excludeExtraneousValues: true },
+    );
+
+    await this.storeIdempotentResponse(dto.attemptId, response);
+    return response;
+  }
+
+  private async loadSessionAndCard(
+    userId: string,
+    sessionId: string,
+    cardId: string,
+  ): Promise<{
+    session: StudySession;
+    card: { id: string; studySetId: string; definition: string };
+  }> {
     const session = await this.prisma.studySession.findUnique({
       where: { id: sessionId },
     });
@@ -95,17 +236,30 @@ export class LearningService {
       throw new ConflictException('Session already completed');
 
     const card = await this.prisma.flashcard.findUnique({
-      where: { id: dto.cardId },
+      where: { id: cardId },
       select: { id: true, studySetId: true, definition: true },
     });
     if (!card) throw new NotFoundException('Flashcard not found');
     if (card.studySetId !== session.studySetId) {
       throw new ConflictException("Card does not belong to this session's set");
     }
+    return { session, card };
+  }
 
-    const response = await this.prisma.$transaction(async (tx) => {
+  private async applyAndPersistAnswer(
+    userId: string,
+    session: StudySession,
+    card: { id: string; studySetId: string; definition: string },
+    event: {
+      attemptId: string;
+      studyMode: StudyMode;
+      outcome: AttemptOutcome;
+      hintUsed: boolean;
+    },
+  ): Promise<AnswerRawResult> {
+    const raw = await this.prisma.$transaction(async (tx) => {
       const existing = await tx.userCardProgress.findUnique({
-        where: { userId_cardId: { userId, cardId: dto.cardId } },
+        where: { userId_cardId: { userId, cardId: card.id } },
       });
 
       const prevState: ProgressState = existing
@@ -124,48 +278,40 @@ export class LearningService {
         : CardMasteryStatus.NEW;
 
       const result: ApplyResult = applyAttempt(prevState, {
-        attemptId: dto.attemptId,
+        attemptId: event.attemptId,
         userId,
-        cardId: dto.cardId,
+        cardId: card.id,
         setId: card.studySetId,
-        sessionId,
-        studyMode: dto.studyMode,
-        outcome: dto.outcome,
-        hintUsed: dto.hintUsed,
+        sessionId: session.id,
+        studyMode: event.studyMode,
+        outcome: event.outcome,
+        hintUsed: event.hintUsed,
         attemptedAt: new Date(),
       });
 
+      const cardWrite = {
+        status: result.next.status,
+        weightedStreak: new Prisma.Decimal(
+          result.next.weightedStreak.toFixed(2),
+        ),
+        correctCount: result.next.correctCount,
+        incorrectCount: result.next.incorrectCount,
+        hintsUsedCount: result.next.hintsUsedCount,
+        timesDemoted: result.next.timesDemoted,
+        masteredAt: result.next.masteredAt,
+        lastStudyMode: granularToCoarse(event.studyMode),
+        lastAttemptedAt: new Date(),
+      };
+
       const persistedCard = await tx.userCardProgress.upsert({
-        where: { userId_cardId: { userId, cardId: dto.cardId } },
+        where: { userId_cardId: { userId, cardId: card.id } },
         create: {
           userId,
-          cardId: dto.cardId,
+          cardId: card.id,
           setId: card.studySetId,
-          status: result.next.status,
-          weightedStreak: new Prisma.Decimal(
-            result.next.weightedStreak.toFixed(2),
-          ),
-          correctCount: result.next.correctCount,
-          incorrectCount: result.next.incorrectCount,
-          hintsUsedCount: result.next.hintsUsedCount,
-          timesDemoted: result.next.timesDemoted,
-          masteredAt: result.next.masteredAt,
-          lastStudyMode: granularToCoarse(dto.studyMode),
-          lastAttemptedAt: new Date(),
+          ...cardWrite,
         },
-        update: {
-          status: result.next.status,
-          weightedStreak: new Prisma.Decimal(
-            result.next.weightedStreak.toFixed(2),
-          ),
-          correctCount: result.next.correctCount,
-          incorrectCount: result.next.incorrectCount,
-          hintsUsedCount: result.next.hintsUsedCount,
-          timesDemoted: result.next.timesDemoted,
-          masteredAt: result.next.masteredAt,
-          lastStudyMode: granularToCoarse(dto.studyMode),
-          lastAttemptedAt: new Date(),
-        },
+        update: cardWrite,
       });
 
       const setProgress = await this.applySetProgressDelta(
@@ -179,30 +325,27 @@ export class LearningService {
 
       if (result.graduated) {
         await tx.srsCard.upsert({
-          where: { userId_cardId: { userId, cardId: dto.cardId } },
-          create: {
-            userId,
-            cardId: dto.cardId,
-          },
+          where: { userId_cardId: { userId, cardId: card.id } },
+          create: { userId, cardId: card.id },
           update: {},
         });
       }
 
-      if (dto.outcome !== 'SKIPPED') {
+      if (event.outcome !== 'SKIPPED') {
         await tx.studySession.update({
-          where: { id: sessionId },
+          where: { id: session.id },
           data: {
             cardsStudied: { increment: 1 },
             correctAnswers:
-              dto.outcome === 'CORRECT' ? { increment: 1 } : undefined,
+              event.outcome === 'CORRECT' ? { increment: 1 } : undefined,
             incorrectAnswers:
-              dto.outcome === 'INCORRECT' ? { increment: 1 } : undefined,
+              event.outcome === 'INCORRECT' ? { increment: 1 } : undefined,
           },
         });
       }
 
       return {
-        correct: dto.outcome === 'CORRECT',
+        correct: event.outcome === 'CORRECT',
         correctAnswer: card.definition,
         graduated: result.graduated,
         demoted: result.demoted,
@@ -224,41 +367,17 @@ export class LearningService {
 
     await this.invalidateSetProgressCache(userId, card.studySetId);
 
-    const dto_ = plainToInstance(
-      AnswerResponseDto,
-      {
-        ...response,
-        cardProgress: plainToInstance(
-          CardProgressSummaryDto,
-          response.cardProgress,
-          {
-            excludeExtraneousValues: true,
-          },
-        ),
-        setProgress: plainToInstance(
-          SetProgressSummaryDto,
-          response.setProgress,
-          {
-            excludeExtraneousValues: true,
-          },
-        ),
-      },
-      { excludeExtraneousValues: true },
-    );
-
-    await this.storeIdempotentResponse(dto.attemptId, dto_);
-
-    if (response.graduated) {
+    if (raw.graduated) {
       this.logger.log(
-        `Card graduated to MASTERED: userId=${userId}, cardId=${dto.cardId}`,
+        `Card graduated to MASTERED: userId=${userId}, cardId=${card.id}`,
       );
-    } else if (response.demoted) {
+    } else if (raw.demoted) {
       this.logger.log(
-        `Card demoted from MASTERED: userId=${userId}, cardId=${dto.cardId}`,
+        `Card demoted from MASTERED: userId=${userId}, cardId=${card.id}`,
       );
     }
 
-    return dto_;
+    return raw;
   }
 
   async completeSession(
@@ -306,6 +425,165 @@ export class LearningService {
         accuracy: Number(accuracy.toFixed(4)),
         startedAt: completed.startedAt,
         completedAt: completed.completedAt as Date,
+      },
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  async listSessions(
+    userId: string,
+    query: ListSessionsQueryDto,
+  ): Promise<{
+    items: SessionHistoryItemDto[];
+    total: number;
+    limit: number;
+    offset: number;
+  }> {
+    const limit = query.limit ?? 20;
+    const offset = query.offset ?? 0;
+    const where: Prisma.StudySessionWhereInput = {
+      userId,
+      ...(query.studySetId ? { studySetId: query.studySetId } : {}),
+    };
+
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.studySession.findMany({
+        where,
+        orderBy: { startedAt: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      this.prisma.studySession.count({ where }),
+    ]);
+
+    const items = rows.map((row) => {
+      const answered = row.correctAnswers + row.incorrectAnswers;
+      const accuracy = answered > 0 ? row.correctAnswers / answered : 0;
+      return plainToInstance(
+        SessionHistoryItemDto,
+        {
+          sessionId: row.id,
+          studySetId: row.studySetId,
+          mode: row.mode,
+          cardsStudied: row.cardsStudied,
+          correctAnswers: row.correctAnswers,
+          incorrectAnswers: row.incorrectAnswers,
+          durationSeconds: row.durationSeconds,
+          accuracy: Number(accuracy.toFixed(4)),
+          startedAt: row.startedAt,
+          completedAt: row.completedAt,
+        },
+        { excludeExtraneousValues: true },
+      );
+    });
+
+    return { items, total, limit, offset };
+  }
+
+  async getNextBatch(
+    userId: string,
+    sessionId: string,
+    size: number,
+  ): Promise<LearnBatchResponseDto> {
+    const session = await this.prisma.studySession.findUnique({
+      where: { id: sessionId },
+    });
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.userId !== userId)
+      throw new ForbiddenException('Not your session');
+    if (session.completedAt)
+      throw new ConflictException('Session already completed');
+    if (session.mode !== StudySessionMode.LEARN) {
+      throw new ConflictException(
+        `next-batch is only supported on LEARN sessions (session mode: ${session.mode})`,
+      );
+    }
+
+    const cards = await this.prisma.flashcard.findMany({
+      where: { studySetId: session.studySetId },
+      select: { id: true, term: true, definition: true, hint: true },
+      orderBy: { orderIndex: 'asc' },
+    });
+    if (cards.length === 0) {
+      return plainToInstance(
+        LearnBatchResponseDto,
+        { sessionId, cards: [], hasMoreCards: false },
+        { excludeExtraneousValues: true },
+      );
+    }
+
+    const progressRows = await this.prisma.userCardProgress.findMany({
+      where: { userId, cardId: { in: cards.map((c) => c.id) } },
+    });
+    const progressByCardId = new Map(progressRows.map((r) => [r.cardId, r]));
+
+    const nonMastered = cards.filter((c) => {
+      const p = progressByCardId.get(c.id);
+      return !p || p.status !== CardMasteryStatus.MASTERED;
+    });
+    if (nonMastered.length === 0) {
+      return plainToInstance(
+        LearnBatchResponseDto,
+        { sessionId, cards: [], hasMoreCards: false },
+        { excludeExtraneousValues: true },
+      );
+    }
+
+    const learning = nonMastered.filter(
+      (c) => progressByCardId.get(c.id)?.status === CardMasteryStatus.LEARNING,
+    );
+    const fresh = nonMastered.filter(
+      (c) => progressByCardId.get(c.id)?.status !== CardMasteryStatus.LEARNING,
+    );
+    const ordered = [...shuffle(learning), ...shuffle(fresh)];
+    const selected = ordered.slice(0, size);
+
+    const batchCards: LearnBatchCardDto[] = selected.map((card) => {
+      const progress = progressByCardId.get(card.id);
+      const streak = progress ? Number(progress.weightedStreak) : 0;
+
+      const distractorPool = Array.from(
+        new Set(
+          cards
+            .filter(
+              (other) =>
+                other.id !== card.id && other.definition !== card.definition,
+            )
+            .map((other) => other.definition),
+        ),
+      );
+
+      const canRenderMC = distractorPool.length >= 3;
+      const promptType: LearnPromptType =
+        canRenderMC && streak < 1.0 ? 'LEARN_MC' : 'LEARN_WRITTEN';
+
+      if (promptType === 'LEARN_WRITTEN') {
+        return {
+          cardId: card.id,
+          term: card.term,
+          hint: card.hint,
+          promptType,
+        };
+      }
+
+      const distractors = shuffle(distractorPool).slice(0, 3);
+      const choices = shuffle([card.definition, ...distractors]);
+      return {
+        cardId: card.id,
+        term: card.term,
+        hint: card.hint,
+        promptType,
+        choices,
+        correctChoiceIndex: choices.indexOf(card.definition),
+      };
+    });
+
+    return plainToInstance(
+      LearnBatchResponseDto,
+      {
+        sessionId,
+        cards: batchCards,
+        hasMoreCards: nonMastered.length > selected.length,
       },
       { excludeExtraneousValues: true },
     );
@@ -452,16 +730,15 @@ export class LearningService {
     return `learning:attempt:${attemptId}`;
   }
 
-  private async readIdempotentResponse(
+  private async readIdempotentResponse<T>(
     attemptId: string,
-  ): Promise<AnswerResponseDto | null> {
+    cls: new () => T,
+  ): Promise<T | null> {
     const raw = await this.redis.get(this.idempotencyKey(attemptId));
     if (!raw) return null;
     try {
-      const parsed = JSON.parse(raw) as AnswerResponseDto;
-      return plainToInstance(AnswerResponseDto, parsed, {
-        excludeExtraneousValues: true,
-      });
+      const parsed: unknown = JSON.parse(raw);
+      return plainToInstance(cls, parsed, { excludeExtraneousValues: true });
     } catch (err) {
       this.logger.warn(
         `Invalid idempotency cache entry for attemptId=${attemptId}, ignoring: ${(err as Error).message}`,
@@ -472,7 +749,7 @@ export class LearningService {
 
   private async storeIdempotentResponse(
     attemptId: string,
-    response: AnswerResponseDto,
+    response: unknown,
   ): Promise<void> {
     await this.redis.set(
       this.idempotencyKey(attemptId),
