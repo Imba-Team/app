@@ -22,7 +22,7 @@ This Technical Design Document (TDD) is the primary engineering reference for bu
 
 - Sections 1–3: Context, technology decisions, repository structure. Read first.
 - Sections 4–7: Backend implementation. Primary reference for all backend engineers.
-- Sections 8–10: Domain-specific algorithms (SRS, AI, TTS). Detailed implementation guides.
+- Sections 8–10: Domain-specific algorithms (SRS, AI, and TTS — §10 is post-MVP; see the deferral banner atop §10).
 - Section 11: Frontend architecture. Primary reference for frontend engineers.
 - Sections 12–16: Infrastructure concerns (caching, search, storage, queues, WebSocket).
 - Sections 17–21: Cross-cutting concerns: security, testing, deployment, performance, error handling.
@@ -41,7 +41,7 @@ This Technical Design Document (TDD) is the primary engineering reference for bu
 - [8. SRS Algorithm Implementation](#8-srs-algorithm-implementation)
 - [8a. Card Mastery Progress Engine](#8a-card-mastery-progress-engine)
 - [9. AI Integration](#9-ai-integration)
-- [10. TTS Integration](#10-tts-integration)
+- [10. TTS Integration *(post-MVP — deferred to v1.1)*](#10-tts-integration)
 - [11. Frontend Architecture — React Web App](#11-frontend-architecture-react-web-app)
 - [12. Caching Strategy — Redis](#12-caching-strategy-redis)
 - [13. Search Implementation — Elasticsearch](#13-search-implementation-elasticsearch)
@@ -1801,6 +1801,8 @@ export class AiRateLimiterService {
 
 ## 10. TTS Integration
 
+> **⚠ Deferred to post-MVP (v1.1).** No TTS code ships in v1.0. The design below is preserved as the intended implementation for when the feature is re-scoped — do not build against it during MVP sprints. Spell Mode (which depends on this) is deferred with it. See the roadmap Post-MVP scope table for the v1.1 slot.
+
 ### 10.1 Architecture Overview
 
 TTS is a client-side feature. The web and mobile apps call the Mimir API, which proxies the TTS provider API, adding authentication and rate limiting. Audio bytes are streamed back to the client. No audio is stored on disk or in the database.
@@ -1921,13 +1923,13 @@ mimir-web/src/                        # Standalone React repo (mimir-web)
 │   │   │   ├── FlashcardsMode.tsx
 │   │   │   ├── LearnMode.tsx
 │   │   │   ├── WriteMode.tsx
-│   │   │   ├── SpellMode.tsx
+│   │   │   ├── SpellMode.tsx     # post-MVP (needs TTS)
 │   │   │   ├── TestMode.tsx
 │   │   │   ├── MatchMode.tsx
 │   │   │   ├── AiFillBlankMode.tsx
 │   │   │   └── AiGuessWordMode.tsx
 │   │   ├── SessionProvider.tsx   # Session state + answer submission
-│   │   └── AudioButton.tsx       # TTS trigger button
+│   │   └── AudioButton.tsx       # TTS trigger button (post-MVP)
 │   ├── srs/
 │   ├── classroom/
 │   ├── ai/
@@ -1946,7 +1948,7 @@ mimir-web/src/                        # Standalone React repo (mimir-web)
 ├── hooks/                        # Custom React hooks
 │   ├── useAuth.ts
 │   ├── useStudySession.ts
-│   ├── useTts.ts
+│   ├── useTts.ts                 # post-MVP (see §10)
 │   └── useSrsQueue.ts
 ├── store/                        # Zustand stores
 │   ├── auth.store.ts             # currentUser, isAuthenticated
@@ -2051,7 +2053,9 @@ function reducer(state: SessionState, action: Action): SessionState {
 }
 ```
 
-### 11.4 TTS Hook
+### 11.4 TTS Hook *(post-MVP — ships with §10)*
+
+> Not implemented in v1.0. Preserved as the intended shape for when TTS lands in v1.1.
 
 ```typescript
 // hooks/useTts.ts
@@ -2092,7 +2096,7 @@ export function useTts() {
 | session:access:{userId}:{jti} | String | 15m | JWT jti for blacklist checks | On logout |
 | refresh:{userId} | String | 30d | Hashed refresh token | On logout / rotation |
 | rate:api:{userId}:{minute} | String | 60s | Request count for rate limiter | Auto-expires |
-| rate:tts:{userId}:{window} | String | 30m | TTS call count in sliding window | Auto-expires |
+| rate:tts:{userId}:{window} *(post-MVP)* | String | 30m | TTS call count in sliding window — ships with §10 in v1.1 | Auto-expires |
 | rate:ai:{userId}:{feature}:{date} | String | 24h | Daily AI generation count | Auto-expires midnight |
 | srs:queue:{userId}:{date} | String (JSON) | 24h | Pre-computed daily SRS queue | On any SRS card update for user |
 | set:preview:{setId} | String (JSON) | 10m | First 10 cards of a public set | On set update |
@@ -2951,7 +2955,7 @@ jobs:
 | JWT_PRIVATE_KEY | Auth Service | RS256 private key for signing JWTs |
 | JWT_PUBLIC_KEY | All services | RS256 public key for verifying JWTs |
 | ANTHROPIC_API_KEY | AI Service | Anthropic Claude API key |
-| GOOGLE_TTS_API_KEY or ELEVENLABS_API_KEY | Study Service | TTS provider credentials |
+| GOOGLE_TTS_API_KEY or ELEVENLABS_API_KEY | Study Service | TTS provider credentials *(post-MVP — required when §10 ships in v1.1; do not provision for v1.0)* |
 | GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET | Auth Service | Google OAuth credentials |
 | SENDGRID_API_KEY | Notification Service | Email delivery API key |
 | FCM_SERVER_KEY | Notification Service | Firebase push notification server key |

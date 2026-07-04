@@ -63,7 +63,7 @@ Mimir is an AI-powered vocabulary learning platform designed to help students, s
 
 | Role | Count | Primary Responsibilities | Sprint Assignment |
 |---|---|---|---|
-| Backend Engineer | 3 | NestJS services, Prisma, SRS algorithm, AI/TTS integration, BullMQ | All phases |
+| Backend Engineer | 3 | NestJS services, Prisma, mastery engine, SRS algorithm, AI integration, BullMQ (TTS integration deferred to v1.1) | All phases |
 | Frontend Engineer | 2 | React SPA, study mode UIs, API integration, design system | Phases 2+ |
 | DevOps / Platform Engineer | 1 | Docker, Kubernetes, CI/CD, monitoring, MinIO, Elasticsearch | Phase 1 + ongoing |
 | Product Designer | 1 (part-time) | UI/UX wireframes, design system, user testing | Phases 1–3 |
@@ -93,7 +93,6 @@ graph TD
   QUIZ[Quiz Mode]
   SRS[Spaced Repetition Engine]
   PROG[Progress Tracking]
-  TTS[TTS Integration]
   AIGEN[AI Flashcard Generation]
   AIFIB[AI Fill-in-the-Blank Mode]
   AIGW[AI Guess the Word Mode]
@@ -120,8 +119,6 @@ graph TD
   CARDS --> AIGEN
   CARDS --> AIFIB
   CARDS --> AIGW
-  TTS --> SPELL
-  TTS --> FLASH
   LEARN --> PROG
   WRITE --> PROG
   SRS --> PROG
@@ -148,7 +145,6 @@ graph TD
   MINIO[(MinIO)]
   BULL[BullMQ on Redis]
   CLAUDE[Anthropic Claude API]
-  TTSAPI[TTS Provider API]
   SENDGRID[SendGrid Email]
   FCM[Firebase FCM Push]
 
@@ -156,7 +152,6 @@ graph TD
   AUTH_SVC --> REDIS
   STUDY_SVC[Study Service] --> PG
   STUDY_SVC --> MINIO
-  STUDY_SVC --> TTSAPI
   LEARN_SVC[Learning Service] --> PG
   LEARN_SVC --> REDIS
   SRS_SVC[SRS Service] --> PG
@@ -182,7 +177,7 @@ graph TD
 | Study Service | PostgreSQL, MinIO, Auth Service | Elasticsearch (search) | SRS Service |
 | Learning Service | PostgreSQL, Redis, Study Service | AI Service, SRS Service | Notification Service |
 | SRS Service | PostgreSQL, Redis, Learning Service | BullMQ | AI Service |
-| AI Service | Anthropic API key, Redis | — | SRS Service, TTS setup |
+| AI Service | Anthropic API key, Redis | — | SRS Service |
 | Classroom Service | PostgreSQL, Auth Service, Study Service | BullMQ, Notification Service | Search Service |
 | Search Service | Elasticsearch, Study Service | — | Classroom Service |
 | Notification Service | Redis, BullMQ, SendGrid, FCM | — | Search Service |
@@ -201,7 +196,6 @@ graph TD
 | Dependency | Risk | Mitigation |
 |---|---|---|
 | Anthropic Claude API | Rate limits or pricing changes could impact AI features cost model. | Implement rate limiting on day one. Abstract provider behind interface for easy swap. |
-| TTS Provider API | Provider outage silently breaks Spell Mode and audio buttons. | Graceful fallback: disable TTS button with clear UI state; study session continues uninterrupted. |
 | Elasticsearch setup | Complex initial config; risk of wrong mapping requiring full re-index. | Validate mapping against real data samples in Sprint 1 before production use. |
 | ClickHouse analytics | Low-priority for MVP; risk of delaying other features if complex. | Stub analytics events in BullMQ; ClickHouse consumer built in Sprint 11 (non-blocking). |
 | MinIO availability | Export jobs fail if MinIO is down. | BullMQ retry policy; exports are async; user notified on failure. |
@@ -255,7 +249,7 @@ The MVP scope is determined by applying three filters to every feature: (1) Does
 | AI Fill-in-the-Blank Mode | ✓ YES | Core unique learning mode differentiating Mimir. | High | L |
 | AI Guess the Word Mode | ✓ YES | Core unique learning mode. Part of v1 identity. | High | L |
 | **Audio** | | | | |
-| TTS Pronunciation (API) | ✓ YES | Essential for language learners. Core use case. | Critical | M |
+| TTS Pronunciation (API) | ✗ NO | Deferred to post-MVP. Provider integration + rate-limit infra can wait until we validate the study loop without audio. | High | M |
 | Pronunciation Recording & Feedback | ✗ NO | Complex; high AI cost. Phase 2. | Medium | XL |
 | **Search** | | | | |
 | Full-Text Search | ✓ YES | Users cannot discover public sets without it. | High | M |
@@ -292,10 +286,10 @@ The MVP scope is determined by applying three filters to every feature: (1) Does
 |---|---|---|---|
 | Authentication | 4 / 6 | 2 (2FA, Apple UI) | Backend Apple auth ready; iOS UI Phase 2 |
 | Study Sets & Cards | 6 / 8 | 2 (Version History, Collab) | Core CRUD fully in MVP |
-| Study Modes | 6 / 7 | 1 (Custom Quiz Builder) | All core modes included |
+| Study Modes | 5 / 7 | 2 (Spell Mode, Custom Quiz Builder) | Flashcard/Learn/Write/Test/Match in MVP; Spell Mode deferred with TTS |
 | Spaced Repetition | 3 / 4 | 1 (Forecast chart) | SM-2 engine fully in MVP |
 | AI Features | 3 / 3 | 0 | All 3 AI modes in MVP — core differentiators |
-| Audio / TTS | 1 / 2 | 1 (Recording) | TTS in MVP; recording is Phase 2 |
+| Audio / TTS | 0 / 2 | 2 (TTS, Recording) | Both deferred to post-MVP |
 | Search | 2 / 3 | 1 (Autocomplete) | Basic search and filters in MVP |
 | Classroom | 4 / 5 | 1 (Report Export) | Core classroom loop in MVP |
 | Notifications | 2 / 4 | 2 (Push, Weekly Email) | Assignment email + SRS email in MVP |
@@ -313,7 +307,7 @@ Mimir follows a staged release strategy: each version builds on the validated fo
 
 | Attribute | Detail |
 |---|---|
-| **Scope** | Auth, Sets, Cards, Flashcard/Learn/Write/Spell/Test/Match modes, SRS, AI (3 features), TTS, Search, Classroom (core), Notifications (email), Student & Teacher analytics, Like/Save social. |
+| **Scope** | Auth, Sets, Cards, Flashcard/Learn/Write/Test/Match modes, SRS, AI (3 features), Search, Classroom (core), Notifications (email), Student & Teacher analytics, Like/Save social. |
 | **Not Included** | Gamification, Premium subscription, Content moderation tooling, Image support, Push notifications, Custom quiz builder, Version history, Collaboration editing, Mobile apps. |
 | **Primary Audience** | Students (K-12, university), self-directed language learners, language teachers. |
 | **Distribution** | Invite-only open beta → public sign-up. |
@@ -336,7 +330,7 @@ Mimir follows a staged release strategy: each version builds on the validated fo
 
 | Attribute | Detail |
 |---|---|
-| **Scope** | Autocomplete search, Custom Quiz builder, Export (PDF + Anki), Push notifications (web), SRS 30-day forecast, Admin analytics dashboard, Profile heatmap, Email weekly summary. |
+| **Scope** | TTS pronunciation (Google TTS proxy + rate limiter + `AudioButton` component), Spell Mode (hear-then-type mode built on TTS), Autocomplete search, Custom Quiz builder, Export (PDF + Anki), Push notifications (web), SRS 30-day forecast, Admin analytics dashboard, Profile heatmap, Email weekly summary. |
 | **Objective** | Complete the study experience; give users more control over their progress; enable teachers to export grades. |
 | **Expected Outcome** | Improved Day-30 retention (+5 pp). Teacher NPS improvement from report exports. |
 
@@ -400,15 +394,16 @@ Development is broken into 10 sequential phases. Each phase has clear entry crit
 | **Risks** | CSV import edge cases (encoding, empty rows, duplicate terms). Invest in robust parser with user-facing error messages. |
 | **Exit Criteria** | User can create a 50-card set via UI. User can import a 200-card CSV. Folders organise sets correctly. Public/private visibility enforced. |
 
-### Phase 4: Flashcard Mode & TTS (Weeks 7–10)
+### Phase 4: Flashcard Mode & Mastery Engine (Weeks 7–10)
 
 | | |
 |---|---|
-| **Objectives** | Deliver the first complete study experience: Flashcard Mode with TTS audio. This is the first time the product feels real. |
-| **Deliverables** | Flashcard study session: flip animation, shuffle, star cards, Know It/Still Learning. TTS Controller: proxy to Google TTS, rate limiting, browser cache headers. Full-screen flashcard UI with keyboard shortcuts. |
-| **Dependencies** | Phase 3 (Study Sets) complete. TTS provider API key configured. |
-| **Risks** | TTS API cold start latency may feel sluggish. Test caching strategy early. |
-| **Exit Criteria** | User can study a 50-card set in Flashcard Mode. Speaker button plays correct pronunciation within 1 second. |
+| **Objectives** | Deliver the first complete study experience: Flashcard Mode wired end-to-end through the mastery engine. This is the first time the product feels real. |
+| **Deliverables** | Flashcard study session: flip animation, shuffle, star cards, Know It/Still Learning. Learning Service session lifecycle + `POST /sessions/:id/answer` mastery ingestion. `UserCardProgress` / `UserSetProgress` / `SrsCard` schema and the pure `applyAttempt` engine. Full-screen flashcard UI with keyboard shortcuts. |
+| **Dependencies** | Phase 3 (Study Sets) complete. |
+| **Risks** | Transactional-persistence race on a hot card under flaky-network retries. Mitigated by client-supplied `attemptId` + Redis idempotency in the answer endpoint. |
+| **Exit Criteria** | User can study a 50-card set in Flashcard Mode. Mastery counters update correctly and set-page progress bar reflects reality. |
+| **Deferred to post-MVP** | TTS audio pronunciation and the `AudioButton` component — see the Post-MVP scope table. |
 
 ### Phase 5: Learn Mode, Write Mode & Progress Tracking (Weeks 9–12)
 
@@ -434,11 +429,12 @@ Development is broken into 10 sequential phases. Each phase has clear entry crit
 
 | | |
 |---|---|
-| **Objectives** | Complete the full study mode suite: Spell Mode, Test Mode, and Match Game. |
-| **Deliverables** | Spell Mode (TTS + typed answer + accuracy tracking). Test Mode (auto-generated multi-type tests, timer, results). Match Game (drag-and-drop grid, time tracking). |
-| **Dependencies** | Phase 4 (TTS) and Phase 5 (answer evaluation logic) complete. |
+| **Objectives** | Complete the MVP study mode suite: Test Mode and Match Game. |
+| **Deliverables** | Test Mode (auto-generated multi-type tests, timer, results). Match Game (drag-and-drop grid, time tracking). |
+| **Dependencies** | Phase 5 (answer evaluation logic) complete. |
 | **Risks** | Test Mode distractor generation quality. Use other cards in the set as distractors; fallback to True/False format when fewer than 4 cards available. |
-| **Exit Criteria** | All three modes fully playable. Test Mode generates valid assessments for any 10+ card set. |
+| **Exit Criteria** | Both modes fully playable. Test Mode generates valid assessments for any 10+ card set. |
+| **Deferred to post-MVP** | Spell Mode — depends on TTS audio playback and moves to post-MVP alongside it. |
 
 ### Phase 8: AI Learning Features (Weeks 15–18)
 
@@ -482,14 +478,15 @@ Epics group related user stories into meaningful units of work. Effort is in eng
 | EPIC-02: Authentication & Identity | P0 | 2 | 10 | Medium | PostgreSQL, Redis, SendGrid |
 | EPIC-03: User Profiles | P0 | 2 | 5 | Low | Auth (EPIC-02) |
 | EPIC-04: Study Set Management | P0 | 3 | 12 | Medium | Auth (EPIC-02) |
-| EPIC-05: Flashcard Mode & TTS | P0 | 4 | 8 | Medium | Sets (EPIC-04), TTS API |
+| EPIC-05: Flashcard Mode & Mastery Engine | P0 | 4 | 8 | Medium | Sets (EPIC-04) |
 | EPIC-06: Learn Mode | P0 | 5 | 10 | High | Sets (EPIC-04) |
 | EPIC-07: Write Mode | P0 | 5 | 6 | Medium | Sets (EPIC-04) |
-| EPIC-08: Progress Tracking | P0 | 5 | 6 | Medium | Learn/Write modes |
+| EPIC-08: Progress Tracking | P0 | 4–5 | 6 | Medium | Absorbed into EPIC-05 mastery engine + Learn/Write |
 | EPIC-09: SRS Engine | P0 | 6 | 14 | High | Progress (EPIC-08) |
-| EPIC-10: Spell Mode | P1 | 7 | 5 | Low | TTS (EPIC-05) |
+| EPIC-10: Spell Mode | **Post-MVP** | v1.1 | 5 | Low | TTS proxy (post-MVP) |
 | EPIC-11: Test Mode | P1 | 7 | 8 | Medium | Cards (EPIC-04) |
 | EPIC-12: Match Game | P1 | 7 | 4 | Low | Cards (EPIC-04) |
+| EPIC-XX: TTS Integration | **Post-MVP** | v1.1 | 6 | Medium | Google TTS (or ElevenLabs), Redis rate limiter |
 | EPIC-13: AI Flashcard Generation | P0 | 8 | 10 | High | Anthropic API, Redis |
 | EPIC-14: AI Fill-in-the-Blank Mode | P0 | 8 | 8 | High | Sessions (EPIC-06) |
 | EPIC-15: AI Guess the Word Mode | P0 | 8 | 8 | High | Sessions (EPIC-06) |
@@ -667,33 +664,30 @@ Sprints 1–12 cover the MVP build (Weeks 1–24). Sprints 13–20 are summarise
 
 ---
 
-### Sprint 5 — Weeks 9–10: Flashcard Mode + TTS
+### Sprint 5 — Weeks 9–10: Flashcard Mode
 
-**Goal:** First complete study experience — Flashcard Mode with TTS pronunciation.
+**Goal:** First complete study experience — Flashcard Mode wired end-to-end through the mastery engine.
 
 **User Stories**
 - US-010: As a learner, I can study with flashcards.
-- US-011: As a learner, I can hear the pronunciation of any term.
-- US-012: As a learner, I can slow down audio playback to 0.5×.
+
+*(Audio user stories US-011 and US-012 are deferred to post-MVP alongside the TTS integration — see the Post-MVP scope table.)*
 
 **Technical Tasks**
 - Build Learning Service: `POST /sessions`, `POST /sessions/:id/answer`, `POST /sessions/:id/complete` — the answer endpoint ingests every study-mode outcome through the mastery engine (§8a).
 - Ship the mastery engine end-to-end: `UserCardProgress` / `UserSetProgress` / `SrsCard` tables, the pure `applyAttempt` algorithm with weighted-streak scoring, transactional persistence with Redis idempotency, and the first-mastery graduation trigger that seeds each `SrsCard` row for Sprint 7.
 - Read path for the "12/30 mastered" progress bar: `GET /study-sets/:setId/my-progress` with Redis cache-aside, invalidated on every answer.
-- Implement TTS Controller in Study Service: `GET /tts?term=&language=&speed=` proxying Google TTS. Add Redis rate limiter (200 calls / 30 m per user).
 - Build Flashcard Mode UI: full-screen card with 3D flip animation (CSS), shuffle, Star / Know It / Still Learning.
-- Build `AudioButton` component using `useTts` hook.
 - Add keyboard navigation: spacebar flip, left/right arrows.
 - Build session complete screen with basic accuracy stats.
 
 **Deliverables**
 - Flashcard Mode fully playable end-to-end.
-- TTS plays correct pronunciation within 1 second.
 - Session + mastery progress persisted to DB; `masteredCount / totalCards` visible on the set page.
 
-**Key Risk:** TTS cold start — first request can take 2–3 s. Implement a brief loading state on the AudioButton; do not block card flip.
+**Key Risk:** Transactional-persistence race on a hot card (same user hammering answers on flaky network). Mitigated by the Redis idempotency key already in the answer endpoint; verify under load with a small stress script.
 
-**Definition of Done:** User can study a 20-card set in Flashcard Mode without errors. TTS audio plays. Playwright E2E test passes.
+**Definition of Done:** User can study a 20-card set in Flashcard Mode without errors. Mastery counters update correctly. Playwright E2E test passes.
 
 ---
 
@@ -753,29 +747,28 @@ Sprints 1–12 cover the MVP build (Weeks 1–24). Sprints 13–20 are summarise
 
 ---
 
-### Sprint 8 — Weeks 15–16: Spell Mode + Test Mode + Match Game
+### Sprint 8 — Weeks 15–16: Test Mode + Match Game
 
-**Goal:** Complete the full study mode suite.
+**Goal:** Complete the MVP study mode suite.
 
 **User Stories**
-- US-015: As a learner, I can practise spelling in Spell Mode.
 - US-016: As a learner, I can take a Test to assess my full knowledge.
 - US-017: As a learner, I can play the Match Game.
 
+*(Spell Mode / US-015 depends on TTS audio playback and is deferred to post-MVP alongside the TTS integration.)*
+
 **Technical Tasks**
-- Implement Spell Mode: TTS playback, typed answer evaluation with tolerance, speed controls.
 - Implement Test Mode auto-generator: MC, matching, written, true/false from set cards.
 - Implement test result saving: per-question analysis, time-per-question, retake tracking.
-- Build Spell Mode UI: auto-plays TTS, speed controls, typing input, replay button.
 - Build Test Mode UI: question list, timer display, result breakdown page.
 - Build Match Game UI: CSS grid, drag-and-drop, shake animation on mismatch, time display.
 
 **Deliverables**
-- All three modes fully playable. Test Mode generates valid assessments for any 10+ card set.
+- Both modes fully playable. Test Mode generates valid assessments for any 10+ card set.
 
 **Key Risk:** Test Mode distractors for sets < 10 cards. Fallback: use True/False format when insufficient distractors.
 
-**Definition of Done:** All three modes testable end-to-end. Test results saved to DB. Match Game completes without JS errors.
+**Definition of Done:** Both modes testable end-to-end. Test results saved to DB. Match Game completes without JS errors.
 
 ---
 
@@ -912,7 +905,7 @@ Sprints 1–12 cover the MVP build (Weeks 1–24). Sprints 13–20 are summarise
 | ID | Risk | Probability | Impact | Severity | Mitigation / Contingency |
 |---|---|---|---|---|---|
 | R-01 | AI generation costs exceed budget: Claude API token costs scale unexpectedly with user volume. | Medium | High | **HIGH** | Per-user daily rate limits from day one. Cost monitoring alert at 80% of monthly AI budget. Provider abstraction allows emergency switch to cheaper model. |
-| R-02 | TTS provider outage disrupts Spell Mode and audio. | Low | Medium | **MEDIUM** | Graceful degradation: TTS button shows error state; study session continues without audio. No data loss. |
+| R-02 | *(Retired — TTS deferred to post-MVP. Re-add this row when the TTS integration is re-scoped for v1.1.)* | — | — | — | — |
 | R-03 | SM-2 algorithm produces unacceptable review schedule for real users. | Medium | Medium | **MEDIUM** | Ship default SM-2 params. Collect user feedback. Plan data-driven parameter tuning pass after 1,000 users. |
 | R-04 | Elasticsearch misconfiguration requires re-index post-launch. | Low | High | **HIGH** | Validate mapping against real data in Sprint 1. Test re-index procedure in staging. Build no-downtime re-index BullMQ job. |
 | R-05 | AI-generated content quality is too low (hallucinated terms, wrong language). | Medium | High | **HIGH** | User-facing review step before any AI content is saved. Users edit cards before accepting. Report flagging for bad AI output. |
@@ -967,10 +960,10 @@ Sprints 1–12 cover the MVP build (Weeks 1–24). Sprints 13–20 are summarise
 | M1 | Infrastructure Ready | Week 2 | All services healthy. CI green. Local stack runs. | DevOps |
 | M2 | Authentication Complete | Week 4 | Register, login, OAuth, password reset working E2E. | BE Lead |
 | M3 | Study Sets & Cards Complete | Week 8 | Full CRUD, CSV import, folder org, Elasticsearch sync. | BE1, FE1 |
-| M4 | Core Study Loop Playable | Week 10 | Flashcard Mode + TTS working in browser. | BE1, FE2 |
+| M4 | Core Study Loop Playable | Week 10 | Flashcard Mode + mastery engine working in browser. | BE1, FE2 |
 | M5 | Active Recall Modes Complete | Week 12 | Learn Mode + Write Mode with progress tracking. | BE2, FE1 |
 | M6 | SRS Engine Live | Week 14 | SM-2 queue, daily reviews, nightly reminders. | BE3 |
-| M7 | All Study Modes Complete | Week 16 | Spell, Test, Match Game all working. | BE2, FE2 |
+| M7 | MVP Study Modes Complete | Week 16 | Test Mode + Match Game working. (Spell Mode + TTS post-MVP.) | BE2, FE2 |
 | M8 | AI Features Live | Week 18 | Flashcard Gen, Fill-Blank, Guess Word all working. | BE1, FE2 |
 | M9 | Search Live | Week 20 | Full-text search returns results in < 300 ms. | BE3, FE1 |
 | M10 | Classroom Complete | Week 22 | Class creation, assignments, teacher analytics working. | BE1, FE1 |
@@ -1000,14 +993,14 @@ gantt
 
   section Study Core
   Study Sets & Cards               :p3, after p2a, 2w
-  Flashcard Mode + TTS             :p4, after p3, 2w
+  Flashcard Mode + Mastery Engine  :p4, after p3, 2w
 
   section Learning
   Learn Mode + Write Mode          :p5, after p4, 2w
   SRS Engine                       :crit, p6, after p5, 2w
 
   section Modes
-  Spell + Test + Match             :p7, after p6, 2w
+  Test + Match                     :p7, after p6, 2w
   AI Features                      :crit, p8, after p7, 2w
 
   section Infrastructure
@@ -1108,7 +1101,6 @@ A staged launch reduces risk, allows the team to fix issues before they affect t
 | AI Generations / Day | 200 | 5,000 |
 | Sessions / Active User / Week | 2.5 | 4.0 |
 | Average Session Duration | 8 min | 12 min |
-| TTS Plays / Day | 10,000 | 100,000 |
 | Public Sets Available (cumulative) | 5,000 | 200,000 |
 
 ### 12.4 Learning Outcomes
@@ -1128,7 +1120,6 @@ A staged launch reduces risk, allows the team to fix issues before they affect t
 | API p95 Response Time | < 300 ms (reads), < 600 ms (writes) at any load |
 | Platform Uptime | ≥ 99.9% (< 8.76 hours downtime / year) |
 | AI Generation p95 Latency | < 8 seconds for 20-card set |
-| TTS p95 Latency | < 1 second per term |
 | Search p95 Latency | < 300 ms per query |
 | Deployment Frequency | ≥ 1 per week (post-MVP) |
 | Mean Time to Recovery (MTTR) | < 30 minutes for P0 incidents |
@@ -1146,21 +1137,20 @@ Every step is justified against four optimisation criteria: **fastest MVP delive
 | 3 | Auth Service — register, login, JWT, refresh, password reset | Authentication is the hardest blocking dependency. Nothing else can be built without it. Google OAuth is included now because retrofitting OAuth later requires touching the user model. | MVP speed ↑, Risk ↓ |
 | 4 | Auth frontend — login, register, forgot-password pages + React auth context | Frontend engineers need working auth to build any screen. Parallelise with Step 5. | MVP speed ↑ |
 | 5 | Study Service — set CRUD + card CRUD + CSV import + folders | Study sets are the core data entity around which everything else is built. SRS, AI, Classroom, and Search all depend on sets being stable. | MVP speed ↑, Business value ↑ |
-| 6 | TTS Proxy endpoint in Study Service | TTS is simple to build (1 provider API call + rate limiter) and immediately makes the product feel like a real language tool. Builds alongside sets. | Business value ↑, MVP speed ↑ |
-| 7 | Flashcard Mode — the first complete study experience | Flashcard Mode is the fastest mode to build and the most universally understood. Shipping it early allows internal testing of the study session model before building more complex modes. | MVP speed ↑, Risk ↓ |
-| 8 | Learn Mode + session model + progress tracking | Learn Mode is the primary driver of mastery and retention. It also establishes the session state machine that Spell Mode, Test Mode, and SRS all reuse. Build it before Spell/Test/SRS. | Business value ↑, Risk ↓ (foundational) |
-| 9 | Write Mode — active recall | Write Mode shares 80% of the infrastructure built for Learn Mode (session model, answer evaluation). Build it immediately after. The shared Levenshtein evaluator also powers Spell Mode. | MVP speed ↑ (low marginal cost) |
-| 10 | Spaced Repetition Engine (SM-2) | This is the hardest backend component and the biggest differentiator. Build it before modes that depend on it (Spell, Test are simpler and can wait). Getting SM-2 into users' hands early generates the retention data the product needs. | Business value ↑ (core differentiator), Risk ↓ (test early) |
-| 11 | Spell Mode + Test Mode + Match Game | These three modes are straightforward given the existing session model, evaluation logic, and TTS proxy. Build all three in one sprint. | MVP speed ↑ (batch work) |
-| 12 | AI Flashcard Generation | The single biggest user acquisition hook. Reduces the #1 friction point (creating cards) to zero. Also the largest technical risk due to Claude API reliability — build and test it before it is on the critical path. | Business value ↑ (acquisition), Risk ↓ (isolated) |
-| 13 | AI Fill-in-the-Blank Mode + AI Guess the Word Mode | These modes are built on top of the same Learning Service session model and the same AnthropicService. Build both together after Flashcard Generation proves the AI integration is stable. | Business value ↑ (retention differentiator) |
-| 14 | Elasticsearch search + BullMQ sync | Search is needed for public set discovery, which is needed for social growth. But it is not a blocker for the core study loop. Build it after the core product is solid. | Business value ↑ (growth) |
-| 15 | Notification Service — assignment email + SRS reminders | Notifications are the habit-formation lever. SRS reminders measurably increase Day-7 retention. But they depend on the SRS queue (Step 10) and Classroom (Step 16) being stable. | Business value ↑ (retention) |
-| 16 | Classroom Service — class CRUD, assignments, teacher analytics | Teachers are the highest-retention user segment. Classroom features are built after the core study modes are solid because teachers need to assign meaningful study experiences. | Business value ↑ (retention + growth) |
-| 17 | Student analytics + Teacher analytics dashboards | Analytics are built last among the MVP features because they require stable data from all study modes and assignments. ClickHouse can be stubbed until data volume justifies it. | Business value ↑ (teacher retention) |
-| 18 | Security hardening + GDPR + load testing + bug bash | Security is not an afterthought, but hardening and stress-testing must happen when the product is feature-complete — not before, or the hardening will need repeating. | Risk ↓, Scalability ↑ |
-| 19 | Internal alpha → Closed beta → Open beta | Staged launch mitigates the risk of critical bugs reaching thousands of users. Each stage has a defined exit gate. Do not skip stages under marketing pressure. | Risk ↓ |
-| 20 | Public v1.0 launch with marketing and Product Hunt | Launch once the open beta exit criteria are met and the team has practiced incident response. A rushed launch that fails publicly is far more damaging than a 2-week delay. | Business value ↑ |
+| 6 | Flashcard Mode + mastery engine — the first complete study experience | Flashcard Mode is the fastest mode to build and the most universally understood. Shipping it wired end-to-end through the mastery engine (§8a) validates the session model, answer ingestion, and progress persistence before more complex modes stack on top. | MVP speed ↑, Risk ↓ |
+| 7 | Learn Mode + session model + progress tracking | Learn Mode is the primary driver of mastery and retention. It also establishes the session state machine that Test Mode and SRS reuse. Build it before Test/SRS. | Business value ↑, Risk ↓ (foundational) |
+| 8 | Write Mode — active recall | Write Mode shares 80% of the infrastructure built for Learn Mode (session model, answer evaluation). Build it immediately after. | MVP speed ↑ (low marginal cost) |
+| 9 | Spaced Repetition Engine (SM-2) | This is the hardest backend component and the biggest differentiator. Build it before modes that depend on it (Test is simpler and can wait). Getting SM-2 into users' hands early generates the retention data the product needs. | Business value ↑ (core differentiator), Risk ↓ (test early) |
+| 10 | Test Mode + Match Game | Two straightforward modes given the existing session model and evaluation logic. Build together in one sprint. Spell Mode intentionally deferred to post-MVP with its TTS dependency. | MVP speed ↑ (batch work) |
+| 11 | AI Flashcard Generation | The single biggest user acquisition hook. Reduces the #1 friction point (creating cards) to zero. Also the largest technical risk due to Claude API reliability — build and test it before it is on the critical path. | Business value ↑ (acquisition), Risk ↓ (isolated) |
+| 12 | AI Fill-in-the-Blank Mode + AI Guess the Word Mode | These modes are built on top of the same Learning Service session model and the same AnthropicService. Build both together after Flashcard Generation proves the AI integration is stable. | Business value ↑ (retention differentiator) |
+| 13 | Elasticsearch search + BullMQ sync | Search is needed for public set discovery, which is needed for social growth. But it is not a blocker for the core study loop. Build it after the core product is solid. | Business value ↑ (growth) |
+| 14 | Notification Service — assignment email + SRS reminders | Notifications are the habit-formation lever. SRS reminders measurably increase Day-7 retention. But they depend on the SRS queue (Step 9) and Classroom (Step 15) being stable. | Business value ↑ (retention) |
+| 15 | Classroom Service — class CRUD, assignments, teacher analytics | Teachers are the highest-retention user segment. Classroom features are built after the core study modes are solid because teachers need to assign meaningful study experiences. | Business value ↑ (retention + growth) |
+| 16 | Student analytics + Teacher analytics dashboards | Analytics are built last among the MVP features because they require stable data from all study modes and assignments. ClickHouse can be stubbed until data volume justifies it. | Business value ↑ (teacher retention) |
+| 17 | Security hardening + GDPR + load testing + bug bash | Security is not an afterthought, but hardening and stress-testing must happen when the product is feature-complete — not before, or the hardening will need repeating. | Risk ↓, Scalability ↑ |
+| 18 | Internal alpha → Closed beta → Open beta | Staged launch mitigates the risk of critical bugs reaching thousands of users. Each stage has a defined exit gate. Do not skip stages under marketing pressure. | Risk ↓ |
+| 19 | Public v1.0 launch with marketing and Product Hunt | Launch once the open beta exit criteria are met and the team has practiced incident response. A rushed launch that fails publicly is far more damaging than a 2-week delay. | Business value ↑ |
 
 ### 13.1 What NOT to Build First
 
