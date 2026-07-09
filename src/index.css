@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens as CSS variables. Keep aligned with src/lib/design-tokens/*.ts
+ * — the TS tokens are the source of truth for JS consumers (charts, XState guards);
+ *   this file is the source of truth for Tailwind classes.
+ * If a mismatch is found, fix both.
+ */
+
+@layer base {
+  :root {
+    /* Surfaces — warm off-white on top of Weathered Taupe deep-text */
+    --background: 40 27% 97%; /* neutral-50 — warm off-white */
+    --foreground: 39 15% 12%; /* neutral-950 — near-black taupe */
+
+    --card: 0 0% 100%;
+    --card-foreground: 39 15% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 39 15% 12%;
+
+    /* Primary = Yellow Stone (#E2D783). Foreground picks the darkest neutral for AAA contrast. */
+    --primary: 53 62% 70%; /* warm-400 — Yellow Stone */
+    --primary-foreground: 39 15% 12%; /* neutral-950 */
+
+    --secondary: 49 50% 63%; /* warm-500 — Yellow Stone deep (#D0BF72) */
+    --secondary-foreground: 39 15% 12%;
+
+    --muted: 33 22% 92%; /* neutral-100 */
+    --muted-foreground: 35 11% 37%; /* neutral-600 */
+
+    --accent: 50 82% 81%; /* warm-200 — Yellow Stone light */
+    --accent-foreground: 39 15% 12%;
+
+    --destructive: 13 44% 45%; /* semantic.danger — warm terra */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 36 22% 84%; /* neutral-200 */
+    --input: 36 22% 84%;
+    --ring: 49 39% 36%; /* warm-700 — deep yellow stone for focus visibility */
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 39 15% 12%; /* neutral-950 */
+    --foreground: 40 27% 97%; /* neutral-50 */
+
+    --card: 36 12% 15%; /* neutral-900 */
+    --card-foreground: 40 27% 97%;
+
+    --popover: 36 12% 15%;
+    --popover-foreground: 40 27% 97%;
+
+    --primary: 53 62% 70%; /* warm-400 — Yellow Stone */
+    --primary-foreground: 39 15% 12%;
+
+    --secondary: 49 50% 63%; /* warm-500 — Yellow Stone deep */
+    --secondary-foreground: 39 15% 12%; /* dark text on yellow surface */
+
+    --muted: 36 11% 21%;
+    --muted-foreground: 34 15% 61%; /* neutral-400 */
+
+    --accent: 47 39% 36%; /* warm-700 — Yellow Stone deep for dark bg */
+    --accent-foreground: 40 27% 97%;
+
+    --destructive: 13 40% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 36 12% 29%; /* neutral-700 — weathered taupe */
+    --input: 36 12% 29%;
+    --ring: 53 62% 70%; /* warm-400 — Yellow Stone */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+}
