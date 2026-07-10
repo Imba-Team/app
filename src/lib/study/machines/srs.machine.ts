@@ -27,9 +27,7 @@ interface SrsContext {
 }
 
 type SrsEvent =
-  | { type: 'LOAD'; queue: SrsQueueCard[] }
-  | { type: 'GRADE'; grade: SrsGrade }
-  | { type: 'END' };
+  { type: 'LOAD'; queue: SrsQueueCard[] } | { type: 'GRADE'; grade: SrsGrade } | { type: 'END' };
 
 export const srsMachine = setup({
   types: {
@@ -79,7 +77,11 @@ export const srsMachine = setup({
     loading: {
       on: {
         LOAD: [
-          { guard: ({ event }) => event.queue.length > 0, target: 'reviewing', actions: 'setQueue' },
+          {
+            guard: ({ event }) => event.queue.length > 0,
+            target: 'reviewing',
+            actions: 'setQueue',
+          },
           { target: 'empty', actions: 'setQueue' },
         ],
       },

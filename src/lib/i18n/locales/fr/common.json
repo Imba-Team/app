@@ -1,4 +1,6 @@
 {
-  "app": { "name": "Mimir", "tagline": "Apprentissage du vocabulaire par IA" },
-  "actions": { "signIn": "Se connecter", "signUp": "S'inscrire" }
+  "app": {
+    "name": "Mimir",
+    "tagline": "Apprentissage du vocabulaire par IA"
+  }
 }

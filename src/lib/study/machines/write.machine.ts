@@ -42,11 +42,7 @@ function levenshtein(a: string, b: string): number {
     prev[0] = i;
     for (let j = 1; j <= b.length; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      const next = Math.min(
-        prev[j]! + 1,
-        prev[j - 1]! + 1,
-        carry + cost,
-      );
+      const next = Math.min(prev[j]! + 1, prev[j - 1]! + 1, carry + cost);
       carry = prev[j]!;
       prev[j] = next;
     }

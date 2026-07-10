@@ -9,19 +9,7 @@
     "delete": "Delete",
     "confirm": "Confirm",
     "continue": "Continue",
-    "back": "Back",
-    "signIn": "Sign in",
-    "signOut": "Sign out",
-    "signUp": "Sign up"
-  },
-  "auth": {
-    "email": "Email",
-    "password": "Password",
-    "displayName": "Display name",
-    "username": "Username",
-    "loginTitle": "Welcome back",
-    "registerTitle": "Create your account",
-    "forgotPassword": "Forgot your password?"
+    "back": "Back"
   },
   "nav": {
     "dashboard": "Home",
@@ -30,23 +18,6 @@
     "classroom": "Classroom",
     "progress": "Progress",
     "profile": "Profile"
-  },
-  "study": {
-    "modes": {
-      "flashcards": "Flashcards",
-      "learn": "Learn",
-      "write": "Write",
-      "spell": "Spell",
-      "test": "Test",
-      "match": "Match",
-      "aiFillBlank": "AI Fill-in-the-Blank",
-      "aiGuessWord": "AI Guess the Word"
-    },
-    "mastery": {
-      "new": "New",
-      "learning": "Learning",
-      "mastered": "Mastered"
-    }
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",

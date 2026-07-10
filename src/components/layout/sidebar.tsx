@@ -1,14 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
-import {
-  BookOpen,
-  Compass,
-  GraduationCap,
-  Home,
-  Library,
-  LineChart,
-  Sparkles,
-} from 'lucide-react';
+import { BookOpen, Compass, GraduationCap, Home, Library, LineChart, Sparkles } from 'lucide-react';
 
 import { cn } from '@/lib/cn';
 

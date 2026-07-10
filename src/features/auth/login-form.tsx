@@ -50,9 +50,7 @@ export function LoginForm() {
           placeholder="you@example.com"
           {...register('email')}
         />
-        {errors.email && (
-          <p className="text-xs text-destructive">{errors.email.message}</p>
-        )}
+        {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
       </div>
 
       <div className="space-y-2">
@@ -63,9 +61,7 @@ export function LoginForm() {
           autoComplete="current-password"
           {...register('password')}
         />
-        {errors.password && (
-          <p className="text-xs text-destructive">{errors.password.message}</p>
-        )}
+        {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
       </div>
 
       {rootError && <p className="text-sm text-destructive">{rootError}</p>}

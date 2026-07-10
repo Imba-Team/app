@@ -1,5 +1,6 @@
 import { LogOut } from 'lucide-react';
 
+import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/api/hooks/auth-context';
 import { useLogout } from '@/lib/api/hooks/use-auth';
@@ -16,15 +17,18 @@ export function Topbar() {
           {currentUser?.displayName ?? currentUser?.email ?? '—'}
         </span>
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => logout.mutate()}
-        disabled={logout.isPending}
-      >
-        <LogOut className="size-4" />
-        Sign out
-      </Button>
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => logout.mutate()}
+          disabled={logout.isPending}
+        >
+          <LogOut className="size-4" />
+          Sign out
+        </Button>
+      </div>
     </header>
   );
 }

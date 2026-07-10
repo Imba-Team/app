@@ -15,7 +15,10 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export interface AuthProviderProps extends Omit<AuthContextValue, 'currentUser' | 'setCurrentUser'> {
+export interface AuthProviderProps extends Omit<
+  AuthContextValue,
+  'currentUser' | 'setCurrentUser'
+> {
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
   children: ReactNode;
@@ -26,6 +29,7 @@ export function AuthProvider(props: AuthProviderProps): JSX.Element {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- Context + hook co-located by React convention; splitting adds no value.
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');

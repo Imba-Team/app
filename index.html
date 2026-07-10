@@ -6,6 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#e2d783" />
     <title>Mimir</title>
+    <script>
+      // Apply the persisted theme before React hydrates to avoid a flash of wrong colours.
+      // Keep this in sync with STORAGE_KEY / applyClass() in src/providers/theme-provider.tsx.
+      (function () {
+        try {
+          var t = localStorage.getItem('mimir.theme') || 'system';
+          var isDark =
+            t === 'dark' ||
+            (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.add(isDark ? 'dark' : 'light');
+        } catch (e) {
+          /* localStorage disabled — fall back to CSS default (light). */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

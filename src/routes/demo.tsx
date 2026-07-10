@@ -61,12 +61,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const sampleRows = [
   { id: 'set-01', title: 'Norse Mythology', cards: 42, mastery: 68 },
@@ -304,14 +299,15 @@ export function DemoRoute() {
                   <Info />
                   <AlertTitle>Heads up</AlertTitle>
                   <AlertDescription>
-                    You can generate flashcards from any topic with AI — try{' '}
-                    <code>/discover</code>.
+                    You can generate flashcards from any topic with AI — try <code>/discover</code>.
                   </AlertDescription>
                 </Alert>
                 <Alert variant="destructive">
                   <AlertCircle />
                   <AlertTitle>Sign-in failed</AlertTitle>
-                  <AlertDescription>Check your email and password, then try again.</AlertDescription>
+                  <AlertDescription>
+                    Check your email and password, then try again.
+                  </AlertDescription>
                 </Alert>
               </CardContent>
             </Card>
@@ -413,9 +409,7 @@ export function DemoRoute() {
                           {row.mastery >= 80 ? (
                             <Badge className="bg-mastery-mastered">Mastered</Badge>
                           ) : row.mastery >= 30 ? (
-                            <Badge className="bg-mastery-learning text-neutral-900">
-                              Learning
-                            </Badge>
+                            <Badge className="bg-mastery-learning text-neutral-900">Learning</Badge>
                           ) : (
                             <Badge className="bg-mastery-new text-neutral-900">New</Badge>
                           )}

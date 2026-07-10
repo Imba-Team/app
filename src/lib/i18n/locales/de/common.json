@@ -1,4 +1,6 @@
 {
-  "app": { "name": "Mimir", "tagline": "KI-gestütztes Vokabellernen" },
-  "actions": { "signIn": "Anmelden", "signUp": "Registrieren" }
+  "app": {
+    "name": "Mimir",
+    "tagline": "KI-gestütztes Vokabellernen"
+  }
 }

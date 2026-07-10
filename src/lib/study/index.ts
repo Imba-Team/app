@@ -1,7 +1,4 @@
-export {
-  initialProgress,
-  reduceProgress,
-} from './mastery.js';
+export { initialProgress, reduceProgress } from './mastery.js';
 export type { CardMasteryStatus, CardProgress, AnswerEvent } from './mastery.js';
 
 export { learnMachine } from './machines/learn.machine.js';

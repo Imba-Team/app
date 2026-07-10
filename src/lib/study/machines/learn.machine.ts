@@ -80,10 +80,7 @@ export const learnMachine = setup({
     active: {
       on: {
         ANSWER: { actions: 'recordAnswer' },
-        NEXT: [
-          { guard: 'hasMoreCards', actions: 'advance' },
-          { target: 'complete' },
-        ],
+        NEXT: [{ guard: 'hasMoreCards', actions: 'advance' }, { target: 'complete' }],
         END: 'complete',
       },
     },
