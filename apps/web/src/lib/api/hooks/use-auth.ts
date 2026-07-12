@@ -19,7 +19,6 @@ export interface LoginPayload {
 
 export interface RegisterPayload extends LoginPayload {
   username: string;
-  displayName: string;
 }
 
 /**
@@ -72,19 +71,18 @@ export function useLogin() {
   });
 }
 
+/**
+ * Register does NOT log the user in — the backend creates an unverified user and
+ * sends a verification email. The user completes registration by clicking the
+ * link, then logs in normally. See /auth/verify-email page.
+ */
 export function useRegister() {
-  const { client, tokens, setCurrentUser } = useAuth();
-  const qc = useQueryClient();
+  const { client } = useAuth();
 
   return useMutation({
-    mutationFn: async (payload: RegisterPayload): Promise<{ accessToken: string; user: User }> => {
-      const { data } = await client.post<AuthResponse | null>('/auth/register', payload);
-      return extractAuthResult(client, data);
-    },
-    onSuccess: ({ accessToken, user }) => {
-      tokens.setAccessToken(accessToken || null);
-      setCurrentUser(user);
-      qc.setQueryData(['auth', 'me'], user);
+    mutationFn: async (payload: RegisterPayload): Promise<{ email: string }> => {
+      const { data } = await client.post<{ email: string } | null>('/auth/register', payload);
+      return { email: data?.email ?? payload.email };
     },
   });
 }

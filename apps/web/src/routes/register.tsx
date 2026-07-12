@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 
+import { RegisterForm } from '@/features/auth/register-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function RegisterRoute() {
@@ -11,9 +12,7 @@ export function RegisterRoute() {
           <CardDescription>Sign up in seconds — no credit card.</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Registration form arrives with the auth work in Step B4.
-          </p>
+          <RegisterForm />
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Already have an account?{' '}
             <Link to="/login" className="font-medium text-primary hover:underline">

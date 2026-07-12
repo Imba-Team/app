@@ -31,18 +31,33 @@ export const PasswordSchema = z
   .regex(/[0-9]/, 'At least one number')
   .regex(/[^A-Za-z0-9]/, 'At least one special character');
 
+export const UsernameSchema = z
+  .string()
+  .trim()
+  .min(3, 'At least 3 characters')
+  .max(30, 'Max 30 characters')
+  .regex(/^[a-z0-9_.-]+$/i, 'Letters, numbers, dot, dash, underscore only');
+
+// API payload — mirrors backend RegisterRequestDto.
 export const RegisterInput = z.object({
   email: EmailSchema,
   password: PasswordSchema,
-  displayName: z.string().trim().min(1).max(80),
-  username: z
-    .string()
-    .trim()
-    .min(3)
-    .max(30)
-    .regex(/^[a-z0-9_.-]+$/i, 'Letters, numbers, dot, dash, underscore only'),
+  username: UsernameSchema,
 });
 export type RegisterInput = z.infer<typeof RegisterInput>;
+
+// Form-level schema — adds confirm + TOS consent (SRS §6.3). The confirmPassword
+// and tos fields never hit the wire; stripped before submission.
+export const RegisterFormInput = RegisterInput.extend({
+  confirmPassword: z.string().min(1, 'Confirm your password'),
+  tos: z.literal(true, {
+    errorMap: () => ({ message: 'You must accept the terms' }),
+  }),
+}).refine((v) => v.password === v.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
+});
+export type RegisterFormInput = z.infer<typeof RegisterFormInput>;
 
 export const LoginInput = z.object({
   email: EmailSchema,
