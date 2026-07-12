@@ -1,5 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { useForgotPassword } from '@/lib/api/hooks/use-auth';
 import { ForgotPasswordInput } from '@/lib/utils/schemas';
 
 export function ForgotPasswordForm() {
+  const { t } = useTranslation('auth');
   const forgot = useForgotPassword();
 
   const {
@@ -24,15 +26,11 @@ export function ForgotPasswordForm() {
     await forgot.mutateAsync(values).catch(() => undefined);
   });
 
-  // The backend intentionally returns 200 whether or not the address exists
-  // (email-enumeration mitigation). We mirror that: always show success.
   if (forgot.isSuccess) {
     return (
       <Alert>
-        <AlertTitle>Check your inbox</AlertTitle>
-        <AlertDescription>
-          If an account exists for that email, we sent a reset link. It expires in 60 minutes.
-        </AlertDescription>
+        <AlertTitle>{t('forgot.successTitle')}</AlertTitle>
+        <AlertDescription>{t('forgot.successDescription')}</AlertDescription>
       </Alert>
     );
   }
@@ -40,19 +38,19 @@ export function ForgotPasswordForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t('fields.email')}</Label>
         <Input
           id="email"
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder={t('placeholders.email')}
           {...register('email')}
         />
         {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
       </div>
 
       <Button type="submit" className="w-full" disabled={isSubmitting || forgot.isPending}>
-        {forgot.isPending ? 'Sending…' : 'Send reset link'}
+        {forgot.isPending ? t('actions.sending') : t('actions.sendResetLink')}
       </Button>
     </form>
   );

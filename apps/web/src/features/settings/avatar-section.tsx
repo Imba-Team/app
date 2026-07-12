@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { useUpdateAvatar } from '@/lib/api/hooks/use-me';
 const MAX_BYTES = 5 * 1024 * 1024; // 5MB
 
 export function AvatarSection() {
+  const { t } = useTranslation('auth');
   const { currentUser } = useAuth();
   const upload = useUpdateAvatar();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -21,11 +23,11 @@ export function AvatarSection() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > MAX_BYTES) {
-      setLocalError('Image is larger than 5MB.');
+      setLocalError(t('settings.avatar.tooLarge'));
       return;
     }
     if (!file.type.startsWith('image/')) {
-      setLocalError('Only image files are allowed.');
+      setLocalError(t('settings.avatar.onlyImages'));
       return;
     }
     await upload.mutateAsync(file).catch(() => undefined);
@@ -35,8 +37,8 @@ export function AvatarSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Avatar</CardTitle>
-        <CardDescription>PNG or JPG up to 5MB.</CardDescription>
+        <CardTitle>{t('settings.avatar.title')}</CardTitle>
+        <CardDescription>{t('settings.avatar.description')}</CardDescription>
       </CardHeader>
       <CardContent className="flex items-center gap-4">
         <Avatar className="size-16">
@@ -60,11 +62,11 @@ export function AvatarSection() {
             onClick={() => inputRef.current?.click()}
             disabled={upload.isPending}
           >
-            {upload.isPending ? 'Uploading…' : 'Change avatar'}
+            {upload.isPending ? t('settings.avatar.uploading') : t('settings.avatar.change')}
           </Button>
           {localError && <p className="text-xs text-destructive">{localError}</p>}
           {upload.isError && !localError && (
-            <p className="text-xs text-destructive">Upload failed. Try again.</p>
+            <p className="text-xs text-destructive">{t('settings.avatar.uploadFailed')}</p>
           )}
         </div>
       </CardContent>

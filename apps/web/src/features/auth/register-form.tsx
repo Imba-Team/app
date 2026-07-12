@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,6 +11,7 @@ import { useRegister } from '@/lib/api/hooks/use-auth';
 import { RegisterFormInput } from '@/lib/utils/schemas';
 
 export function RegisterForm() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const register = useRegister();
 
@@ -32,8 +34,6 @@ export function RegisterForm() {
   const onSubmit = handleSubmit(async ({ email, username, password }) => {
     await register.mutateAsync({ email, username, password }, {
       onSuccess: () => {
-        // Backend returns 202 with { email } and sends a verification email.
-        // Hand off to a "check your inbox" state on the login page.
         navigate('/login?justRegistered=1', { replace: true });
       },
     });
@@ -43,36 +43,36 @@ export function RegisterForm() {
     register.error && !register.isPending
       ? ((register.error as { response?: { data?: { message?: string } } }).response?.data?.message ??
         (register.error as Error).message ??
-        'Registration failed. Please try again.')
+        t('register.failed'))
       : null;
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="username">Username</Label>
+        <Label htmlFor="username">{t('fields.username')}</Label>
         <Input
           id="username"
           autoComplete="username"
-          placeholder="janedoe"
+          placeholder={t('placeholders.username')}
           {...field('username')}
         />
         {errors.username && <p className="text-xs text-destructive">{errors.username.message}</p>}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t('fields.email')}</Label>
         <Input
           id="email"
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder={t('placeholders.email')}
           {...field('email')}
         />
         {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">{t('fields.password')}</Label>
         <Input
           id="password"
           type="password"
@@ -83,7 +83,7 @@ export function RegisterForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm password</Label>
+        <Label htmlFor="confirmPassword">{t('fields.confirmPassword')}</Label>
         <Input
           id="confirmPassword"
           type="password"
@@ -109,13 +109,13 @@ export function RegisterForm() {
           )}
         />
         <Label htmlFor="tos" className="text-sm font-normal leading-snug">
-          I agree to the{' '}
+          {t('register.tosAgree')}{' '}
           <a href="/terms" target="_blank" rel="noopener" className="underline">
-            Terms
+            {t('register.termsLink')}
           </a>{' '}
-          and{' '}
+          {t('register.and')}{' '}
           <a href="/privacy" target="_blank" rel="noopener" className="underline">
-            Privacy Policy
+            {t('register.privacyLink')}
           </a>
           .
         </Label>
@@ -125,7 +125,7 @@ export function RegisterForm() {
       {rootError && <p className="text-sm text-destructive">{rootError}</p>}
 
       <Button type="submit" className="w-full" disabled={isSubmitting || register.isPending}>
-        {register.isPending ? 'Creating account…' : 'Create account'}
+        {register.isPending ? t('actions.creatingAccount') : t('actions.createAccount')}
       </Button>
     </form>
   );

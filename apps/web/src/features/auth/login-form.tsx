@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import { useLogin } from '@/lib/api/hooks/use-auth';
 import { LoginInput } from '@/lib/utils/schemas';
 
 export function LoginForm() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const location = useLocation();
   const login = useLogin();
@@ -33,28 +35,27 @@ export function LoginForm() {
 
   const rootError =
     login.error && !login.isPending
-      ? // Backend error body first, then any Error.message we throw locally, then generic fallback.
-        ((login.error as { response?: { data?: { message?: string } } }).response?.data?.message ??
+      ? ((login.error as { response?: { data?: { message?: string } } }).response?.data?.message ??
         (login.error as Error).message ??
-        'Sign-in failed. Please try again.')
+        t('login.failed'))
       : null;
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t('fields.email')}</Label>
         <Input
           id="email"
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder={t('placeholders.email')}
           {...register('email')}
         />
         {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">{t('fields.password')}</Label>
         <Input
           id="password"
           type="password"
@@ -67,7 +68,7 @@ export function LoginForm() {
       {rootError && <p className="text-sm text-destructive">{rootError}</p>}
 
       <Button type="submit" className="w-full" disabled={isSubmitting || login.isPending}>
-        {login.isPending ? 'Signing in…' : 'Sign in'}
+        {login.isPending ? t('actions.signingIn') : t('actions.signIn')}
       </Button>
     </form>
   );

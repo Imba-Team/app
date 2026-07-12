@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/lib/api/hooks/auth-context';
@@ -13,6 +14,7 @@ type User = components['schemas']['UserResponseDto'];
  * context, and hand off to the dashboard. On failure we bounce to /login.
  */
 export function OAuthCallbackRoute() {
+  const { t } = useTranslation('auth');
   const { provider } = useParams<{ provider: string }>();
   const [params] = useSearchParams();
   const ok = params.get('ok') === '1';
@@ -45,9 +47,9 @@ export function OAuthCallbackRoute() {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <Alert variant="destructive" className="max-w-md">
-          <AlertTitle>Sign-in failed</AlertTitle>
+          <AlertTitle>{t('oauth.failedTitle')}</AlertTitle>
           <AlertDescription>
-            The {provider} sign-in didn't complete. Try again from the login page.
+            {t('oauth.failedDescription', { provider: provider ?? 'OAuth' })}
           </AlertDescription>
         </Alert>
       </div>
@@ -56,7 +58,7 @@ export function OAuthCallbackRoute() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 text-sm text-muted-foreground">
-      Finishing sign-in…
+      {t('oauth.signingIn')}
     </div>
   );
 }

@@ -6,7 +6,7 @@ describe('createI18n', () => {
   it('resolves keys from the requested namespace', () => {
     const i18n = createI18n({ lng: 'en' });
     expect(i18n.t('actions.save', { ns: 'common' })).toBe('Save');
-    expect(i18n.t('loginTitle', { ns: 'auth' })).toBe('Welcome back');
+    expect(i18n.t('login.title', { ns: 'auth' })).toBe('Welcome back');
     expect(i18n.t('modes.flashcards', { ns: 'study' })).toBe('Flashcards');
   });
 

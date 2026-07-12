@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +19,7 @@ import { useAuth } from '@/lib/api/hooks/auth-context';
 import { useDeleteMyAccount } from '@/lib/api/hooks/use-me';
 
 export function DeleteAccountSection() {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const del = useDeleteMyAccount();
@@ -39,26 +41,23 @@ export function DeleteAccountSection() {
   return (
     <Card className="border-destructive/40">
       <CardHeader>
-        <CardTitle className="text-destructive">Delete account</CardTitle>
-        <CardDescription>
-          Permanently removes your account, sets, and study history. This cannot be undone.
-        </CardDescription>
+        <CardTitle className="text-destructive">{t('settings.delete.title')}</CardTitle>
+        <CardDescription>{t('settings.delete.description')}</CardDescription>
       </CardHeader>
       <CardContent>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button variant="destructive">Delete my account</Button>
+            <Button variant="destructive">{t('settings.delete.button')}</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Delete account?</DialogTitle>
+              <DialogTitle>{t('settings.delete.dialogTitle')}</DialogTitle>
               <DialogDescription>
-                Type your username <span className="font-mono font-medium">{username}</span> to
-                confirm. Your account is scheduled for deletion immediately.
+                {t('settings.delete.dialogDescription', { username })}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
-              <Label htmlFor="confirm-username">Username</Label>
+              <Label htmlFor="confirm-username">{t('fields.username')}</Label>
               <Input
                 id="confirm-username"
                 value={typed}
@@ -68,20 +67,20 @@ export function DeleteAccountSection() {
               />
             </div>
             {del.isError && (
-              <p className="text-xs text-destructive">
-                Deletion failed. Try again or contact support.
-              </p>
+              <p className="text-xs text-destructive">{t('settings.delete.failed')}</p>
             )}
             <DialogFooter>
               <Button variant="ghost" onClick={() => setOpen(false)}>
-                Cancel
+                {t('settings.delete.cancel')}
               </Button>
               <Button
                 variant="destructive"
                 onClick={onDelete}
                 disabled={!canConfirm || del.isPending}
               >
-                {del.isPending ? 'Deleting…' : 'Delete permanently'}
+                {del.isPending
+                  ? t('settings.delete.deleting')
+                  : t('settings.delete.deleteButton')}
               </Button>
             </DialogFooter>
           </DialogContent>

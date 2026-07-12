@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { useResetPassword } from '@/lib/api/hooks/use-auth';
 import { ResetPasswordFormInput } from '@/lib/utils/schemas';
 
 export function ResetPasswordForm({ token }: { token: string }) {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const reset = useResetPassword();
 
@@ -37,14 +39,14 @@ export function ResetPasswordForm({ token }: { token: string }) {
     reset.error && !reset.isPending
       ? ((reset.error as { response?: { data?: { message?: string } } }).response?.data?.message ??
         (reset.error as Error).message ??
-        'Reset failed. The link may have expired.')
+        t('reset.failed'))
       : null;
 
   if (reset.isSuccess) {
     return (
       <Alert>
-        <AlertTitle>Password updated</AlertTitle>
-        <AlertDescription>Redirecting to sign in…</AlertDescription>
+        <AlertTitle>{t('reset.successTitle')}</AlertTitle>
+        <AlertDescription>{t('reset.successDescription')}</AlertDescription>
       </Alert>
     );
   }
@@ -52,7 +54,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="password">New password</Label>
+        <Label htmlFor="password">{t('fields.newPassword')}</Label>
         <Input
           id="password"
           type="password"
@@ -63,7 +65,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm new password</Label>
+        <Label htmlFor="confirmPassword">{t('fields.confirmNewPassword')}</Label>
         <Input
           id="confirmPassword"
           type="password"
@@ -78,7 +80,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       {rootError && <p className="text-sm text-destructive">{rootError}</p>}
 
       <Button type="submit" className="w-full" disabled={isSubmitting || reset.isPending}>
-        {reset.isPending ? 'Updating…' : 'Update password'}
+        {reset.isPending ? t('actions.updating') : t('actions.updatePassword')}
       </Button>
     </form>
   );

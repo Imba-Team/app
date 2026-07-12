@@ -1,5 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +12,7 @@ import { useUpdateMyProfile } from '@/lib/api/hooks/use-me';
 import { UpdateProfileInput } from '@/lib/utils/schemas';
 
 export function ProfileSection() {
+  const { t } = useTranslation('auth');
   const { currentUser } = useAuth();
   const update = useUpdateMyProfile();
 
@@ -37,29 +39,29 @@ export function ProfileSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Profile</CardTitle>
-        <CardDescription>How other learners see you.</CardDescription>
+        <CardTitle>{t('settings.profile.title')}</CardTitle>
+        <CardDescription>{t('settings.profile.description')}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Display name</Label>
+            <Label htmlFor="name">{t('fields.name')}</Label>
             <Input id="name" {...register('name')} />
             {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bio">Bio</Label>
+            <Label htmlFor="bio">{t('fields.bio')}</Label>
             <Textarea id="bio" rows={3} maxLength={280} {...register('bio')} />
             {errors.bio && <p className="text-xs text-destructive">{errors.bio.message}</p>}
           </div>
 
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={isSubmitting || update.isPending || !isDirty}>
-              {update.isPending ? 'Saving…' : 'Save'}
+              {update.isPending ? t('settings.profile.saving') : t('settings.profile.save')}
             </Button>
             {update.isSuccess && !isDirty && (
-              <span className="text-xs text-muted-foreground">Saved</span>
+              <span className="text-xs text-muted-foreground">{t('settings.profile.saved')}</span>
             )}
           </div>
         </form>

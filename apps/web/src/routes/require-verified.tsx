@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { useResendVerification } from '@/lib/api/hooks/use-auth';
  * a resend button instead of the guarded content.
  */
 export function RequireVerified({ children }: { children: ReactNode }) {
+  const { t } = useTranslation('auth');
   const { currentUser } = useAuth();
   const location = useLocation();
   const resend = useResendVerification();
@@ -28,12 +30,9 @@ export function RequireVerified({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto max-w-xl p-6">
       <Alert>
-        <AlertTitle>Verify your email to continue</AlertTitle>
+        <AlertTitle>{t('requireVerified.title')}</AlertTitle>
         <AlertDescription className="space-y-3">
-          <p>
-            We sent a link to <span className="font-medium">{currentUser.email}</span>. Click it to
-            unlock study modes and everything else on your account.
-          </p>
+          <p>{t('requireVerified.description', { email: currentUser.email })}</p>
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
@@ -41,13 +40,13 @@ export function RequireVerified({ children }: { children: ReactNode }) {
               disabled={resend.isPending || resend.isSuccess}
             >
               {resend.isSuccess
-                ? 'Sent — check your inbox'
+                ? t('requireVerified.resendSent')
                 : resend.isPending
-                  ? 'Sending…'
-                  : 'Resend verification email'}
+                  ? t('requireVerified.sending')
+                  : t('actions.resendVerification')}
             </Button>
             <Button asChild size="sm" variant="ghost">
-              <Link to="/">Back to dashboard</Link>
+              <Link to="/">{t('requireVerified.backToDashboard')}</Link>
             </Button>
           </div>
         </AlertDescription>

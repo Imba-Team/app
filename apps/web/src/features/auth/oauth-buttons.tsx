@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { Button } from '@/components/ui/button';
 
 // OAuth must hit the real backend origin (not the Vite proxy) because the
@@ -7,6 +9,7 @@ const BACKEND_ORIGIN =
   import.meta.env.VITE_BACKEND_ORIGIN ?? 'http://localhost:9090';
 
 export function OAuthButtons() {
+  const { t } = useTranslation('auth');
   const startGoogle = () => {
     window.location.href = `${BACKEND_ORIGIN}/auth/google`;
   };
@@ -14,7 +17,7 @@ export function OAuthButtons() {
   return (
     <div className="space-y-2">
       <Button type="button" variant="outline" className="w-full" onClick={startGoogle}>
-        Continue with Google
+        {t('oauth.continueWithGoogle')}
       </Button>
       {/* Apple OAuth ships in Sprint 1b (backend AppleStrategy pending). */}
     </div>
