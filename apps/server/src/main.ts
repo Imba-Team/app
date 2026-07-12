@@ -19,15 +19,13 @@ async function bootstrap() {
   // Use Helmet for security headers
   app.use(helmet());
 
-  // Enable CORS if needed
   app.enableCors({
-    // Explicit origins without trailing slashes to match browser Origin header
     origin: [
-      'http://localhost:3000',
-      'https://quizlet-taupe.vercel.app',
-      'https://imba-learn.vercel.app',
+      'http://localhost:9000', // dev — direct (bypasses the Vite proxy)
+      'https://mimir.app', // prod web
+      'https://staging.mimir.app', // staging web
     ],
-    credentials: true,
+    credentials: true, // required for the HttpOnly refresh cookie
   });
 
   // Enable global validation pipe
