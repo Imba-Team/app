@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 
@@ -16,14 +16,13 @@ export function VerifyEmailRoute() {
   const verify = useVerifyEmail();
   const resend = useResendVerification();
   const [resendEmail, setResendEmail] = useState('');
-  const attempted = useRef(false);
+  const { mutate: mutateVerify } = verify;
 
+  // Fire once on mount when the token is present. mutate is stable per
+  // react-query, so this doesn't re-run on state transitions.
   useEffect(() => {
-    if (token && !attempted.current) {
-      attempted.current = true;
-      verify.mutate({ token });
-    }
-  }, [token, verify]);
+    if (token) mutateVerify({ token });
+  }, [token, mutateVerify]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
