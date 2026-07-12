@@ -1,7 +1,8 @@
 // auth.module.ts
 import { forwardRef, Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
+import type { StringValue } from 'ms';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthHealthController } from './auth-health.controller';
@@ -21,7 +22,7 @@ import { loadJwtKeyPair } from 'src/common/jwt/key-loader';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => {
+      useFactory: (cfg: ConfigService): JwtModuleOptions => {
         const keys = loadJwtKeyPair(cfg);
         const issuer = cfg.get<string>('JWT_ISSUER') ?? 'mimir-api';
         return {
@@ -29,7 +30,7 @@ import { loadJwtKeyPair } from 'src/common/jwt/key-loader';
           publicKey: keys.publicKey,
           signOptions: {
             algorithm: 'RS256',
-            expiresIn: cfg.get<string>('JWT_ACCESS_TTL') ?? '15m',
+            expiresIn: (cfg.get<string>('JWT_ACCESS_TTL') ?? '15m') as StringValue,
             issuer,
           },
           verifyOptions: {

@@ -1,13 +1,24 @@
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 
 // Where Vite forwards /api/* requests during dev.
 // Override with VITE_DEV_API_PROXY_TARGET if the backend runs elsewhere.
 const DEV_API_PROXY_TARGET = process.env.VITE_DEV_API_PROXY_TARGET ?? 'http://localhost:9090';
 
+const logAddress = (): Plugin => ({
+  name: 'log-address',
+  configureServer(server) {
+    server.httpServer?.once('listening', () => {
+      const addr = server.httpServer?.address();
+      const port = typeof addr === 'object' && addr ? addr.port : server.config.server.port;
+      console.log(`Application is running on: http://localhost:${port}`);
+    });
+  },
+});
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), logAddress()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
