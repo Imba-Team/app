@@ -2685,15 +2685,29 @@
           "email": {
             "type": "string"
           },
+          "username": {
+            "type": "string"
+          },
           "name": {
             "type": "string",
             "description": "Display name (maps from username)"
           },
+          "bio": {
+            "type": "string",
+            "nullable": true
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
           "status": {
-            "type": "object"
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive"
+            ]
           },
           "role": {
-            "type": "object"
+            "type": "string"
           },
           "createdAt": {
             "format": "date-time",
@@ -2704,14 +2718,17 @@
             "type": "string"
           },
           "profilePicture": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           }
         },
         "required": [
           "id",
           "email",
+          "username",
           "name",
+          "bio",
+          "emailVerified",
           "status",
           "role",
           "createdAt",

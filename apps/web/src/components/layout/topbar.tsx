@@ -14,7 +14,7 @@ export function Topbar() {
       <div className="text-sm text-muted-foreground">
         Signed in as{' '}
         <span className="font-medium text-foreground">
-          {currentUser?.displayName ?? currentUser?.email ?? '—'}
+          {currentUser?.name ?? currentUser?.email ?? '—'}
         </span>
       </div>
       <div className="flex items-center gap-2">

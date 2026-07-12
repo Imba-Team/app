@@ -13,12 +13,24 @@ export class UserResponseDto {
   email: string;
 
   @Expose()
+  @ApiProperty()
+  username: string;
+
+  @Expose()
   @ApiProperty({ description: 'Display name (maps from username)' })
   @Transform(({ obj }) => (obj as { username?: string }).username ?? '')
   name: string;
 
   @Expose()
+  @ApiProperty({ type: String, nullable: true })
+  bio?: string | null;
+
+  @Expose()
   @ApiProperty()
+  emailVerified: boolean;
+
+  @Expose()
+  @ApiProperty({ type: String, enum: ['active', 'inactive'] })
   @Transform(({ obj }) => {
     const s = (obj as { status?: string | null }).status;
     return s === 'inactive' ? 'inactive' : 'active';
@@ -26,7 +38,7 @@ export class UserResponseDto {
   status: UserStatus;
 
   @Expose()
-  @ApiProperty()
+  @ApiProperty({ type: String })
   role: Role;
 
   @Expose()
@@ -38,6 +50,6 @@ export class UserResponseDto {
   updatedAt: Date;
 
   @Expose()
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   profilePicture?: string | null;
 }

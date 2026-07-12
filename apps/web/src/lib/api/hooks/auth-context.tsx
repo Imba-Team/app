@@ -4,7 +4,7 @@ import type { AxiosInstance } from 'axios';
 import type { TokenStore } from '../token-store.js';
 import type { components } from '../generated/api-types.js';
 
-type User = components['schemas']['User'];
+type User = components['schemas']['UserResponseDto'];
 
 interface AuthContextValue {
   client: AxiosInstance;

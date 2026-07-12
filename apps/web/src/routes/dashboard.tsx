@@ -7,7 +7,7 @@ export function DashboardRoute() {
     <div className="space-y-6">
       <header>
         <h1 className="text-3xl font-semibold">
-          Welcome back{currentUser?.displayName ? `, ${currentUser.displayName}` : ''}
+          Welcome back{currentUser?.name ? `, ${currentUser.name}` : ''}
         </h1>
         <p className="text-muted-foreground">Your study queue and recent sets will land here.</p>
       </header>

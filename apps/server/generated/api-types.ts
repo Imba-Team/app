@@ -1299,17 +1299,21 @@ export interface components {
             isPrivate: boolean;
         };
         UserResponseDto: {
+            bio: string | null;
             /** Format: date-time */
             createdAt: string;
             email: string;
+            emailVerified: boolean;
             id: string;
             /** @description Display name (maps from username) */
             name: string;
-            profilePicture: Record<string, never> | null;
-            role: Record<string, never>;
-            status: Record<string, never>;
+            profilePicture: string | null;
+            role: string;
+            /** @enum {string} */
+            status: "active" | "inactive";
             /** Format: date-time */
             updatedAt: string;
+            username: string;
         };
         VerifyEmailRequestDto: {
             /**

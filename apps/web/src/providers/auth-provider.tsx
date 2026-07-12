@@ -5,8 +5,12 @@ import { createApiClient, createMemoryTokenStore } from '@/lib/api';
 import { AuthProvider as AuthContextProvider } from '@/lib/api/hooks/auth-context';
 import type { components } from '@/lib/api/generated/api-types';
 
-type User = components['schemas']['User'];
-type AuthResponse = components['schemas']['AuthResponse'];
+type User = components['schemas']['UserResponseDto'];
+
+interface AuthResponse {
+  accessToken?: string;
+  user?: User;
+}
 
 // Falls back to the Vite dev-server proxy path so login works with just `pnpm dev`.
 // Override via VITE_API_BASE_URL in .env for staging/prod (see .env.example).

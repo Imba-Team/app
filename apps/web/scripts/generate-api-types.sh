@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-# Regenerate TypeScript types from the backend's OpenAPI spec.
+# Sync frontend API types from the backend's OpenAPI-generated types.
+#
+# In the monorepo the backend produces the canonical types offline via
+# `pnpm --filter @mimir/server openapi`. This script re-runs that and copies
+# the result into apps/web/src/lib/api/generated/api-types.ts.
 #
 # Usage:
-#   pnpm generate:api-types              # fetch + overwrite src/lib/api/generated/api-types.ts
-#   pnpm generate:api-types:check        # CI mode: fail non-zero if committed file drifts
-#   BACKEND_STAGING_URL=https://staging.api.mimir.app pnpm generate:api-types
-#
-# Env:
-#   BACKEND_STAGING_URL   Backend base URL (default: http://localhost:3000)
-#                         The script appends /api/docs-json.
+#   pnpm generate:api-types          # regenerate + overwrite
+#   pnpm generate:api-types:check    # CI mode: fail if the committed file drifts
 
 set -euo pipefail
 
@@ -16,32 +15,28 @@ MODE="write"
 if [[ "${1:-}" == "--check" ]]; then
   MODE="check"
 elif [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
-  sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'
   exit 0
 fi
 
-SPEC_URL="${BACKEND_STAGING_URL:-http://localhost:3000}/api/docs-json"
-OUT_DIR="src/lib/api/generated"
+WEB_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+SERVER_TYPES="${WEB_ROOT}/../server/generated/api-types.ts"
+OUT_DIR="${WEB_ROOT}/src/lib/api/generated"
 OUT_FILE="${OUT_DIR}/api-types.ts"
 
 mkdir -p "${OUT_DIR}"
 
-# Fail fast with a readable message if the backend isn't reachable.
-if ! curl -sSf -o /dev/null "${SPEC_URL}"; then
-  echo "ERROR: could not fetch OpenAPI spec from ${SPEC_URL}" >&2
-  echo "       Is the backend running? Set BACKEND_STAGING_URL to point at a live instance." >&2
+echo "Regenerating backend OpenAPI spec + types..."
+pnpm --filter @mimir/server openapi >/dev/null
+
+if [[ ! -f "${SERVER_TYPES}" ]]; then
+  echo "ERROR: backend types not found at ${SERVER_TYPES}" >&2
   exit 2
 fi
 
 if [[ "${MODE}" == "check" ]]; then
-  TMP_FILE="$(mktemp -t mimir-api-types.XXXXXX.ts)"
-  trap 'rm -f "${TMP_FILE}"' EXIT
-
-  echo "Fetching OpenAPI spec from ${SPEC_URL} (check mode)..."
-  pnpm exec openapi-typescript "${SPEC_URL}" --output "${TMP_FILE}" >/dev/null
-
-  if diff -u "${OUT_FILE}" "${TMP_FILE}"; then
-    echo "OK: ${OUT_FILE} matches the live spec."
+  if diff -u "${OUT_FILE}" "${SERVER_TYPES}"; then
+    echo "OK: ${OUT_FILE} matches backend types."
     exit 0
   else
     echo "" >&2
@@ -51,6 +46,5 @@ if [[ "${MODE}" == "check" ]]; then
   fi
 fi
 
-echo "Fetching OpenAPI spec from ${SPEC_URL}..."
-pnpm exec openapi-typescript "${SPEC_URL}" --output "${OUT_FILE}"
-echo "Types generated at ${OUT_FILE}"
+cp "${SERVER_TYPES}" "${OUT_FILE}"
+echo "Types synced to ${OUT_FILE}"

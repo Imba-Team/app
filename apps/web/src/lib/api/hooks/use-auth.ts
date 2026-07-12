@@ -3,8 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '../generated/api-types.js';
 import { useAuth } from './auth-context.js';
 
-type AuthResponse = components['schemas']['AuthResponse'];
-type User = components['schemas']['User'];
+type User = components['schemas']['UserResponseDto'];
+
+// Backend is cookie-only (returns { ok, data: null }); some deployments may return
+// { accessToken, user } in the body, so the auth flow accepts either shape.
+interface AuthResponse {
+  accessToken?: string;
+  user?: User;
+}
 
 export interface LoginPayload {
   email: string;
@@ -104,7 +110,7 @@ export function useCurrentUser() {
   return useQuery({
     queryKey: ['auth', 'me'] as const,
     queryFn: async (): Promise<User> => {
-      const { data } = await client.get<User>('/auth/me');
+      const { data } = await client.get<User>('/users/me');
       return data;
     },
     initialData: currentUser ?? undefined,
