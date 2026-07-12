@@ -2,11 +2,13 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 
 import { RootLayout } from './root-layout';
 import { RequireAuth } from './require-auth';
+import { RequireVerified } from './require-verified';
 import { LoginRoute } from './login';
 import { RegisterRoute } from './register';
 import { ForgotPasswordRoute } from './forgot-password';
 import { ResetPasswordRoute } from './reset-password';
 import { VerifyEmailRoute } from './verify-email';
+import { OAuthCallbackRoute } from './oauth-callback';
 import { DashboardRoute } from './dashboard';
 import { LibraryRoute } from './library';
 import { SetDetailRoute } from './set-detail';
@@ -37,6 +39,7 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
   { path: '/forgot-password', element: <ForgotPasswordRoute /> },
   { path: '/reset-password', element: <ResetPasswordRoute /> },
   { path: '/auth/verify-email', element: <VerifyEmailRoute /> },
+  { path: '/auth/callback/:provider', element: <OAuthCallbackRoute /> },
   {
     path: '/',
     element: (
@@ -48,7 +51,14 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
       { index: true, element: <DashboardRoute /> },
       { path: 'library', element: <LibraryRoute /> },
       { path: 'sets/:setId', element: <SetDetailRoute /> },
-      { path: 'sets/:setId/study/:mode', element: <SetStudyRoute /> },
+      {
+        path: 'sets/:setId/study/:mode',
+        element: (
+          <RequireVerified>
+            <SetStudyRoute />
+          </RequireVerified>
+        ),
+      },
       { path: 'classroom', element: <ClassroomRoute /> },
       { path: 'progress', element: <ProgressRoute /> },
       { path: 'discover', element: <DiscoverRoute /> },

@@ -300,27 +300,20 @@ export class AuthController {
   @UseGuards(GoogleOauthGuard)
   @ApiOperation({ summary: 'Google OAuth2 callback handler' })
   @ApiResponse({
-    status: 200,
-    description: 'Successfully authenticated with Google',
-    schema: {
-      example: {
-        ok: true,
-        message: 'Authentication successful',
-        data: null,
-      },
-    },
+    status: 302,
+    description:
+      'Sets the session cookies and redirects to the SPA callback route ' +
+      '(FRONTEND_URL/auth/callback/google?ok=1). The frontend then loads /users/me.',
   })
   async googleAuthCallback(
     @Req() req: Request & { user: { id: string; email: string } },
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<ResponseDto<null>> {
+    @Res() res: Response,
+  ): Promise<void> {
     const session = await this.authService.loginViaGoogle(req.user, req);
     this.authService.finalizeLogin(res, session);
 
-    return {
-      ok: true,
-      message: 'Authentication successful',
-      data: null,
-    };
+    const frontend =
+      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:9000';
+    res.redirect(`${frontend}/auth/callback/google?ok=1`);
   }
 }

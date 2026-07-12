@@ -1,8 +1,10 @@
 import { Link, useSearchParams } from 'react-router-dom';
 
 import { LoginForm } from '@/features/auth/login-form';
+import { OAuthButtons } from '@/features/auth/oauth-buttons';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 
 export function LoginRoute() {
   const [params] = useSearchParams();
@@ -25,6 +27,12 @@ export function LoginRoute() {
             </Alert>
           )}
           <LoginForm />
+          <div className="flex items-center gap-2">
+            <Separator className="flex-1" />
+            <span className="text-xs uppercase text-muted-foreground">or</span>
+            <Separator className="flex-1" />
+          </div>
+          <OAuthButtons />
           <p className="text-center text-sm text-muted-foreground">
             No account yet?{' '}
             <Link to="/register" className="font-medium text-primary hover:underline">
