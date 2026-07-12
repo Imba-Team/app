@@ -1,0 +1,26 @@
+{
+  "name": "mimir",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Mimir monorepo — NestJS backend (@mimir/server) + Vite/React frontend (@mimir/web).",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20.10.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --stream run dev",
+    "dev:server": "pnpm --filter @mimir/server dev",
+    "dev:web": "pnpm --filter @mimir/web dev",
+    "build": "pnpm -r run build",
+    "build:server": "pnpm --filter @mimir/server build",
+    "build:web": "pnpm --filter @mimir/web build",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\" --ignore-path .gitignore",
+    "clean": "pnpm -r exec rm -rf dist coverage .turbo && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2"
+  }
+}

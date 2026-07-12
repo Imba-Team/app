@@ -1,7 +1,7 @@
 {
-  "name": "nest-boilerplate",
+  "name": "@mimir/server",
   "version": "0.0.1",
-  "description": "",
+  "description": "Mimir NestJS backend — API, SRS engine, auth, learning services.",
   "author": "",
   "private": true,
   "license": "UNLICENSED",

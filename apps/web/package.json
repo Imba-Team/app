@@ -1,5 +1,5 @@
 {
-  "name": "mimir-web",
+  "name": "@mimir/web",
   "version": "0.0.0",
   "private": true,
   "description": "Mimir web frontend — Vite + React 18 SPA. Talks to the mimir-backend NestJS monolith via its OpenAPI spec.",
