@@ -4,6 +4,9 @@ import { RootLayout } from './root-layout';
 import { RequireAuth } from './require-auth';
 import { LoginRoute } from './login';
 import { RegisterRoute } from './register';
+import { ForgotPasswordRoute } from './forgot-password';
+import { ResetPasswordRoute } from './reset-password';
+import { VerifyEmailRoute } from './verify-email';
 import { DashboardRoute } from './dashboard';
 import { LibraryRoute } from './library';
 import { SetDetailRoute } from './set-detail';
@@ -31,6 +34,9 @@ import { NotFoundRoute } from './not-found';
 export const router: ReturnType<typeof createBrowserRouter> = createBrowserRouter([
   { path: '/login', element: <LoginRoute /> },
   { path: '/register', element: <RegisterRoute /> },
+  { path: '/forgot-password', element: <ForgotPasswordRoute /> },
+  { path: '/reset-password', element: <ResetPasswordRoute /> },
+  { path: '/auth/verify-email', element: <VerifyEmailRoute /> },
   {
     path: '/',
     element: (

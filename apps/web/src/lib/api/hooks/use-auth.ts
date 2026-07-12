@@ -87,6 +87,64 @@ export function useRegister() {
   });
 }
 
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export function useForgotPassword() {
+  const { client } = useAuth();
+
+  return useMutation({
+    mutationFn: async (payload: ForgotPasswordPayload): Promise<void> => {
+      await client.post('/auth/forgot-password', payload);
+    },
+  });
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  password: string;
+  confirmPassword: string;
+}
+
+export function useResetPassword() {
+  const { client } = useAuth();
+
+  return useMutation({
+    mutationFn: async (payload: ResetPasswordPayload): Promise<void> => {
+      await client.post('/auth/reset-password', payload);
+    },
+  });
+}
+
+export interface VerifyEmailPayload {
+  token: string;
+}
+
+export function useVerifyEmail() {
+  const { client } = useAuth();
+
+  return useMutation({
+    mutationFn: async (payload: VerifyEmailPayload): Promise<void> => {
+      await client.post('/auth/verify-email', payload);
+    },
+  });
+}
+
+export interface ResendVerificationPayload {
+  email: string;
+}
+
+export function useResendVerification() {
+  const { client } = useAuth();
+
+  return useMutation({
+    mutationFn: async (payload: ResendVerificationPayload): Promise<void> => {
+      await client.post('/auth/resend-verification', payload);
+    },
+  });
+}
+
 export function useLogout() {
   const { client, tokens, setCurrentUser } = useAuth();
   const qc = useQueryClient();

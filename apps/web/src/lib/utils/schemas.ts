@@ -65,6 +65,22 @@ export const LoginInput = z.object({
 });
 export type LoginInput = z.infer<typeof LoginInput>;
 
+export const ForgotPasswordInput = z.object({
+  email: EmailSchema,
+});
+export type ForgotPasswordInput = z.infer<typeof ForgotPasswordInput>;
+
+export const ResetPasswordFormInput = z
+  .object({
+    password: PasswordSchema,
+    confirmPassword: z.string().min(1, 'Confirm your password'),
+  })
+  .refine((v) => v.password === v.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
+export type ResetPasswordFormInput = z.infer<typeof ResetPasswordFormInput>;
+
 // -------- Study Set / Card --------
 
 export const CardFields = z.object({
