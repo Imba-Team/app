@@ -17,6 +17,7 @@ import { ClassroomRoute } from './classroom';
 import { ProgressRoute } from './progress';
 import { DiscoverRoute } from './discover';
 import { ProfileRoute } from './profile';
+import { SettingsAccountRoute } from './settings-account';
 import { DemoRoute } from './demo';
 import { NotFoundRoute } from './not-found';
 
@@ -63,6 +64,7 @@ export const router: ReturnType<typeof createBrowserRouter> = createBrowserRoute
       { path: 'progress', element: <ProgressRoute /> },
       { path: 'discover', element: <DiscoverRoute /> },
       { path: 'profile/:username', element: <ProfileRoute /> },
+      { path: 'settings/account', element: <SettingsAccountRoute /> },
       { path: 'demo', element: <DemoRoute /> },
       { path: '*', element: <NotFoundRoute /> },
     ],

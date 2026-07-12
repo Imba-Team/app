@@ -1,4 +1,5 @@
-import { LogOut } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,12 @@ export function Topbar() {
       </div>
       <div className="flex items-center gap-2">
         <ThemeToggle />
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/settings/account">
+            <Settings className="size-4" />
+            Settings
+          </Link>
+        </Button>
         <Button
           variant="ghost"
           size="sm"

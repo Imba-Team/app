@@ -81,6 +81,24 @@ export const ResetPasswordFormInput = z
   });
 export type ResetPasswordFormInput = z.infer<typeof ResetPasswordFormInput>;
 
+export const UpdateProfileInput = z.object({
+  name: z.string().trim().min(2, 'At least 2 characters').max(50, 'Max 50 characters'),
+  bio: z.string().trim().max(280, 'Max 280 characters').optional().or(z.literal('')),
+});
+export type UpdateProfileInput = z.infer<typeof UpdateProfileInput>;
+
+export const ChangePasswordFormInput = z
+  .object({
+    oldPassword: z.string().min(1, 'Current password is required'),
+    newPassword: PasswordSchema,
+    confirmPassword: z.string().min(1, 'Confirm your password'),
+  })
+  .refine((v) => v.newPassword === v.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
+export type ChangePasswordFormInput = z.infer<typeof ChangePasswordFormInput>;
+
 // -------- Study Set / Card --------
 
 export const CardFields = z.object({
