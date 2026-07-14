@@ -1,68 +1,63 @@
 export const colors = {
   /**
-   * Iris Green — Mimir's brand color. Warm chartreuse/olive.
-   * The 400 shade (#ACBD6F, provided) is the DEFAULT — used for shadcn --primary.
-   * Shades 100/200/400 come from the source palette; the rest are interpolated.
+   * Coinbase-inspired brand blue. The 600 shade is the default for primary actions.
    */
   brand: {
-    50: '#f6f9ec',
-    100: '#e4ebca', // source
-    200: '#cbd581', // source
-    300: '#bacb76',
-    400: '#acbd6f', // source — DEFAULT
-    500: '#96aa5b',
-    600: '#7f9147',
-    700: '#657339',
-    800: '#4c5628',
-    900: '#3a4220',
-    950: '#1f2410',
+    50: '#f2f7ff',
+    100: '#dcecff',
+    200: '#b8d2ff',
+    300: '#85b2ff',
+    400: '#4f89ff',
+    500: '#2468ff',
+    600: '#0052ff', // default
+    700: '#003ed6',
+    800: '#002ca4',
+    900: '#001d72',
+    950: '#08113c',
   },
   /**
-   * Warm neutrals — Greige → Weathered Taupe.
-   * 100/300/700 are source palette shades. The rest are interpolated so we have
-   * a full Tailwind-style scale (bg-neutral-50 through bg-neutral-950).
+   * Slate neutrals for surfaces, borders, and text on the new fintech-inspired UI.
    */
   neutral: {
     0: '#ffffff',
-    50: '#faf8f4',
-    100: '#efeae4', // source (greige light)
-    200: '#dfd8ce',
-    300: '#cbc5b9', // source (greige)
-    400: '#a89f8f',
-    500: '#857c6c',
-    600: '#6a6255',
-    700: '#534d41', // source (weathered taupe)
-    800: '#3d3830',
-    900: '#2b2822',
-    950: '#1a1814',
+    50: '#f7f9fc',
+    100: '#eef2f7',
+    200: '#dde3ec',
+    300: '#c1c9d6',
+    400: '#97a2b3',
+    500: '#69748a',
+    600: '#525b6d',
+    700: '#3b4354',
+    800: '#272d3a',
+    900: '#171c25',
+    950: '#0b1018',
   },
   /**
-   * Yellow Stone — warm accent. Feeds shadcn --accent and any highlight surface.
-   * 200/400/500 are source palette shades.
+   * Emerald accent used for highlights, success states, and subtle emphasis.
    */
   warm: {
-    50: '#fdf9e6',
-    100: '#faf2c4',
-    200: '#f6e9a8', // source
-    300: '#ecdc94',
-    400: '#e2d783', // source — DEFAULT
-    500: '#d0bf72', // source
-    600: '#a99852',
-    700: '#7f7238',
-    800: '#5b5227',
-    900: '#3f381c',
-    950: '#232010',
+    50: '#f0fbf7',
+    100: '#d9f5ea',
+    200: '#b6ebd4',
+    300: '#87d9bb',
+    400: '#4bc996',
+    500: '#22b67d',
+    600: '#14915d',
+    700: '#0f7045',
+    800: '#0b4e33',
+    900: '#072f22',
+    950: '#041910',
   },
   semantic: {
-    success: '#7f9147', // brand-600 — deep iris green
-    warning: '#d0bf72', // warm-500 — yellow stone
-    danger: '#a6553f', // warm terra — synthesized to harmonize with the earthy palette
-    info: '#5f6b7a', // muted blue-gray — synthesized
+    success: '#14915d',
+    warning: '#f59e0b',
+    danger: '#e04f39',
+    info: '#0052ff',
   },
   mastery: {
-    new: '#a89f8f', // neutral-400 — muted warm gray
-    learning: '#d0bf72', // warm-500 — yellow stone
-    mastered: '#7f9147', // brand-600 — deep iris green
+    new: '#97a2b3',
+    learning: '#4f89ff',
+    mastered: '#14915d',
   },
 } as const;
 

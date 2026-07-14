@@ -11,67 +11,66 @@
 
 @layer base {
   :root {
-    /* Surfaces — warm off-white on top of Weathered Taupe deep-text */
-    --background: 40 27% 97%; /* neutral-50 — warm off-white */
-    --foreground: 39 15% 12%; /* neutral-950 — near-black taupe */
+    /* Coinbase-inspired palette: bright blue primary, slate neutrals, and airy light surfaces. */
+    --background: 210 40% 98%; /* light blue-gray */
+    --foreground: 224 71% 14%; /* deep slate */
 
     --card: 0 0% 100%;
-    --card-foreground: 39 15% 12%;
+    --card-foreground: 224 71% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 39 15% 12%;
+    --popover-foreground: 224 71% 14%;
 
-    /* Primary = Yellow Stone (#E2D783). Foreground picks the darkest neutral for AAA contrast. */
-    --primary: 53 62% 70%; /* warm-400 — Yellow Stone */
-    --primary-foreground: 39 15% 12%; /* neutral-950 */
+    --primary: 221 100% 50%; /* Coinbase blue */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 49 50% 63%; /* warm-500 — Yellow Stone deep (#D0BF72) */
-    --secondary-foreground: 39 15% 12%;
+    --secondary: 214 95% 93%; /* soft blue tint */
+    --secondary-foreground: 224 71% 14%;
 
-    --muted: 33 22% 92%; /* neutral-100 */
-    --muted-foreground: 35 11% 37%; /* neutral-600 */
+    --muted: 214 32% 95%;
+    --muted-foreground: 219 13% 43%;
 
-    --accent: 50 82% 81%; /* warm-200 — Yellow Stone light */
-    --accent-foreground: 39 15% 12%;
+    --accent: 160 70% 42%; /* teal accent */
+    --accent-foreground: 224 71% 14%;
 
-    --destructive: 13 44% 45%; /* semantic.danger — warm terra */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 36 22% 84%; /* neutral-200 */
-    --input: 36 22% 84%;
-    --ring: 49 39% 36%; /* warm-700 — deep yellow stone for focus visibility */
+    --border: 214 32% 89%;
+    --input: 214 32% 89%;
+    --ring: 221 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 39 15% 12%; /* neutral-950 */
-    --foreground: 40 27% 97%; /* neutral-50 */
+    --background: 224 40% 10%; /* deep navy */
+    --foreground: 210 40% 96%; /* cool white */
 
-    --card: 36 12% 15%; /* neutral-900 */
-    --card-foreground: 40 27% 97%;
+    --card: 220 24% 13%;
+    --card-foreground: 210 40% 96%;
 
-    --popover: 36 12% 15%;
-    --popover-foreground: 40 27% 97%;
+    --popover: 220 24% 13%;
+    --popover-foreground: 210 40% 96%;
 
-    --primary: 53 62% 70%; /* warm-400 — Yellow Stone */
-    --primary-foreground: 39 15% 12%;
+    --primary: 221 100% 62%;
+    --primary-foreground: 224 71% 14%;
 
-    --secondary: 49 50% 63%; /* warm-500 — Yellow Stone deep */
-    --secondary-foreground: 39 15% 12%; /* dark text on yellow surface */
+    --secondary: 221 44% 24%;
+    --secondary-foreground: 210 40% 96%;
 
-    --muted: 36 11% 21%;
-    --muted-foreground: 34 15% 61%; /* neutral-400 */
+    --muted: 221 30% 18%;
+    --muted-foreground: 215 20% 72%;
 
-    --accent: 47 39% 36%; /* warm-700 — Yellow Stone deep for dark bg */
-    --accent-foreground: 40 27% 97%;
+    --accent: 160 65% 45%;
+    --accent-foreground: 210 40% 96%;
 
-    --destructive: 13 40% 40%;
+    --destructive: 0 84% 64%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 36 12% 29%; /* neutral-700 — weathered taupe */
-    --input: 36 12% 29%;
-    --ring: 53 62% 70%; /* warm-400 — Yellow Stone */
+    --border: 221 25% 24%;
+    --input: 221 25% 24%;
+    --ring: 221 100% 62%;
   }
 }
 
@@ -90,5 +89,6 @@
     @apply bg-background text-foreground font-sans antialiased;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
   }
 }

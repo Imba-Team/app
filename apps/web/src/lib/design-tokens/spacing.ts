@@ -19,19 +19,19 @@ export const spacing = {
 
 export const radii = {
   none: '0px',
-  sm: '4px',
-  md: '8px',
-  lg: '12px',
-  xl: '16px',
+  sm: '8px',
+  md: '12px',
+  lg: '16px',
+  xl: '20px',
   '2xl': '24px',
   full: '9999px',
 } as const;
 
 export const shadows = {
-  sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-  md: '0 2px 8px 0 rgb(0 0 0 / 0.08)',
-  lg: '0 10px 30px -5px rgb(0 0 0 / 0.1)',
-  focus: '0 0 0 3px rgb(47 92 255 / 0.35)',
+  sm: '0 1px 3px 0 rgb(15 23 42 / 0.06)',
+  md: '0 8px 24px -8px rgb(15 23 42 / 0.12)',
+  lg: '0 18px 48px -12px rgb(15 23 42 / 0.16)',
+  focus: '0 0 0 3px rgb(0 82 255 / 0.24)',
 } as const;
 
 export type SpacingToken = keyof typeof spacing;

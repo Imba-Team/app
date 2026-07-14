@@ -1,5 +1,5 @@
 export const fonts = {
-  sans: 'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+  sans: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   mono: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
   serif: 'ui-serif, Georgia, Cambria, "Times New Roman", serif',
 } as const;
