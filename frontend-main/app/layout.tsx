@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import Header from "@/components/Header";
-import { usePathname } from "next/navigation";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { QueryProvider } from "@/lib/providers/QueryProvider";
+import { Geist, Geist_Mono } from 'next/font/google';
+import './globals.css';
+import Header from '@/components/Header';
+import { usePathname } from 'next/navigation';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { QueryProvider } from '@/lib/providers/QueryProvider';
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   const pathname = usePathname();
   const isAuthPage =
-    pathname.includes("/login") || pathname.includes("/register");
+    pathname.includes('/login') || pathname.includes('/register');
 
   return (
     <html lang="en">
@@ -39,8 +39,7 @@ export default function RootLayout({
             {!isAuthPage && (
               <footer className="fixed w-full py-4 bottom-0 text-center text-sm text-gray-600 bg-white border-t">
                 <p>
-                  &copy; {new Date().getFullYear()} Imba Learn. All rights
-                  reserved.
+                  &copy; {new Date().getFullYear()} Mimir. All rights reserved.
                 </p>
               </footer>
             )}

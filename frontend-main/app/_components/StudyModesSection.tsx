@@ -1,6 +1,6 @@
-"use client";
-import Image from "next/image";
-import Link from "next/link";
+'use client';
+import Image from 'next/image';
+import Link from 'next/link';
 
 export const StudyModesSection = () => {
   return (
@@ -10,24 +10,24 @@ export const StudyModesSection = () => {
       </h1>
 
       <p className="text-center text-lg md:text-xl max-w-2xl mb-8">
-        Master whatever you’re learning with Imba Learn’s interactive
-        flashcards, practice tests and study activities.
+        Master whatever you’re learning with Mimir’s interactive flashcards,
+        practice tests and study activities.
       </p>
 
       <div className=" grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mt-16 w-full px-8">
         {[
-          { src: "/images/img1.png", label: "Learn", bg: "#98E3FF" },
-          { src: "/images/img2.png", label: "Study guides", bg: "#423ED8" },
-          { src: "/images/img3.png", label: "Flashcards", bg: "#FFCD1F" },
-          { src: "/images/img4.png", label: "Practice tests", bg: "#FDD2CA" },
+          { src: '/images/img1.png', label: 'Learn', bg: '#98E3FF' },
+          { src: '/images/img2.png', label: 'Study guides', bg: '#423ED8' },
+          { src: '/images/img3.png', label: 'Flashcards', bg: '#FFCD1F' },
+          { src: '/images/img4.png', label: 'Practice tests', bg: '#FDD2CA' },
         ].map((item, idx) => (
           <div
             key={idx}
             className="relative rounded-2xl overflow-hidden shadow-md aspect-4/3 cursor-pointer transform transition-transform duration-300 hover:scale-105 hover:shadow-xl"
             style={{
               backgroundColor: item.bg,
-              height: "300px",
-              width: "100%",
+              height: '300px',
+              width: '100%',
             }}
           >
             <Image

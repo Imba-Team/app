@@ -1,4 +1,4 @@
-# Imba Learn Server
+# Mimir Server
 
 Comprehensive backend for a quizlet-style application built with NestJS, TypeORM and PostgreSQL. This document describes how to setup, run, test, and work with the project. It also contains a compact API reference and examples.
 

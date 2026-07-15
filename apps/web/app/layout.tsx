@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: 'Imba Learn',
+  title: 'Mimir',
   description: 'Study smarter with flashcards, quizzes, and modules',
 };
 

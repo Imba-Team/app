@@ -17,7 +17,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         {!isAuthPage && (
           <footer className="fixed bottom-0 w-full border-t border-border bg-background/95 py-4 text-center text-sm text-muted-foreground backdrop-blur">
-            <p>&copy; {new Date().getFullYear()} Imba Learn. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Mimir. All rights reserved.</p>
           </footer>
         )}
       </AuthProvider>

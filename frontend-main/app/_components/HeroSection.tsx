@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Play } from "lucide-react";
-import Link from "next/link";
+import { Button } from '@/components/ui/button';
+import { ArrowRight, Sparkles, Play } from 'lucide-react';
+import Link from 'next/link';
 
 const HeroSection = ({
   isLoading,
@@ -30,7 +30,7 @@ const HeroSection = ({
 
           {/* Main Headline */}
           <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-extrabold text-foreground mb-6 animate-fade-up leading-tight">
-            Master Anything with{" "}
+            Master Anything with{' '}
             <span className="text-[#4255FF] rounded-lg px-2">
               Smart Learning
             </span>
@@ -38,7 +38,7 @@ const HeroSection = ({
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-up-delayed">
-            Join millions of students who use Imba Learn&apos;s interactive
+            Join millions of students who use Mimir&apos;s interactive
             flashcards, practice tests, and AI-powered study tools to ace their
             exams and master new skills.
           </p>
@@ -46,14 +46,14 @@ const HeroSection = ({
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up-delayed">
             <Link
-              href={isLoading ? "#" : isAuthenticated ? "/dashboard" : "/login"}
+              href={isLoading ? '#' : isAuthenticated ? '/dashboard' : '/login'}
               className="bg-[#4255FF] text-white px-16 py-3 rounded-full text-lg font-semibold hover:scale-105 transition-transform duration-200"
             >
               {isLoading
-                ? "Loading..."
+                ? 'Loading...'
                 : isAuthenticated
-                ? "Go to your dashboard"
-                : "Login or register to get started"}
+                  ? 'Go to your dashboard'
+                  : 'Login or register to get started'}
             </Link>
           </div>
 

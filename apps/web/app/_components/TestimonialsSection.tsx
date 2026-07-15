@@ -1,28 +1,28 @@
-import { Star } from "lucide-react";
+import { Star } from 'lucide-react';
 
 const testimonials = [
   {
-    name: "Emin Dabahov",
-    role: "Medical Student",
-    avatar: "ED",
+    name: 'Emin Dabahov',
+    role: 'Medical Student',
+    avatar: 'ED',
     content:
-      "Imba Learn helped me pass my MCAT with a score in the 99th percentile. The spaced repetition algorithm is incredible!",
+      'Mimir helped me pass my MCAT with a score in the 99th percentile. The spaced repetition algorithm is incredible!',
     rating: 5,
   },
   {
-    name: "Leyla Aliyeva",
-    role: "High School Teacher",
-    avatar: "LA",
+    name: 'Leyla Aliyeva',
+    role: 'High School Teacher',
+    avatar: 'LA',
     content:
-      "I create flashcard sets for my students and share them instantly. Their test scores have improved by an average of 20%.",
+      'I create flashcard sets for my students and share them instantly. Their test scores have improved by an average of 20%.',
     rating: 5,
   },
   {
-    name: "Diana",
-    role: "Language Learner",
-    avatar: "D",
+    name: 'Diana',
+    role: 'Language Learner',
+    avatar: 'D',
     content:
-      "I learned conversational Japanese in 6 months using Imba Learn. The audio flashcards and practice tests are amazing.",
+      'I learned conversational Japanese in 6 months using Mimir. The audio flashcards and practice tests are amazing.',
     rating: 5,
   },
 ];
@@ -48,26 +48,17 @@ const TestimonialsSection = () => {
             >
               <div className="flex items-center gap-1 mb-4">
                 {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-5 h-5 fill-amber-300 text-amber-300"
-                  />
+                  <Star key={i} className="w-5 h-5 fill-amber-300 text-amber-300" />
                 ))}
               </div>
-              <p className="text-foreground mb-6">
-                &quot;{testimonial.content}&quot;
-              </p>
+              <p className="text-foreground mb-6">&quot;{testimonial.content}&quot;</p>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-[#4255FF]/10 rounded-full flex items-center justify-center font-bold text-[#4255FF]">
                   {testimonial.avatar}
                 </div>
                 <div>
-                  <div className="font-semibold text-foreground">
-                    {testimonial.name}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {testimonial.role}
-                  </div>
+                  <div className="font-semibold text-foreground">{testimonial.name}</div>
+                  <div className="text-sm text-muted-foreground">{testimonial.role}</div>
                 </div>
               </div>
             </div>

@@ -6,6 +6,7 @@ import { LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from './ui/skeleton';
 import { useMe } from '@/lib/hooks/useUser';
+import { buildAssetUrl } from '@/lib/env';
 
 export default function Header() {
   const { isAuthenticated, isLoading, logout } = useAuth();
@@ -23,7 +24,7 @@ export default function Header() {
   return (
     <header className="bg-white border-b border-gray-200 text-[#4255FF] shadow-sm p-4 flex items-center justify-between">
       <Link href="/">
-        <h1 className="text-2xl font-bold ml-4">Imba Learn</h1>
+        <h1 className="text-2xl font-bold ml-4">Mimir</h1>
       </Link>
 
       {isAuthenticated ? (
@@ -34,7 +35,7 @@ export default function Header() {
             ) : (
               <Avatar className="size-12 border border-gray-100">
                 <AvatarImage
-                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:9090'}${me?.profilePicture || ''}`}
+                  src={buildAssetUrl(me?.profilePicture) || ''}
                   alt={me?.name}
                   crossOrigin="anonymous"
                 />

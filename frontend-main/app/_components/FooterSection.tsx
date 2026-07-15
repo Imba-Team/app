@@ -1,11 +1,11 @@
-import { BookOpen, Twitter, Instagram, Youtube, Linkedin } from "lucide-react";
-import Link from "next/link";
+import { BookOpen, Twitter, Instagram, Youtube, Linkedin } from 'lucide-react';
+import Link from 'next/link';
 
 const footerLinks = {
-  Product: ["Features", "Pricing", "Mobile App", "Browser Extension"],
-  Resources: ["Blog", "Help Center", "Guides", "Community"],
-  Company: ["About Us", "Careers", "Press", "Contact"],
-  Legal: ["Privacy Policy", "Terms of Service", "Cookie Policy"],
+  Product: ['Features', 'Pricing', 'Mobile App', 'Browser Extension'],
+  Resources: ['Blog', 'Help Center', 'Guides', 'Community'],
+  Company: ['About Us', 'Careers', 'Press', 'Contact'],
+  Legal: ['Privacy Policy', 'Terms of Service', 'Cookie Policy'],
 };
 
 const FooterSection = () => {
@@ -20,7 +20,7 @@ const FooterSection = () => {
                 <BookOpen className="w-6 h-6 text-primary-foreground" />
               </div>
               <span className="font-display text-xl font-bold text-background">
-                Imba Learn
+                Mimir
               </span>
             </Link>
             <p className="text-background/60 text-sm mb-6 max-w-xs">
@@ -77,7 +77,7 @@ const FooterSection = () => {
 
         <div className="border-t border-background/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-background/60 text-sm">
-            © {new Date().getFullYear()} Imba Learn. All rights reserved.
+            © {new Date().getFullYear()} Mimir. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
             <a

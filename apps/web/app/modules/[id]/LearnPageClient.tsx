@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import ModuleHeader from './_components/ModuleHeader';
 import type { Term } from './types';
 import { useModule } from '@/lib/hooks/useModules';
+import { buildApiUrl } from '@/lib/env';
 import {
   useCreateTerm,
   useUpdateTerm,
@@ -69,13 +70,10 @@ export default function LearnPageClient({ id }: { id: string }) {
 
   async function collectModule(moduleId: string) {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:9090'}/v2/modules/${moduleId}/collect`,
-        {
-          method: 'POST',
-          credentials: 'include',
-        },
-      );
+      const res = await fetch(buildApiUrl(`/v2/modules/${moduleId}/collect`), {
+        method: 'POST',
+        credentials: 'include',
+      });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       toast.success('Module collected!');

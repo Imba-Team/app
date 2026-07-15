@@ -1,11 +1,11 @@
-"use client";
-import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { Button } from "./ui/button";
-import { LogOut } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { Skeleton } from "./ui/skeleton";
-import { useMe } from "@/lib/hooks/useUser";
+'use client';
+import Link from 'next/link';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Button } from './ui/button';
+import { LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Skeleton } from './ui/skeleton';
+import { useMe } from '@/lib/hooks/useUser';
 
 export default function Header() {
   const { isAuthenticated, isLoading, logout } = useAuth();
@@ -13,9 +13,9 @@ export default function Header() {
 
   const getInitials = (name: string) => {
     return name
-      .split(" ")
+      .split(' ')
       .map((n) => n[0])
-      .join("")
+      .join('')
       .toUpperCase()
       .slice(0, 2);
   };
@@ -23,7 +23,7 @@ export default function Header() {
   return (
     <header className="bg-white border-b border-gray-200 text-[#4255FF] shadow-sm p-4 flex items-center justify-between">
       <Link href="/">
-        <h1 className="text-2xl font-bold ml-4">Imba Learn</h1>
+        <h1 className="text-2xl font-bold ml-4">Mimir</h1>
       </Link>
 
       {isAuthenticated ? (
@@ -38,13 +38,13 @@ export default function Header() {
               <Avatar className="size-12 border border-gray-100">
                 <AvatarImage
                   src={
-                    "https://imba-server.up.railway.app" + me?.profilePicture
+                    'https://imba-server.up.railway.app' + me?.profilePicture
                   }
                   alt={me?.name}
                   crossOrigin="anonymous"
                 />
                 <AvatarFallback>
-                  {me ? getInitials(me.name) : "U"}
+                  {me ? getInitials(me.name) : 'U'}
                 </AvatarFallback>
               </Avatar>
             )}
@@ -66,10 +66,10 @@ export default function Header() {
         </div>
       ) : (
         <div>
-          <Button asChild variant="ghost" className="mr-4" size={"sm"}>
+          <Button asChild variant="ghost" className="mr-4" size={'sm'}>
             <Link href="/login">Login</Link>
           </Button>
-          <Button asChild className="mr-4" size={"sm"}>
+          <Button asChild className="mr-4" size={'sm'}>
             <Link href="/register">Sign Up</Link>
           </Button>
         </div>

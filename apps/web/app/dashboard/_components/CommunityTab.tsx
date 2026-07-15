@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import type { CommunityModule as CommunityModuleType } from '@/lib/api';
 import { useState } from 'react';
 import { useCommunityModules } from '@/lib/hooks/useModules';
+import { buildAssetUrl } from '@/lib/env';
 import { toast } from 'sonner';
 import { CommunityLoading } from './CommunitySkeleton';
 
@@ -38,7 +39,7 @@ export default function CommunityTab() {
           Community Modules
         </h2>
         <p className="text-center text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-          Search and explore modules shared by the Imba Learn community!
+          Search and explore modules shared by the Mimir community!
         </p>
       </div>
 
@@ -96,7 +97,7 @@ export default function CommunityTab() {
                 <div className="flex gap-2 items-center">
                   <Avatar className="size-8 border border-gray-100 shrink-0">
                     <AvatarImage
-                      src={`${process.env.NEXT_PUBLIC_API_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:9090'}${m.ownerImg}`}
+                      src={buildAssetUrl(m.ownerImg) || ''}
                       alt={m.ownerName}
                       crossOrigin="anonymous"
                     />

@@ -1,28 +1,28 @@
-import { Star } from "lucide-react";
+import { Star } from 'lucide-react';
 
 const testimonials = [
   {
-    name: "Emin Dabahov",
-    role: "Medical Student",
-    avatar: "ED",
+    name: 'Emin Dabahov',
+    role: 'Medical Student',
+    avatar: 'ED',
     content:
-      "Imba Learn helped me pass my MCAT with a score in the 99th percentile. The spaced repetition algorithm is incredible!",
+      'Mimir helped me pass my MCAT with a score in the 99th percentile. The spaced repetition algorithm is incredible!',
     rating: 5,
   },
   {
-    name: "Leyla Aliyeva",
-    role: "High School Teacher",
-    avatar: "LA",
+    name: 'Leyla Aliyeva',
+    role: 'High School Teacher',
+    avatar: 'LA',
     content:
-      "I create flashcard sets for my students and share them instantly. Their test scores have improved by an average of 20%.",
+      'I create flashcard sets for my students and share them instantly. Their test scores have improved by an average of 20%.',
     rating: 5,
   },
   {
-    name: "Diana",
-    role: "Language Learner",
-    avatar: "D",
+    name: 'Diana',
+    role: 'Language Learner',
+    avatar: 'D',
     content:
-      "I learned conversational Japanese in 6 months using Imba Learn. The audio flashcards and practice tests are amazing.",
+      'I learned conversational Japanese in 6 months using Mimir. The audio flashcards and practice tests are amazing.',
     rating: 5,
   },
 ];

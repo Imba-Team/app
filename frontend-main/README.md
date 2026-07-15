@@ -1,4 +1,4 @@
-## Imba learn
+## Mimir
 
 This app is a Quizlet-inspired study tool. The app lets you create and manage study modules, add terms, and practice with flashcards, quizzes, tests, and a learn flow. It connects to the hosted API at `https://imba-server.up.railway.app` using cookie-based login. The website is deployed at `https://imba-learn.vercel.app`
 
@@ -42,4 +42,3 @@ The API base URL lives in `lib/axios.ts`. Change it if you point to a different 
 
 1. `npm run build`
 2. `npm run start` in production mode.
-

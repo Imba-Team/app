@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import type { CommunityModule as CommunityModuleType } from "@/lib/api";
-import { useState } from "react";
-import { useCommunityModules } from "@/lib/hooks/useModules";
-import { toast } from "sonner";
-import { CommunityLoading } from "./CommunitySkeleton";
+import { useRouter } from 'next/navigation';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import type { CommunityModule as CommunityModuleType } from '@/lib/api';
+import { useState } from 'react';
+import { useCommunityModules } from '@/lib/hooks/useModules';
+import { toast } from 'sonner';
+import { CommunityLoading } from './CommunitySkeleton';
 
 export default function CommunityTab() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [inputValue, setInputValue] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [inputValue, setInputValue] = useState('');
 
   const {
     data: communityModules = [],
@@ -31,7 +31,7 @@ export default function CommunityTab() {
   }
 
   if (isError) {
-    toast.error("Failed to load community modules");
+    toast.error('Failed to load community modules');
   }
 
   return (
@@ -42,7 +42,7 @@ export default function CommunityTab() {
           Community Modules
         </h2>
         <p className="text-center text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-          Search and explore modules shared by the Imba Learn community!
+          Search and explore modules shared by the Mimir community!
         </p>
       </div>
 
@@ -51,7 +51,7 @@ export default function CommunityTab() {
         <div
           className="flex flex-col sm:flex-row w-full max-w-2xl mx-auto items-stretch sm:items-center gap-3 sm:gap-2"
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === 'Enter') {
               e.preventDefault();
               handleSearch();
             }
@@ -94,7 +94,7 @@ export default function CommunityTab() {
                 </div>
                 <div className="flex items-center">
                   <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-medium">
-                    {m.termsCount} {m.termsCount === 1 ? "term" : "terms"}
+                    {m.termsCount} {m.termsCount === 1 ? 'term' : 'terms'}
                   </span>
                 </div>
               </div>
@@ -107,7 +107,7 @@ export default function CommunityTab() {
                 <div className="flex gap-2 items-center">
                   <Avatar className="size-8 border border-gray-100 shrink-0">
                     <AvatarImage
-                      src={"https://imba-server.up.railway.app" + m.ownerImg}
+                      src={'https://imba-server.up.railway.app' + m.ownerImg}
                       alt={m.ownerName}
                       crossOrigin="anonymous"
                     />

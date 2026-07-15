@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, Play } from "lucide-react";
-import Link from "next/link";
+import { Button } from '@/components/ui/button';
+import { ArrowRight, Sparkles, Play } from 'lucide-react';
+import Link from 'next/link';
 
 const HeroSection = ({
   isLoading,
@@ -30,30 +30,27 @@ const HeroSection = ({
 
           {/* Main Headline */}
           <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-extrabold text-foreground mb-6 animate-fade-up leading-tight">
-            Master Anything with{" "}
-            <span className="text-[#4255FF] rounded-lg px-2">
-              Smart Learning
-            </span>
+            Master Anything with{' '}
+            <span className="text-[#4255FF] rounded-lg px-2">Smart Learning</span>
           </h1>
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-up-delayed">
-            Join millions of students who use Imba Learn&apos;s interactive
-            flashcards, practice tests, and AI-powered study tools to ace their
-            exams and master new skills.
+            Join millions of students who use Mimir&apos;s interactive flashcards, practice tests,
+            and AI-powered study tools to ace their exams and master new skills.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up-delayed">
             <Link
-              href={isLoading ? "#" : isAuthenticated ? "/dashboard" : "/login"}
+              href={isLoading ? '#' : isAuthenticated ? '/dashboard' : '/login'}
               className="bg-[#4255FF] text-white px-16 py-3 rounded-full text-lg font-semibold hover:scale-105 transition-transform duration-200"
             >
               {isLoading
-                ? "Loading..."
+                ? 'Loading...'
                 : isAuthenticated
-                ? "Go to your dashboard"
-                : "Login or register to get started"}
+                  ? 'Go to your dashboard'
+                  : 'Login or register to get started'}
             </Link>
           </div>
 
@@ -63,15 +60,9 @@ const HeroSection = ({
               Trusted by students at top universities
             </p>
             <div className="flex items-center justify-center gap-8 opacity-60 grayscale">
-              <div className="font-display font-bold text-lg">
-                ADA University
-              </div>
-              <div className="font-display font-bold text-lg">
-                Nazarbayev University
-              </div>
-              <div className="font-display font-bold text-lg">
-                Khazar University
-              </div>
+              <div className="font-display font-bold text-lg">ADA University</div>
+              <div className="font-display font-bold text-lg">Nazarbayev University</div>
+              <div className="font-display font-bold text-lg">Khazar University</div>
             </div>
           </div>
         </div>

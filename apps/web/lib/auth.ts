@@ -2,6 +2,8 @@
  * Authentication utility functions for cookie and session management
  */
 
+import { API_BASE_URL, buildApiUrl } from '@/lib/env';
+
 export interface AuthStatus {
   isAuthenticated: boolean;
   needsRefresh: boolean;
@@ -11,12 +13,9 @@ export interface AuthStatus {
  * Checks if the user is authenticated by making a request to the /users/me endpoint
  * This will validate if the cookies are still valid on the backend
  */
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:9090';
-
 export async function checkAuth(): Promise<AuthStatus> {
   try {
-    const res = await fetch(`${API_BASE_URL}/users/me`, {
+    const res = await fetch(buildApiUrl('/users/me'), {
       method: 'GET',
       credentials: 'include',
     });
@@ -43,7 +42,7 @@ export async function checkAuth(): Promise<AuthStatus> {
  */
 export async function clearAuthCookies(): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/logout`, {
+    const res = await fetch(buildApiUrl('/auth/logout'), {
       method: 'POST',
       credentials: 'include',
     });

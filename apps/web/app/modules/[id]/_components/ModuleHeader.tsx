@@ -1,6 +1,7 @@
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { buildAssetUrl } from '@/lib/env';
 // import { Button } from "@/components/ui/button";
 // import { RotateCcw } from "lucide-react";
 import type { ModuleInfo } from '../types';
@@ -61,7 +62,7 @@ ModuleHeaderProps) {
           <div className="flex gap-x-2 items-center">
             <Avatar className="size-10">
               <AvatarImage
-                src={`${process.env.NEXT_PUBLIC_API_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:9090'}${module.ownerImg}`}
+                src={buildAssetUrl(module.ownerImg) || ''}
                 alt={module.ownerName}
                 crossOrigin="anonymous"
               />

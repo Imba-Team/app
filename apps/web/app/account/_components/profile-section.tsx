@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { apiClient } from '@/lib/axios';
 import { toast } from 'sonner';
 import { User } from '@/lib/hooks/useUser';
+import { buildAssetUrl } from '@/lib/env';
 
 interface ProfileSectionProps {
   userData: User;
@@ -71,11 +72,7 @@ export default function ProfileSection({ userData, isEditing, setIsEditing }: Pr
         <div className="flex flex-col items-center mb-8">
           <Avatar className="h-28 w-28 border border-gray-200">
             <AvatarImage
-              src={
-                userData.profilePicture
-                  ? `${process.env.NEXT_PUBLIC_API_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:9090'}${userData.profilePicture}`
-                  : undefined
-              }
+              src={userData.profilePicture ? buildAssetUrl(userData.profilePicture) : undefined}
               alt={userData.name}
               crossOrigin="anonymous"
               className="object-cover"
