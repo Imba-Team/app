@@ -23,7 +23,7 @@ export function useLogin() {
 
 export function useRegister() {
   return useMutation({
-    mutationFn: async (credentials: { name: string; email: string; password: string }) =>
+    mutationFn: async (credentials: { username: string; email: string; password: string }) =>
       registerUser(credentials),
     onError: (error: Error) => {
       toast.error(error.message || 'Registration failed');

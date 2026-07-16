@@ -19,13 +19,57 @@ async function bootstrap() {
   // Use Helmet for security headers
   app.use(helmet());
 
+  const configuredCorsOrigins = (process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  const defaultCorsOrigins = [
+    'http://localhost:9000', // dev — direct (bypasses the Vite proxy)
+    'http://127.0.0.1:9000',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'https://mimir.app', // prod web
+    'https://staging.mimir.app', // staging web
+  ];
+
+  const allowedCorsOrigins = [
+    ...new Set([...defaultCorsOrigins, ...configuredCorsOrigins]),
+  ];
+
   app.enableCors({
-    origin: [
-      'http://localhost:9000', // dev — direct (bypasses the Vite proxy)
-      'https://mimir.app', // prod web
-      'https://staging.mimir.app', // staging web
-    ],
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      try {
+        const requestOrigin = new URL(origin);
+        const isLocalhostOrigin =
+          requestOrigin.hostname === 'localhost' ||
+          requestOrigin.hostname === '127.0.0.1' ||
+          requestOrigin.hostname === '::1';
+
+        if (
+          isLocalhostOrigin ||
+          allowedCorsOrigins.includes(origin) ||
+          allowedCorsOrigins.includes(requestOrigin.origin)
+        ) {
+          callback(null, true);
+          return;
+        }
+      } catch {
+        // Ignore invalid origins and let the request fail closed.
+      }
+
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true, // required for the HttpOnly refresh cookie
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
 
   // Enable global validation pipe

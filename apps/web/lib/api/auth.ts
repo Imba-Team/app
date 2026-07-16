@@ -22,7 +22,11 @@ export async function loginUser(credentials: { email: string; password: string }
   return data;
 }
 
-export async function registerUser(credentials: { name: string; email: string; password: string }) {
+export async function registerUser(credentials: {
+  username: string;
+  email: string;
+  password: string;
+}) {
   const { data } = await apiClient.post<AuthResponse<AuthUser>>('/auth/register', credentials);
 
   if (!data.ok) throw new Error(data.message || 'Registration failed');
