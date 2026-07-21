@@ -39,8 +39,7 @@ export default function QuizClient() {
   const moduleId = params.id as string;
 
   const { data: moduleData, isLoading: moduleLoading } = useModule(moduleId);
-  // const { data: termsData = [], isLoading: termsLoading } = useTerms(moduleId);
-  const termsData = useMemo(() => moduleData?.data.terms || [], [moduleData]);
+  const { data: termsData = [], isLoading: termsLoading } = useTerms(moduleId);
   const updateTerm = useUpdateTerm();
   const updateTermStatus = useUpdateTermStatus();
 
@@ -55,7 +54,7 @@ export default function QuizClient() {
   const hasSubmittedRef = useRef(false);
   const [, startTransition] = useTransition();
 
-  const loading = moduleLoading;
+  const loading = moduleLoading || termsLoading;
 
   const moduleInfo = useMemo(
     () =>
