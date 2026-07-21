@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
-import { ArrowLeft, RotateCcw, Settings2 } from 'lucide-react';
+import { ArrowLeft, History, RotateCcw, Settings2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -103,13 +103,20 @@ export default function LearnPageClient({ id }: { id: string }) {
     <main className="flex flex-col items-center min-h-screen bg-gray-50 relative p-8 pb-20">
       {/* Top navigation — "Back to dashboard" belongs here, not at the
           bottom, so it's discoverable without scrolling to the end of the
-          term list. */}
-      <div className="w-full max-w-4xl mb-6">
+          term list. History lives here too so learners can jump to
+          their study record without hunting through the Settings menu. */}
+      <div className="w-full max-w-4xl mb-6 flex items-center justify-between gap-3 flex-wrap">
         <Link
           href="/dashboard"
           className="inline-flex items-center gap-x-2 text-sm text-gray-500 hover:text-[#4255FF] hover:underline underline-offset-4 transition"
         >
           <ArrowLeft size={16} /> Back to dashboard
+        </Link>
+        <Link
+          href={`/modules/${id}/sessions`}
+          className="inline-flex items-center gap-x-1.5 text-sm text-gray-500 hover:text-[#4255FF] hover:underline underline-offset-4 transition"
+        >
+          <History size={16} /> Session history
         </Link>
       </div>
 
@@ -238,6 +245,13 @@ export default function LearnPageClient({ id }: { id: string }) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="min-w-56">
                     <DropdownMenuLabel>Study settings</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href={`/modules/${id}/sessions`}>
+                        <History size={16} className="mr-2" />
+                        Session history
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => setResetOpen(true)}

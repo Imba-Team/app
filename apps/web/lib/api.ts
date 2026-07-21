@@ -368,3 +368,47 @@ export async function completeSession(sessionId: string): Promise<SessionSummary
     throw extractError(error, 'Failed to complete session');
   }
 }
+
+export type SessionHistoryItem = Schemas['SessionHistoryItemDto'];
+
+export interface SessionHistoryPage {
+  items: SessionHistoryItem[];
+  total: number;
+  limit: number;
+  page: number;
+  totalPages: number;
+}
+
+export async function getSessionHistory(params: {
+  studySetId?: string;
+  limit?: number;
+  offset?: number;
+} = {}): Promise<SessionHistoryPage> {
+  try {
+    const query: { studySetId?: string; limit?: number; offset?: number } = {};
+    if (params.studySetId) query.studySetId = params.studySetId;
+    if (params.limit !== undefined) query.limit = params.limit;
+    if (params.offset !== undefined) query.offset = params.offset;
+
+    const res = await apiFetch('get', '/sessions', { query });
+    const items = unwrap(res, 'Failed to fetch sessions');
+    // ResponseDto.meta is currently emitted as Record<string, never>
+    // because the nested shape isn't decorated. Cast here rather than
+    // spread `any` across the caller. TODO: type meta on ResponseDto.
+    const meta = (res as unknown as { meta?: {
+      total?: number;
+      limit?: number;
+      page?: number;
+      totalPages?: number;
+    } }).meta ?? {};
+    return {
+      items,
+      total: meta.total ?? items.length,
+      limit: meta.limit ?? items.length,
+      page: meta.page ?? 1,
+      totalPages: meta.totalPages ?? 1,
+    };
+  } catch (error) {
+    throw extractError(error, 'Failed to fetch sessions');
+  }
+}

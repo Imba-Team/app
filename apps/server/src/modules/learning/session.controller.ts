@@ -61,6 +61,10 @@ export class SessionController {
     description:
       "Paginated. Optionally filter by studySetId to power the set page's activity list. Ordered newest-first by startedAt.",
   })
+  @ApiOkEnvelope(SessionHistoryItemDto, {
+    isArray: true,
+    description: 'Sessions retrieved',
+  })
   async list(
     @CurrentUser() user: IUser,
     @Query() query: ListSessionsQueryDto,

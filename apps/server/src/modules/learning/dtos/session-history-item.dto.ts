@@ -44,6 +44,8 @@ export class SessionHistoryItemDto {
   startedAt!: Date;
 
   @ApiPropertyOptional({
+    type: String,
+    format: 'date-time',
     nullable: true,
     description: 'Null while a session is still in progress.',
   })

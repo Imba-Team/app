@@ -1298,6 +1298,30 @@ export interface components {
             /** @example 12345 */
             uptimeSeconds: number;
         };
+        SessionHistoryItemDto: {
+            /**
+             * @description Accuracy as a fraction (0.00–1.00). Zero if the session recorded no correct/incorrect answers yet.
+             * @example 0.85
+             */
+            accuracy: number;
+            cardsStudied: number;
+            /**
+             * Format: date-time
+             * @description Null while a session is still in progress.
+             */
+            completedAt?: string | null;
+            correctAnswers: number;
+            durationSeconds: number;
+            incorrectAnswers: number;
+            /** @enum {string} */
+            mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "MATCH" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
+            /** Format: uuid */
+            sessionId: string;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: uuid */
+            studySetId: string;
+        };
         SessionSummaryDto: {
             /**
              * @description Accuracy as a fraction (0.00–1.00). Zero if no correct+incorrect answers recorded.
@@ -1514,6 +1538,7 @@ export type SchemaResendVerificationRequestDto = components['schemas']['ResendVe
 export type SchemaResetPasswordRequestDto = components['schemas']['ResetPasswordRequestDto'];
 export type SchemaResponseDto = components['schemas']['ResponseDto'];
 export type SchemaServiceHealthResponseDto = components['schemas']['ServiceHealthResponseDto'];
+export type SchemaSessionHistoryItemDto = components['schemas']['SessionHistoryItemDto'];
 export type SchemaSessionSummaryDto = components['schemas']['SessionSummaryDto'];
 export type SchemaSetProgressSummaryDto = components['schemas']['SetProgressSummaryDto'];
 export type SchemaStartSessionDto = components['schemas']['StartSessionDto'];
@@ -2511,11 +2536,16 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Sessions retrieved */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["SessionHistoryItemDto"][];
+                    };
+                };
             };
         };
     };

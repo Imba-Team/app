@@ -2748,7 +2748,28 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Sessions retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SessionHistoryItemDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3989,6 +4010,70 @@
         "required": [
           "studySetId",
           "mode"
+        ]
+      },
+      "SessionHistoryItemDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studySetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "FLASHCARD",
+              "LEARN",
+              "WRITE",
+              "SPELL",
+              "TEST",
+              "MATCH",
+              "AI_FILL_BLANK",
+              "AI_GUESS_WORD"
+            ]
+          },
+          "cardsStudied": {
+            "type": "number"
+          },
+          "correctAnswers": {
+            "type": "number"
+          },
+          "incorrectAnswers": {
+            "type": "number"
+          },
+          "durationSeconds": {
+            "type": "number"
+          },
+          "accuracy": {
+            "type": "number",
+            "description": "Accuracy as a fraction (0.00–1.00). Zero if the session recorded no correct/incorrect answers yet.",
+            "example": 0.85
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Null while a session is still in progress."
+          }
+        },
+        "required": [
+          "sessionId",
+          "studySetId",
+          "mode",
+          "cardsStudied",
+          "correctAnswers",
+          "incorrectAnswers",
+          "durationSeconds",
+          "accuracy",
+          "startedAt"
         ]
       },
       "CardProgressSummaryDto": {
