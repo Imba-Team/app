@@ -26,10 +26,11 @@ export class SearchSyncService {
    * within the queue's window) into a single re-index.
    */
   async enqueueIndex(setId: string): Promise<void> {
+    // BullMQ >=5 rejects ":" in custom job IDs (reserved as key separator).
     await this.queue.add(
       SearchSyncJob.INDEX_SET,
       { setId },
-      { jobId: `index:${setId}` },
+      { jobId: `index-${setId}` },
     );
     this.logger.debug(`enqueued INDEX_SET setId=${setId}`);
   }
@@ -38,7 +39,7 @@ export class SearchSyncService {
     await this.queue.add(
       SearchSyncJob.DELETE_SET,
       { setId },
-      { jobId: `delete:${setId}` },
+      { jobId: `delete-${setId}` },
     );
     this.logger.debug(`enqueued DELETE_SET setId=${setId}`);
   }
