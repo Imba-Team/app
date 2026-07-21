@@ -11,6 +11,10 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import {
+  ApiCreatedEnvelope,
+  ApiOkEnvelope,
+} from 'src/common/decorators/api-envelope.decorator';
 import { Role, Roles } from 'src/common/decorators/roles.decorator';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
 import { IUser } from 'src/common/interfaces/user.interface';
@@ -41,6 +45,7 @@ export class SessionController {
   @Post()
   @HttpCode(201)
   @ApiOperation({ summary: 'Start a new study session' })
+  @ApiCreatedEnvelope(StartSessionResponseDto, { description: 'Session started' })
   async start(
     @CurrentUser() user: IUser,
     @Body() dto: StartSessionDto,
@@ -82,6 +87,7 @@ export class SessionController {
     description:
       'Applies the outcome to the card mastery engine and returns the updated card + set progress.',
   })
+  @ApiOkEnvelope(AnswerResponseDto, { description: 'Answer recorded' })
   async answer(
     @CurrentUser() user: IUser,
     @Param('id', new ParseUUIDPipe()) sessionId: string,
@@ -138,6 +144,7 @@ export class SessionController {
   @Post(':id/complete')
   @HttpCode(200)
   @ApiOperation({ summary: 'Mark a session complete and return the summary' })
+  @ApiOkEnvelope(SessionSummaryDto, { description: 'Session completed' })
   async complete(
     @CurrentUser() user: IUser,
     @Param('id', new ParseUUIDPipe()) sessionId: string,
