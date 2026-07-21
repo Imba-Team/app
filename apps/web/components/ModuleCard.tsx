@@ -1,14 +1,6 @@
 import React from "react";
 import { Card } from "./ui/card";
-type Module = {
-  id: string;
-  slug: string;
-  title: string;
-  description: string;
-  isPrivate: boolean;
-  userId: string;
-  isOwner: boolean;
-};
+import type { Module } from "@/lib/api";
 
 type ModuleCardProps = {
   module: Module;

@@ -12,16 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
-
-type Module = {
-  id: string;
-  slug: string;
-  title: string;
-  description: string;
-  isPrivate: boolean;
-  userId: string;
-  isOwner: boolean;
-};
+import type { Module } from "@/lib/api";
 
 type ModuleListItemProps = {
   module: Module;

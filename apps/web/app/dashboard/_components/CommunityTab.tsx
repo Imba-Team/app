@@ -84,7 +84,7 @@ export default function CommunityTab() {
                 </div>
                 <div className="flex items-center">
                   <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-medium">
-                    {m.termsCount} {m.termsCount === 1 ? 'term' : 'terms'}
+                    {m.flashcardsCount} {m.flashcardsCount === 1 ? 'term' : 'terms'}
                   </span>
                 </div>
               </div>
@@ -102,7 +102,7 @@ export default function CommunityTab() {
                       crossOrigin="anonymous"
                     />
                     <AvatarFallback className="text-xs">
-                      {m.ownerName.charAt(0).toUpperCase() + m.ownerName.charAt(1).toUpperCase()}
+                      {(m.ownerName ?? '?').slice(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <p className="text-sm font-medium truncate">{m.ownerName}</p>

@@ -6,7 +6,8 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generate:api-types": "pnpm --filter @mimir/server openapi && cp ../server/generated/api-types.ts lib/api/generated.ts && echo '✓ api-types synced to apps/web/lib/api/generated.ts'"
   },
   "type": "module",
   "dependencies": {
@@ -42,6 +43,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
     "tailwindcss": "^4",

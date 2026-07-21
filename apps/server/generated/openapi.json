@@ -741,19 +741,8 @@
         "operationId": "AuthController_googleAuthCallback",
         "parameters": [],
         "responses": {
-          "200": {
-            "description": "Successfully authenticated with Google",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "example": {
-                    "ok": true,
-                    "message": "Authentication successful",
-                    "data": null
-                  }
-                }
-              }
-            }
+          "302": {
+            "description": "Sets the session cookies and redirects to the SPA callback route (FRONTEND_URL/auth/callback/google?ok=1). The frontend then loads /users/me."
           }
         },
         "summary": "Google OAuth2 callback handler",
@@ -799,7 +788,25 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Study set created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/StudySetResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -838,7 +845,25 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Study set updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/StudySetResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -865,7 +890,25 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Study set retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/StudySetResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -874,6 +917,52 @@
           }
         ],
         "summary": "Get study set details",
+        "tags": [
+          "Study Sets"
+        ]
+      },
+      "delete": {
+        "operationId": "StudySetController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Study set deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "null",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete own study set",
         "tags": [
           "Study Sets"
         ]
@@ -904,7 +993,25 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Visibility updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/StudySetResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -924,7 +1031,28 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Study sets retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/StudySetResponseDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -944,7 +1072,28 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Collection retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/StudySetResponseDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -975,7 +1124,28 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Public study sets retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/StudySetResponseDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1117,7 +1287,25 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Flashcard updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/FlashcardResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1144,7 +1332,26 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Flashcard deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "null",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1183,7 +1390,25 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Flashcard created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/FlashcardResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1210,7 +1435,28 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Flashcards retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/FlashcardResponseDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1219,6 +1465,57 @@
           }
         ],
         "summary": "List flashcards in a study set",
+        "tags": [
+          "Flashcards"
+        ]
+      }
+    },
+    "/study-sets/{setId}/cards/progress": {
+      "get": {
+        "description": "One row per flashcard including status (NEW / LEARNING / MASTERED), weighted streak, and isStarred. Powers the module page term list — avoids N per-card requests.",
+        "operationId": "SetFlashcardsController_listWithProgress",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Flashcards with progress retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/FlashcardWithProgressDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List flashcards in a study set folded with the caller's progress",
         "tags": [
           "Flashcards"
         ]
@@ -1348,7 +1645,25 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Progress retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/FlashcardWithProgressDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1387,7 +1702,25 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Star updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/FlashcardWithProgressDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1404,10 +1737,37 @@
     "/me/library/{studySetId}": {
       "post": {
         "operationId": "FavouriteStudySetController_addToLibrary",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "studySetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "Study set saved to library",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/StudySetResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1422,10 +1782,38 @@
       },
       "delete": {
         "operationId": "FavouriteStudySetController_removeFromLibrary",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "studySetId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
-          "204": {
-            "description": ""
+          "200": {
+            "description": "Study set removed from library",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "null",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1445,7 +1833,28 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Library retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/LibraryItemDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2270,7 +2679,25 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Session started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/StartSessionResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2361,7 +2788,25 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Answer recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AnswerResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2472,7 +2917,25 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Session completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SessionSummaryDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2502,7 +2965,25 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Set progress retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SetProgressSummaryDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2511,6 +2992,53 @@
           }
         ],
         "summary": "Read my mastery rollup for a study set",
+        "tags": [
+          "Learning"
+        ]
+      },
+      "delete": {
+        "description": "Wipes the caller's UserCardProgress, SrsCard, and UserSetProgress rows for this set. Study-session history and the append-only attempt log are preserved.",
+        "operationId": "SetProgressController_resetMine",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Progress reset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "null",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Reset my mastery + SRS state for a study set",
         "tags": [
           "Learning"
         ]
@@ -2896,6 +3424,95 @@
           "confirmPassword"
         ]
       },
+      "ResponseDto": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Operation successful"
+          },
+          "data": {
+            "type": "object"
+          },
+          "error": {
+            "type": "string"
+          },
+          "meta": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "ok",
+          "message"
+        ]
+      },
+      "StudySetResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "isPrivate": {
+            "type": "boolean",
+            "description": "true = private, false = public"
+          },
+          "ownerId": {
+            "type": "string",
+            "description": "Owner id"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "ownerImg": {
+            "type": "string"
+          },
+          "isOwner": {
+            "type": "boolean",
+            "example": false
+          },
+          "isCollected": {
+            "type": "boolean",
+            "example": true
+          },
+          "flashcardsCount": {
+            "type": "number",
+            "example": 0
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "description",
+          "isPrivate",
+          "ownerId",
+          "isOwner",
+          "flashcardsCount",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "CreateStudySetDto": {
         "type": "object",
         "properties": {
@@ -2954,6 +3571,59 @@
         },
         "required": [
           "isPrivate"
+        ]
+      },
+      "FlashcardResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studySetId": {
+            "type": "string"
+          },
+          "term": {
+            "type": "string"
+          },
+          "definition": {
+            "type": "string"
+          },
+          "example": {
+            "type": "object",
+            "nullable": true
+          },
+          "phonetic": {
+            "type": "object",
+            "nullable": true
+          },
+          "hint": {
+            "type": "object",
+            "nullable": true
+          },
+          "imageUrl": {
+            "type": "object",
+            "nullable": true
+          },
+          "orderIndex": {
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "studySetId",
+          "term",
+          "definition",
+          "orderIndex",
+          "createdAt",
+          "updatedAt"
         ]
       },
       "UpdateFlashcardDto": {
@@ -3028,6 +3698,50 @@
           "definition"
         ]
       },
+      "FlashcardWithProgressDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "term": {
+            "type": "string"
+          },
+          "definition": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "LEARNING",
+              "MASTERED"
+            ]
+          },
+          "weightedStreak": {
+            "type": "string",
+            "example": "1.50",
+            "description": "Running weighted-correct streak (0.00 – 5.00+)."
+          },
+          "isStarred": {
+            "type": "boolean",
+            "example": false
+          },
+          "masteredAt": {
+            "type": "object",
+            "nullable": true,
+            "example": "2026-06-30T21:04:11.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "term",
+          "definition",
+          "status",
+          "weightedStreak",
+          "isStarred"
+        ]
+      },
       "ToggleStarDto": {
         "type": "object",
         "properties": {
@@ -3038,6 +3752,66 @@
         },
         "required": [
           "isStarred"
+        ]
+      },
+      "LibraryItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "object",
+            "nullable": true
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "PUBLIC",
+              "PRIVATE",
+              "UNLISTED"
+            ]
+          },
+          "language": {
+            "type": "object",
+            "nullable": true
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "isOwner": {
+            "type": "boolean",
+            "example": true
+          },
+          "isFavourited": {
+            "type": "boolean",
+            "example": false
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "visibility",
+          "ownerId",
+          "createdAt",
+          "updatedAt",
+          "isOwner",
+          "isFavourited"
         ]
       },
       "CreateTagDto": {
@@ -3155,6 +3929,42 @@
           "content"
         ]
       },
+      "StartSessionResponseDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studySetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "FLASHCARD",
+              "LEARN",
+              "WRITE",
+              "SPELL",
+              "TEST",
+              "MATCH",
+              "AI_FILL_BLANK",
+              "AI_GUESS_WORD"
+            ]
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "studySetId",
+          "mode",
+          "startedAt"
+        ]
+      },
       "StartSessionDto": {
         "type": "object",
         "properties": {
@@ -3179,6 +3989,97 @@
         "required": [
           "studySetId",
           "mode"
+        ]
+      },
+      "CardProgressSummaryDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "NEW",
+              "LEARNING",
+              "MASTERED"
+            ]
+          },
+          "weightedStreak": {
+            "type": "string",
+            "example": "1.50"
+          },
+          "correctCount": {
+            "type": "number"
+          },
+          "incorrectCount": {
+            "type": "number"
+          },
+          "masteredAt": {
+            "type": "object",
+            "nullable": true
+          }
+        },
+        "required": [
+          "status",
+          "weightedStreak",
+          "correctCount",
+          "incorrectCount"
+        ]
+      },
+      "SetProgressSummaryDto": {
+        "type": "object",
+        "properties": {
+          "totalCards": {
+            "type": "number"
+          },
+          "newCount": {
+            "type": "number"
+          },
+          "learningCount": {
+            "type": "number"
+          },
+          "masteredCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "totalCards",
+          "newCount",
+          "learningCount",
+          "masteredCount"
+        ]
+      },
+      "AnswerResponseDto": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean",
+            "description": "True if the submitted outcome was CORRECT (echoed for UI convenience)."
+          },
+          "correctAnswer": {
+            "type": "string",
+            "description": "Canonical answer text for the card."
+          },
+          "graduated": {
+            "type": "boolean",
+            "description": "Whether this attempt caused the card to reach MASTERED for the first time. SRS row created if true."
+          },
+          "demoted": {
+            "type": "boolean",
+            "description": "Whether this attempt demoted a previously MASTERED card back to LEARNING."
+          },
+          "cardProgress": {
+            "$ref": "#/components/schemas/CardProgressSummaryDto"
+          },
+          "setProgress": {
+            "$ref": "#/components/schemas/SetProgressSummaryDto"
+          }
+        },
+        "required": [
+          "correct",
+          "correctAnswer",
+          "graduated",
+          "demoted",
+          "cardProgress",
+          "setProgress"
         ]
       },
       "SubmitAnswerDto": {
@@ -3274,6 +4175,70 @@
           "studyMode",
           "userAnswer",
           "hintUsed"
+        ]
+      },
+      "SessionSummaryDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studySetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "FLASHCARD",
+              "LEARN",
+              "WRITE",
+              "SPELL",
+              "TEST",
+              "MATCH",
+              "AI_FILL_BLANK",
+              "AI_GUESS_WORD"
+            ]
+          },
+          "cardsStudied": {
+            "type": "number"
+          },
+          "correctAnswers": {
+            "type": "number"
+          },
+          "incorrectAnswers": {
+            "type": "number"
+          },
+          "durationSeconds": {
+            "type": "number",
+            "description": "Total wall-clock time in seconds from startedAt to completedAt."
+          },
+          "accuracy": {
+            "type": "number",
+            "description": "Accuracy as a fraction (0.00–1.00). Zero if no correct+incorrect answers recorded.",
+            "example": 0.85
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "studySetId",
+          "mode",
+          "cardsStudied",
+          "correctAnswers",
+          "incorrectAnswers",
+          "durationSeconds",
+          "accuracy",
+          "startedAt",
+          "completedAt"
         ]
       }
     }

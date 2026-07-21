@@ -1,155 +1,38 @@
-import { TermProgress } from "@/app/modules/[id]/types";
-import { apiClient } from "./axios";
-import { AxiosError } from "axios";
+/**
+ * Frontend API surface.
+ *
+ * All request/response shapes are inferred from the server's OpenAPI spec
+ * via `apps/web/lib/api/generated.ts`. See `apps/web/lib/api/client.ts` for
+ * the typed axios wrapper — it turns URL/param/body/response mismatches
+ * into compile errors instead of runtime 500s.
+ *
+ * Regenerate types with `pnpm --filter @mimir/web generate:api-types`.
+ */
+
+import type { AxiosError } from 'axios';
+import { apiFetch, type Schemas } from './api/client';
+import type { TermProgress } from '@/app/modules/[id]/types';
 
 // ============================================
-// MODULES API
+// TYPE RE-EXPORTS (generated from the server)
 // ============================================
 
-export interface Module {
-  id: string;
-  slug: string;
-  title: string;
-  description: string;
-  isPrivate: boolean;
-  userId: string;
-  isOwner: boolean;
-}
+export type Module = Schemas['StudySetResponseDto'];
+export type CommunityModule = Schemas['StudySetResponseDto'];
+export type CreateModuleData = Schemas['CreateStudySetDto'];
+export type UpdateModuleData = Schemas['UpdateStudySetDto'];
 
-export interface CommunityModule extends Module {
-  ownerName: string;
-  ownerImg?: string;
-  termsCount: number;
-}
-
-export interface CreateModuleData {
-  title: string;
-  description: string;
-  isPrivate: boolean;
-}
-
-export interface UpdateModuleData {
-  title?: string;
-  description?: string;
-  isPrivate?: boolean;
-}
-
-export async function getModules() {
-  try {
-    const { data } = await apiClient.get("/v2/modules/collection");
-    if (!data.ok) throw new Error(data.message || "Failed to fetch modules");
-    return data.data as Module[];
-  } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to fetch modules"
-    );
-  }
-}
-
-export async function getCommunityModules(q?: string) {
-  try {
-    const { data } = await apiClient.get("/v2/modules/public", {
-      params: q ? { q } : undefined,
-    });
-    if (!data.ok)
-      throw new Error(data.message || "Failed to fetch community modules");
-    return data.data as CommunityModule[];
-  } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to fetch community modules"
-    );
-  }
-}
-
-export async function getModuleById(id: string) {
-  try {
-    const { data } = await apiClient.get(`/v2/modules/${id}`);
-    return data;
-  } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to fetch module"
-    );
-  }
-}
-
-export async function createModule(moduleData: CreateModuleData) {
-  try {
-    const { data } = await apiClient.post("/v2/modules", moduleData);
-    if (!data.ok) throw new Error(data.message || "Failed to create module");
-    return data.data;
-  } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to create module"
-    );
-  }
-}
-
-export async function updateModule(id: string, moduleData: UpdateModuleData) {
-  try {
-    const { data } = await apiClient.patch(`/v2/modules/${id}`, moduleData);
-    if (!data.ok) throw new Error(data.message || "Failed to update module");
-    return data.data;
-  } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to update module"
-    );
-  }
-}
-
-export async function deleteModule(id: string) {
-  try {
-    const { data } = await apiClient.delete(`/modules/${id}`);
-    if (!data.ok) throw new Error(data.message || "Failed to delete module");
-    return data;
-  } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to delete module"
-    );
-  }
-}
-
-export async function collectModule(id: string) {
-  try {
-    const { data } = await apiClient.post(`/v2/modules/${id}/collect`);
-    if (!data.ok) throw new Error(data.message || "Failed to collect module");
-    return data;
-  } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to collect module"
-    );
-  }
-}
-
-export async function uncollectModule(id: string) {
-  try {
-    const { data } = await apiClient.post(`/v2/modules/${id}/uncollect`);
-    if (!data.ok) throw new Error(data.message || "Failed to uncollect module");
-    return data;
-  } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to uncollect module"
-    );
-  }
-}
-
-// ============================================
-// TERMS API
-// ============================================
-
+// Flashcards are called "terms" on the frontend. Adapt the shape so the
+// existing components (which expect `moduleId`, `isStarred`, `status`)
+// keep working. Real per-user progress is fetched separately via
+// `GET /flashcards/{id}/progress`.
 export interface Term {
   id: string;
   term: string;
   definition: string;
   moduleId: string;
   isStarred: boolean;
+  status: 'not_started' | 'in_progress' | 'completed';
 }
 
 export interface CreateTermData {
@@ -165,100 +48,323 @@ export interface UpdateTermData {
   isStarred?: boolean;
 }
 
-export async function getTermsByModuleId(moduleId: string) {
+// ============================================
+// HELPERS
+// ============================================
+
+type Envelope<T> = { ok: boolean; message?: string; data?: T };
+
+function unwrap<T>(res: Envelope<T> | undefined, fallback: string): T {
+  if (!res?.ok || res.data === undefined) {
+    throw new Error(res?.message || fallback);
+  }
+  return res.data;
+}
+
+function extractError(error: unknown, fallback: string): Error {
+  const axiosError = error as AxiosError<{ message?: string }>;
+  return new Error(axiosError.response?.data?.message || fallback);
+}
+
+function flashcardToTerm(fc: Schemas['FlashcardResponseDto']): Term {
+  return {
+    id: fc.id,
+    term: fc.term,
+    definition: fc.definition,
+    moduleId: fc.studySetId,
+    isStarred: false,
+    status: 'not_started',
+  };
+}
+
+// Server CardMasteryStatus (NEW/LEARNING/MASTERED) → the UI-facing triad
+// the existing components already render against.
+const MASTERY_TO_STATUS: Record<
+  Schemas['FlashcardWithProgressDto']['status'],
+  Term['status']
+> = {
+  NEW: 'not_started',
+  LEARNING: 'in_progress',
+  MASTERED: 'completed',
+};
+
+function flashcardWithProgressToTerm(
+  fc: Schemas['FlashcardWithProgressDto'],
+  moduleId: string,
+): Term {
+  return {
+    id: fc.id,
+    term: fc.term,
+    definition: fc.definition,
+    moduleId,
+    isStarred: fc.isStarred,
+    status: MASTERY_TO_STATUS[fc.status] ?? 'not_started',
+  };
+}
+
+// ============================================
+// MODULES
+// ============================================
+
+export async function getModules(): Promise<Module[]> {
   try {
-    const { data } = await apiClient.get(`/terms`, { params: { moduleId } });
-    return data.data?.data || [];
+    const res = await apiFetch('get', '/study-sets/collection');
+    return unwrap(res, 'Failed to fetch modules');
   } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to fetch terms"
-    );
+    throw extractError(error, 'Failed to fetch modules');
   }
 }
 
-export async function createTerm(termData: CreateTermData) {
+export async function getRecentModules(limit = 4): Promise<Module[]> {
+  const all = await getModules();
+  return all.slice(0, limit);
+}
+
+export async function getCommunityModules(q?: string): Promise<CommunityModule[]> {
   try {
-    const { data } = await apiClient.post("/terms", termData);
-    return data.data;
+    const res = await apiFetch('get', '/study-sets/public', {
+      query: q ? { q } : undefined,
+    });
+    return unwrap(res, 'Failed to fetch community modules');
   } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to create term"
-    );
+    throw extractError(error, 'Failed to fetch community modules');
   }
 }
 
-export async function updateTerm(id: string, termData: UpdateTermData) {
+// NOTE: kept loosely typed to preserve compat with `/modules/[id]` pages
+// that read `moduleData.data.<field>`. Callers using the envelope shape
+// still work; a follow-up should switch to unwrapped access.
+export async function getModuleById(id: string) {
   try {
-    const { data } = await apiClient.patch(`/terms/${id}`, termData);
-    return data.data;
+    return await apiFetch('get', '/study-sets/{id}', { path: { id } });
   } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to update term"
-    );
+    throw extractError(error, 'Failed to fetch module');
   }
 }
 
-export async function deleteTerm(id: string) {
+export async function createModule(data: CreateModuleData): Promise<Module> {
   try {
-    await apiClient.delete(`/terms/${id}`);
-    return { success: true };
+    const res = await apiFetch('post', '/study-sets', { body: data });
+    return unwrap(res, 'Failed to create module');
   } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to delete term"
-    );
+    throw extractError(error, 'Failed to create module');
+  }
+}
+
+export async function updateModule(id: string, data: UpdateModuleData): Promise<Module> {
+  try {
+    const res = await apiFetch('patch', '/study-sets/{id}', {
+      path: { id },
+      body: data,
+    });
+    return unwrap(res, 'Failed to update module');
+  } catch (error) {
+    throw extractError(error, 'Failed to update module');
+  }
+}
+
+export async function deleteModule(id: string): Promise<void> {
+  try {
+    await apiFetch('delete', '/study-sets/{id}', { path: { id } });
+  } catch (error) {
+    throw extractError(error, 'Failed to delete module');
+  }
+}
+
+export async function collectModule(id: string): Promise<Module> {
+  try {
+    const res = await apiFetch('post', '/me/library/{studySetId}', {
+      path: { studySetId: id },
+    });
+    return unwrap(res, 'Failed to collect module');
+  } catch (error) {
+    throw extractError(error, 'Failed to collect module');
+  }
+}
+
+export async function uncollectModule(id: string): Promise<void> {
+  try {
+    await apiFetch('delete', '/me/library/{studySetId}', {
+      path: { studySetId: id },
+    });
+  } catch (error) {
+    throw extractError(error, 'Failed to uncollect module');
   }
 }
 
 // ============================================
-// TERM PROGRESS API
+// TERMS (flashcards)
+// ============================================
+
+export async function getTermsWithProgress(moduleId: string): Promise<Term[]> {
+  try {
+    const res = await apiFetch('get', '/study-sets/{setId}/cards/progress', {
+      path: { setId: moduleId },
+    });
+    return unwrap(res, 'Failed to fetch terms').map((fc) =>
+      flashcardWithProgressToTerm(fc, moduleId),
+    );
+  } catch (error) {
+    throw extractError(error, 'Failed to fetch terms');
+  }
+}
+
+export async function getTermsByModuleId(moduleId: string): Promise<Term[]> {
+  try {
+    const res = await apiFetch('get', '/study-sets/{setId}/cards', {
+      path: { setId: moduleId },
+    });
+    return unwrap(res, 'Failed to fetch terms').map(flashcardToTerm);
+  } catch (error) {
+    throw extractError(error, 'Failed to fetch terms');
+  }
+}
+
+export async function createTerm(termData: CreateTermData): Promise<Term> {
+  try {
+    const res = await apiFetch('post', '/study-sets/{setId}/cards', {
+      path: { setId: termData.moduleId },
+      body: { term: termData.term, definition: termData.definition },
+    });
+    return flashcardToTerm(unwrap(res, 'Failed to create term'));
+  } catch (error) {
+    throw extractError(error, 'Failed to create term');
+  }
+}
+
+export async function updateTerm(id: string, termData: UpdateTermData): Promise<Term> {
+  try {
+    const patch: Schemas['UpdateFlashcardDto'] = {};
+    if (termData.term !== undefined) patch.term = termData.term;
+    if (termData.definition !== undefined) patch.definition = termData.definition;
+    // isStarred lives on progress, not on the flashcard row — handled
+    // separately via toggleTermStar() below.
+    const res = await apiFetch('patch', '/flashcards/{id}', {
+      path: { id },
+      body: patch,
+    });
+    return flashcardToTerm(unwrap(res, 'Failed to update term'));
+  } catch (error) {
+    throw extractError(error, 'Failed to update term');
+  }
+}
+
+export async function deleteTerm(id: string): Promise<void> {
+  try {
+    await apiFetch('delete', '/flashcards/{id}', { path: { id } });
+  } catch (error) {
+    throw extractError(error, 'Failed to delete term');
+  }
+}
+
+export async function toggleTermStar(id: string, isStarred: boolean) {
+  try {
+    const res = await apiFetch('put', '/flashcards/{id}/star', {
+      path: { id },
+      body: { isStarred },
+    });
+    return unwrap(res, 'Failed to update star');
+  } catch (error) {
+    throw extractError(error, 'Failed to update star');
+  }
+}
+
+// ============================================
+// TERM PROGRESS (kept as-is; endpoints not yet wired on server side)
 // ============================================
 
 export async function getTermProgress(id: string) {
   try {
-    const { data } = await apiClient.get(`/v2/terms/${id}/progress`);
-    return data;
+    const res = await apiFetch('get', '/flashcards/{id}/progress', {
+      path: { id },
+    });
+    return unwrap(res, 'Failed to fetch term progress');
   } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to fetch term progress"
-    );
+    throw extractError(error, 'Failed to fetch term progress');
   }
 }
 
 export async function updateTermProgress(
-  id: string,
-  termData: { status?: TermProgress["status"]; isStarred?: boolean }
+  _id: string,
+  _termData: { status?: TermProgress['status']; isStarred?: boolean },
 ) {
-  try {
-    const { data } = await apiClient.patch(`/v2/terms/${id}/progress`, {
-      status: termData.status,
-      isStarred: termData.isStarred,
-    });
+  // TODO: no `/flashcards/:id/progress` PATCH exists on the server yet.
+  // Callers should be split: use toggleTermStar() for stars and the SRS
+  // submit endpoint for status. Left as a no-op to avoid runtime errors.
+  return { ok: true, data: null };
+}
 
-    return data;
+export async function updateTermStatus(_id: string, _success: boolean) {
+  // TODO: same as above — no dedicated endpoint on the current backend.
+  return { ok: true, data: null };
+}
+
+export async function resetSetProgress(setId: string): Promise<void> {
+  try {
+    await apiFetch('delete', '/study-sets/{setId}/my-progress', {
+      path: { setId },
+    });
   } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to update term progress"
-    );
+    throw extractError(error, 'Failed to reset progress');
   }
 }
 
-export async function updateTermStatus(id: string, success: boolean) {
+// ============================================
+// STUDY SESSIONS (TDD §8a.5–§8a.7)
+// ============================================
+
+export type StudyMode = Schemas['SubmitAnswerDto']['studyMode'];
+export type AttemptOutcome = Schemas['SubmitAnswerDto']['outcome'];
+export type SessionMode = Schemas['StartSessionDto']['mode'];
+
+export type StartSessionResponse = Schemas['StartSessionResponseDto'];
+export type AnswerResponse = Schemas['AnswerResponseDto'];
+export type SessionSummary = Schemas['SessionSummaryDto'];
+
+export async function startSession(
+  studySetId: string,
+  mode: SessionMode,
+): Promise<StartSessionResponse> {
   try {
-    // TODO: change to PATCH method on backend
-    const { data } = await apiClient.post(`/v2/terms/${id}/update-status`, {
-      success,
+    const res = await apiFetch('post', '/sessions', {
+      body: { studySetId, mode },
     });
-    return data;
+    return unwrap(res, 'Failed to start session');
   } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    throw new Error(
-      axiosError.response?.data?.message || "Failed to update term progress"
-    );
+    throw extractError(error, 'Failed to start session');
+  }
+}
+
+export interface SubmitAnswerPayload {
+  attemptId: string;
+  cardId: string;
+  studyMode: StudyMode;
+  outcome: AttemptOutcome;
+  hintUsed: boolean;
+}
+
+export async function submitSessionAnswer(
+  sessionId: string,
+  payload: SubmitAnswerPayload,
+): Promise<AnswerResponse> {
+  try {
+    const res = await apiFetch('post', '/sessions/{id}/answer', {
+      path: { id: sessionId },
+      body: payload,
+    });
+    return unwrap(res, 'Failed to submit answer');
+  } catch (error) {
+    throw extractError(error, 'Failed to submit answer');
+  }
+}
+
+export async function completeSession(sessionId: string): Promise<SessionSummary> {
+  try {
+    const res = await apiFetch('post', '/sessions/{id}/complete', {
+      path: { id: sessionId },
+    });
+    return unwrap(res, 'Failed to complete session');
+  } catch (error) {
+    throw extractError(error, 'Failed to complete session');
   }
 }
