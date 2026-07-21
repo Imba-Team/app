@@ -5,6 +5,12 @@ import { Plus, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+// Shared field styles so the Term and Definition inputs render at
+// identical size/typography — asymmetry between them makes the form
+// feel visually off-balance for a symmetric concept.
+const FIELD_CLASS =
+  "w-full min-h-24 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] disabled:bg-gray-50 text-base leading-relaxed";
+
 interface AddTermProps {
   onSubmit: (term: string, definition: string) => void;
   /**
@@ -33,7 +39,7 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
   const [isAdding, setIsAdding] = useState(false);
   const [newTerm, setNewTerm] = useState("");
   const [newDef, setNewDef] = useState("");
-  const termRef = useRef<HTMLInputElement>(null);
+  const termRef = useRef<HTMLTextAreaElement>(null);
   const defRef = useRef<HTMLTextAreaElement>(null);
   const wasSubmittingRef = useRef(false);
 
@@ -123,13 +129,16 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
           <label htmlFor="new-term" className="text-xs font-medium text-gray-500">
             Term
           </label>
-          <input
+          <textarea
             ref={termRef}
             id="new-term"
             value={newTerm}
             onChange={(e) => setNewTerm(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              // Term is typically short, so Enter should advance to
+              // the Definition field like a single-line input. Users
+              // who want a multi-line term can still use Shift+Enter.
+              if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 if (e.ctrlKey || e.metaKey) submit();
                 else defRef.current?.focus();
@@ -139,8 +148,9 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
               }
             }}
             placeholder="e.g. photosynthesis"
+            rows={3}
             disabled={isSubmitting}
-            className="w-full h-10 px-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] disabled:bg-gray-50"
+            className={FIELD_CLASS}
           />
         </div>
 
@@ -163,9 +173,9 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
               }
             }}
             placeholder="Explanation (Shift+Enter for a new line)"
-            rows={2}
+            rows={3}
             disabled={isSubmitting}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg resize-y min-h-10 focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] disabled:bg-gray-50"
+            className={FIELD_CLASS}
           />
         </div>
       </div>

@@ -4,6 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { Star, MoreHorizontal } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+
+// Kept in sync with AddTerm — matching class means the inline editor
+// looks and behaves identically to the "Add term" form.
+const EDIT_FIELD_CLASS =
+  "w-full min-h-24 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] disabled:bg-gray-50 text-base leading-relaxed";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,7 +72,8 @@ export default function TermItem({
   const [isEditing, setIsEditing] = useState(false);
   const [editTermValue, setEditTermValue] = useState(term.term);
   const [editDefValue, setEditDefValue] = useState(term.definition);
-  const editTermRef = useRef<HTMLInputElement>(null);
+  const editTermRef = useRef<HTMLTextAreaElement>(null);
+  const editDefRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (isEditing) editTermRef.current?.focus();
@@ -79,14 +85,30 @@ export default function TermItem({
     setIsEditing(true);
   };
 
+  const canSave =
+    editTermValue.trim().length > 0 && editDefValue.trim().length > 0;
+
   const handleSaveEdit = () => {
-    if (!editTermValue.trim() || !editDefValue.trim()) return;
+    if (!canSave) return;
     onSaveEdit(term.id, editTermValue.trim(), editDefValue.trim());
     setIsEditing(false);
   };
 
-  const handleEditKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+  // Mirrors AddTerm: Enter in Term advances to Definition; Enter in
+  // Definition submits; Shift+Enter is a newline; Ctrl/⌘+Enter always
+  // submits; Escape cancels.
+  const handleTermKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (e.ctrlKey || e.metaKey) handleSaveEdit();
+      else editDefRef.current?.focus();
+    } else if (e.key === "Escape") {
+      setIsEditing(false);
+    }
+  };
+
+  const handleDefKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSaveEdit();
     } else if (e.key === "Escape") {
@@ -113,29 +135,78 @@ export default function TermItem({
 
       <div className="flex-1 min-w-0">
         {isEditing ? (
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-            <input
-              ref={editTermRef}
-              className="p-2 border border-gray-200 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40"
-              value={editTermValue}
-              onChange={(e) => setEditTermValue(e.target.value)}
-              onKeyDown={handleEditKey}
-              placeholder="Term"
-            />
-            <input
-              className="p-2 border border-gray-200 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40"
-              value={editDefValue}
-              onChange={(e) => setEditDefValue(e.target.value)}
-              onKeyDown={handleEditKey}
-              placeholder="Definition"
-            />
-            <div className="flex gap-2">
-              <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>
-                Cancel
-              </Button>
-              <Button size="sm" onClick={handleSaveEdit}>
-                Save
-              </Button>
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label
+                  htmlFor={`edit-term-${term.id}`}
+                  className="text-xs font-medium text-gray-500"
+                >
+                  Term
+                </label>
+                <textarea
+                  ref={editTermRef}
+                  id={`edit-term-${term.id}`}
+                  value={editTermValue}
+                  onChange={(e) => setEditTermValue(e.target.value)}
+                  onKeyDown={handleTermKey}
+                  rows={3}
+                  className={EDIT_FIELD_CLASS}
+                  placeholder="Term"
+                />
+              </div>
+              <div className="space-y-1">
+                <label
+                  htmlFor={`edit-def-${term.id}`}
+                  className="text-xs font-medium text-gray-500"
+                >
+                  Definition
+                </label>
+                <textarea
+                  ref={editDefRef}
+                  id={`edit-def-${term.id}`}
+                  value={editDefValue}
+                  onChange={(e) => setEditDefValue(e.target.value)}
+                  onKeyDown={handleDefKey}
+                  rows={3}
+                  className={EDIT_FIELD_CLASS}
+                  placeholder="Explanation (Shift+Enter for a new line)"
+                />
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs text-gray-500 flex flex-wrap gap-x-3 gap-y-1">
+                <span>
+                  <kbd className="font-mono border border-gray-300 rounded px-1">
+                    Enter
+                  </kbd>{" "}
+                  save
+                </span>
+                <span>
+                  <kbd className="font-mono border border-gray-300 rounded px-1">
+                    Shift+Enter
+                  </kbd>{" "}
+                  new line
+                </span>
+                <span>
+                  <kbd className="font-mono border border-gray-300 rounded px-1">
+                    Esc
+                  </kbd>{" "}
+                  cancel
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setIsEditing(false)}
+                >
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleSaveEdit} disabled={!canSave}>
+                  Save
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
