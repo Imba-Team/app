@@ -1,14 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Edit2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { apiClient } from '@/lib/axios';
-import { toast } from 'sonner';
-import { User } from '@/lib/hooks/useUser';
+import { User, useUpdateProfilePicture } from '@/lib/hooks/useUser';
 import { buildAssetUrl } from '@/lib/env';
 
 interface ProfileSectionProps {
@@ -18,32 +15,15 @@ interface ProfileSectionProps {
 }
 
 export default function ProfileSection({ userData, isEditing, setIsEditing }: ProfileSectionProps) {
-  const [uploading, setUploading] = useState(false);
+  const updateProfilePicture = useUpdateProfilePicture();
+  const uploading = updateProfilePicture.isPending;
 
   if (isEditing) return null;
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    setUploading(true);
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      await apiClient.patch('/users/me/profile-picture', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      toast.success('Profile picture updated');
-      window.location.reload();
-    } catch (error) {
-      console.error('upload error:', error);
-      toast.error('Failed to upload profile picture');
-    } finally {
-      setUploading(false);
-    }
+    updateProfilePicture.mutate(file);
   }
 
   return (

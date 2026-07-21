@@ -1,16 +1,16 @@
 # Mimir
 
-Monorepo: [apps/server](apps/server) (NestJS backend, `@mimir/server`) + [apps/web](apps/web) (Vite/React SPA, `@mimir/web`).
+Monorepo: [apps/server](apps/server) (NestJS backend, `@mimir/server`) + [apps/web](apps/web) (Next.js app, `@mimir/web`).
 
 ## Commands
 
-- `pnpm dev` — server + web in parallel (server on :9090, web on :9000)
-- `pnpm --filter @mimir/server exec prisma migrate dev` — apply migrations
-- `pnpm --filter @mimir/server exec prisma generate` — regenerate Prisma client (needed after fresh install)
+- `pnpm dev` — server + web in parallel (server on :9090, web on :3000; :9000 is MinIO)
+- `pnpm --filter @mimir/server prisma:migrate` — apply migrations (wraps `prisma migrate dev`, loads root `.env`)
+- `pnpm --filter @mimir/server generate` — regenerate Prisma client (needed after fresh install; loads root `.env`)
 - `pnpm --filter @mimir/server openapi` — regenerate OpenAPI spec + types
 - `pnpm --filter @mimir/web generate:api-types` — sync spec into web (calls the server script)
 - `pnpm --filter @mimir/web test` — vitest
-- `pnpm --filter @mimir/web test:e2e` — Playwright. **Kill any :9000 dev server first** (or use `pnpm test:e2e:ui`).
+- `pnpm --filter @mimir/web test:e2e` — Playwright. **Kill any :3000 dev server first** (or use `pnpm test:e2e:ui`).
 
 ## Conventions
 

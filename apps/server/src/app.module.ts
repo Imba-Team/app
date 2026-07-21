@@ -1,3 +1,4 @@
+import * as path from 'node:path';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -81,7 +82,10 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     SearchModule,
     NotificationModule,
     AnalyticsModule,
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: path.resolve(process.cwd(), '../../.env'),
+    }),
   ],
   providers: [
     // Globally enforce the named throttlers. Per-route decorators can

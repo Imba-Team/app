@@ -70,6 +70,29 @@ export function useDeleteMe() {
   });
 }
 
+export function useUpdateProfilePicture() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const { data } = await apiClient.patch(
+        "/users/me/profile-picture",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+      return data.data as User;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: userKeys.me() });
+      toast.success("Profile picture updated");
+    },
+    onError: (err: unknown) => {
+      toast.error((err as Error).message || "Failed to upload profile picture");
+    },
+  });
+}
+
 export function useChangePassword() {
   return useMutation({
     mutationFn: async (payload: {
