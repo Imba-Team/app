@@ -52,6 +52,49 @@ export class FlashcardProgressService {
     );
   }
 
+  /**
+   * Bulk cards+progress for a set — one row per flashcard, folded with the
+   * caller's UserCardProgress (or defaults if they have never touched it).
+   * Powers the module page's term list so the mastery dot reflects reality
+   * without N per-card requests.
+   */
+  async listWithProgress(
+    userId: string,
+    studySetId: string,
+  ): Promise<FlashcardWithProgressDto[]> {
+    const canAccess = await this.studySetService.canAccess(userId, studySetId);
+    if (!canAccess) throw new ForbiddenException('Study set is private');
+
+    const [flashcards, progressRows] = await Promise.all([
+      this.prisma.flashcard.findMany({
+        where: { studySetId },
+        orderBy: { orderIndex: 'asc' },
+      }),
+      this.prisma.userCardProgress.findMany({
+        where: { userId, setId: studySetId },
+      }),
+    ]);
+
+    const progressByCard = new Map(progressRows.map((p) => [p.cardId, p]));
+
+    return flashcards.map((fc) => {
+      const p = progressByCard.get(fc.id);
+      return plainToInstance(
+        FlashcardWithProgressDto,
+        {
+          id: fc.id,
+          term: fc.term,
+          definition: fc.definition,
+          status: p?.status ?? CardMasteryStatus.NEW,
+          weightedStreak: p?.weightedStreak.toString() ?? '0.00',
+          isStarred: p?.isStarred ?? false,
+          masteredAt: p?.masteredAt ?? null,
+        },
+        { excludeExtraneousValues: true },
+      );
+    });
+  }
+
   async setStarred(
     userId: string,
     flashcardId: string,

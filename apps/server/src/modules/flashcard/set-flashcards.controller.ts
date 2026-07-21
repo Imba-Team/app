@@ -23,6 +23,10 @@ import {
 import * as multer from 'multer';
 
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import {
+  ApiCreatedEnvelope,
+  ApiOkEnvelope,
+} from 'src/common/decorators/api-envelope.decorator';
 import { Role, Roles } from 'src/common/decorators/roles.decorator';
 import { IUser } from 'src/common/interfaces/user.interface';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
@@ -36,7 +40,9 @@ import {
   CsvPreviewResponseDto,
 } from './dtos/csv-import.dto';
 import { FlashcardResponseDto } from './dtos/flashcard-response.dto';
+import { FlashcardWithProgressDto } from './dtos/flashcard-with-progress.dto';
 import { CSV_MAX_BYTES, CsvImportService } from './csv-import.service';
+import { FlashcardProgressService } from './flashcard-progress.service';
 import { FlashcardService } from './flashcard.service';
 
 type MulterFile = {
@@ -77,12 +83,14 @@ export class SetFlashcardsController {
   constructor(
     private readonly flashcardService: FlashcardService,
     private readonly csvImportService: CsvImportService,
+    private readonly flashcardProgressService: FlashcardProgressService,
   ) {}
 
   @Post(':setId/cards')
   @HttpCode(201)
   @ApiOperation({ summary: 'Create a flashcard in a study set' })
   @ApiBody({ type: CreateFlashcardDto })
+  @ApiCreatedEnvelope(FlashcardResponseDto, { description: 'Flashcard created' })
   async create(
     @CurrentUser() user: IUser,
     @Param('setId') setId: string,
@@ -95,12 +103,38 @@ export class SetFlashcardsController {
   @Get(':setId/cards')
   @HttpCode(200)
   @ApiOperation({ summary: 'List flashcards in a study set' })
+  @ApiOkEnvelope(FlashcardResponseDto, {
+    isArray: true,
+    description: 'Flashcards retrieved',
+  })
   async list(
     @CurrentUser() user: IUser,
     @Param('setId') setId: string,
   ): Promise<ResponseDto<FlashcardResponseDto[]>> {
     const data = await this.flashcardService.list(user.id, setId);
     return { ok: true, message: 'Flashcards retrieved', data };
+  }
+
+  @Get(':setId/cards/progress')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: "List flashcards in a study set folded with the caller's progress",
+    description:
+      'One row per flashcard including status (NEW / LEARNING / MASTERED), weighted streak, and isStarred. Powers the module page term list — avoids N per-card requests.',
+  })
+  @ApiOkEnvelope(FlashcardWithProgressDto, {
+    isArray: true,
+    description: 'Flashcards with progress retrieved',
+  })
+  async listWithProgress(
+    @CurrentUser() user: IUser,
+    @Param('setId') setId: string,
+  ): Promise<ResponseDto<FlashcardWithProgressDto[]>> {
+    const data = await this.flashcardProgressService.listWithProgress(
+      user.id,
+      setId,
+    );
+    return { ok: true, message: 'Flashcards with progress retrieved', data };
   }
 
   @Post(':setId/cards/import/preview')

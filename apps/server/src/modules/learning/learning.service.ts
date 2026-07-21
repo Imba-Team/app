@@ -652,6 +652,35 @@ export class LearningService {
     return dto;
   }
 
+  /**
+   * Clear the caller's mastery + SRS state for a set. Wipes UserCardProgress,
+   * UserSetProgress, and SrsCard rows for every card in the set. Study-session
+   * history and the append-only attempt log are preserved — reset is a
+   * learner-facing "start over", not a delete-my-analytics.
+   */
+  async resetSetProgress(userId: string, setId: string): Promise<void> {
+    const canAccess = await this.studySetService.canAccess(userId, setId);
+    if (!canAccess) throw new ForbiddenException('Study set is private');
+
+    await this.prisma.$transaction([
+      this.prisma.userCardProgress.deleteMany({
+        where: { userId, setId },
+      }),
+      this.prisma.srsCard.deleteMany({
+        where: {
+          userId,
+          card: { studySetId: setId },
+        },
+      }),
+      this.prisma.userSetProgress.deleteMany({
+        where: { userId, setId },
+      }),
+    ]);
+    await this.redis.del(this.setProgressCacheKey(userId, setId));
+
+    this.logger.log(`Set progress reset: userId=${userId}, setId=${setId}`);
+  }
+
   private setProgressCacheKey(userId: string, setId: string): string {
     return `learning:set-progress:${userId}:${setId}`;
   }

@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
@@ -8,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { ApiOkEnvelope } from 'src/common/decorators/api-envelope.decorator';
 import { Role, Roles } from 'src/common/decorators/roles.decorator';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
 import { IUser } from 'src/common/interfaces/user.interface';
@@ -32,11 +34,28 @@ export class SetProgressController {
     description:
       'Returns { totalCards, newCount, learningCount, masteredCount }. Cache-aside via Redis (5-min TTL, invalidated on every answer).',
   })
+  @ApiOkEnvelope(SetProgressSummaryDto, { description: 'Set progress retrieved' })
   async getMine(
     @CurrentUser() user: IUser,
     @Param('setId', new ParseUUIDPipe()) setId: string,
   ): Promise<ResponseDto<SetProgressSummaryDto>> {
     const data = await this.learningService.getSetProgress(user.id, setId);
     return { ok: true, message: 'Set progress retrieved', data };
+  }
+
+  @Delete(':setId/my-progress')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Reset my mastery + SRS state for a study set',
+    description:
+      "Wipes the caller's UserCardProgress, SrsCard, and UserSetProgress rows for this set. Study-session history and the append-only attempt log are preserved.",
+  })
+  @ApiOkEnvelope(null, { description: 'Progress reset' })
+  async resetMine(
+    @CurrentUser() user: IUser,
+    @Param('setId', new ParseUUIDPipe()) setId: string,
+  ): Promise<ResponseDto<null>> {
+    await this.learningService.resetSetProgress(user.id, setId);
+    return { ok: true, message: 'Progress reset', data: null };
   }
 }
