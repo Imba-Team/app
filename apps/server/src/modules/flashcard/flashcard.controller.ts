@@ -10,6 +10,7 @@ import {
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { ApiOkEnvelope } from 'src/common/decorators/api-envelope.decorator';
 import { Role, Roles } from 'src/common/decorators/roles.decorator';
 import { IUser } from 'src/common/interfaces/user.interface';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
@@ -32,6 +33,7 @@ export class FlashcardController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Update a flashcard' })
   @ApiBody({ type: UpdateFlashcardDto })
+  @ApiOkEnvelope(FlashcardResponseDto, { description: 'Flashcard updated' })
   async update(
     @CurrentUser() user: IUser,
     @Param('id') id: string,
@@ -44,6 +46,7 @@ export class FlashcardController {
   @Delete(':id')
   @HttpCode(200)
   @ApiOperation({ summary: 'Delete a flashcard' })
+  @ApiOkEnvelope(null, { description: 'Flashcard deleted' })
   async delete(
     @CurrentUser() user: IUser,
     @Param('id') id: string,

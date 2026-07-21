@@ -45,4 +45,12 @@ export class StudySetResponseDto {
   @ApiProperty({ example: 0 })
   @Expose()
   flashcardsCount?: number;
+
+  @ApiProperty({ type: String, format: 'date-time' })
+  @Expose()
+  createdAt: Date;
+
+  @ApiProperty({ type: String, format: 'date-time' })
+  @Expose()
+  updatedAt: Date;
 }

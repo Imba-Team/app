@@ -160,6 +160,7 @@ export class StudySetService {
     const sets = await this.prisma.studySet.findMany({
       where: { ownerId: userId },
       include: { flashcards: true },
+      orderBy: { updatedAt: 'desc' },
     });
     const sorted = sets.map((s) => this.withSortedFlashcards(s));
     return this.buildStudySetsForUserBatch(sorted, userId);
@@ -186,7 +187,18 @@ export class StudySetService {
       }
     }
 
-    return this.buildStudySetsForUserBatch([...byId.values()], userId);
+    const all = [...byId.values()].sort(
+      (a, b) => b.updatedAt.getTime() - a.updatedAt.getTime(),
+    );
+    return this.buildStudySetsForUserBatch(all, userId);
+  }
+
+  async delete(userId: string, studySetId: string): Promise<void> {
+    this.logger.debug(`Deleting study set: id=${studySetId}, userId=${userId}`);
+    await this.ensureOwnedStudySet(userId, studySetId);
+    await this.prisma.studySet.delete({ where: { id: studySetId } });
+    await this.searchSync.enqueueDelete(studySetId);
+    this.logger.log(`Study set deleted: id=${studySetId}, userId=${userId}`);
   }
 
   async searchPublic(userId: string, query: SearchStudySetsDto) {
@@ -315,6 +327,8 @@ export class StudySetService {
         isOwner,
         isCollected,
         flashcardsCount: flashcards.length,
+        createdAt: studySet.createdAt,
+        updatedAt: studySet.updatedAt,
       },
       { excludeExtraneousValues: true },
     );
@@ -449,6 +463,8 @@ export class StudySetService {
             isOwner,
             isCollected,
             flashcardsCount: flashcards.length,
+            createdAt: studySet.createdAt,
+            updatedAt: studySet.updatedAt,
           },
           { excludeExtraneousValues: true },
         );

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
@@ -21,6 +22,10 @@ import { plainToInstance } from 'class-transformer';
 import { StudySetService } from './study-set.service';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import {
+  ApiCreatedEnvelope,
+  ApiOkEnvelope,
+} from 'src/common/decorators/api-envelope.decorator';
 import { Roles, Role } from 'src/common/decorators/roles.decorator';
 import { IUser } from 'src/common/interfaces/user.interface';
 import { JwtGuard } from 'src/guards/jwt.guard';
@@ -44,6 +49,7 @@ export class StudySetController {
   @HttpCode(201)
   @ApiOperation({ summary: 'Create a study set' })
   @ApiBody({ type: CreateStudySetDto })
+  @ApiCreatedEnvelope(StudySetResponseDto, { description: 'Study set created' })
   async create(
     @CurrentUser() user: IUser,
     @Body() dto: CreateStudySetDto,
@@ -60,6 +66,7 @@ export class StudySetController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Update own study set' })
   @ApiBody({ type: UpdateStudySetDto })
+  @ApiOkEnvelope(StudySetResponseDto, { description: 'Study set updated' })
   async update(
     @CurrentUser() user: IUser,
     @Param('id') id: string,
@@ -75,6 +82,7 @@ export class StudySetController {
   @Patch(':id/visibility')
   @HttpCode(200)
   @ApiOperation({ summary: 'Make study set public/private' })
+  @ApiOkEnvelope(StudySetResponseDto, { description: 'Visibility updated' })
   async updateVisibility(
     @CurrentUser() user: IUser,
     @Param('id') id: string,
@@ -96,6 +104,10 @@ export class StudySetController {
   @ApiOperation({
     summary: 'List study sets I created',
   })
+  @ApiOkEnvelope(StudySetResponseDto, {
+    isArray: true,
+    description: 'Study sets retrieved',
+  })
   async myStudySets(
     @CurrentUser() user: IUser,
   ): Promise<ResponseDto<StudySetResponseDto[]>> {
@@ -111,6 +123,10 @@ export class StudySetController {
   @Get('collection')
   @HttpCode(200)
   @ApiOperation({ summary: 'List study sets in my collection' })
+  @ApiOkEnvelope(StudySetResponseDto, {
+    isArray: true,
+    description: 'Collection retrieved',
+  })
   async myCollection(
     @CurrentUser() user: IUser,
   ): Promise<ResponseDto<StudySetResponseDto[]>> {
@@ -127,6 +143,10 @@ export class StudySetController {
   @HttpCode(200)
   @ApiQuery({ name: 'q', required: false })
   @ApiOperation({ summary: 'Search public study sets' })
+  @ApiOkEnvelope(StudySetResponseDto, {
+    isArray: true,
+    description: 'Public study sets retrieved',
+  })
   async publicStudySets(
     @CurrentUser() user: IUser,
     @Query() query: SearchStudySetsDto,
@@ -143,6 +163,7 @@ export class StudySetController {
   @Get(':id')
   @HttpCode(200)
   @ApiOperation({ summary: 'Get study set details' })
+  @ApiOkEnvelope(StudySetResponseDto, { description: 'Study set retrieved' })
   async getOne(
     @CurrentUser() user: IUser,
     @Param('id') id: string,
@@ -152,5 +173,17 @@ export class StudySetController {
       excludeExtraneousValues: true,
     });
     return { ok: true, message: 'Study set retrieved', data };
+  }
+
+  @Delete(':id')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Delete own study set' })
+  @ApiOkEnvelope(null, { description: 'Study set deleted' })
+  async remove(
+    @CurrentUser() user: IUser,
+    @Param('id') id: string,
+  ): Promise<ResponseDto<null>> {
+    await this.studySetService.delete(user.id, id);
+    return { ok: true, message: 'Study set deleted', data: null };
   }
 }

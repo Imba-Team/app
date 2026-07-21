@@ -2,6 +2,7 @@ import { Controller, Get, HttpCode, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { ApiOkEnvelope } from 'src/common/decorators/api-envelope.decorator';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
 import { IUser } from 'src/common/interfaces/user.interface';
 import { JwtGuard } from 'src/guards/jwt.guard';
@@ -19,6 +20,10 @@ export class LibraryController {
   @Get()
   @HttpCode(200)
   @ApiOperation({ summary: 'Get my library' })
+  @ApiOkEnvelope(LibraryItemDto, {
+    isArray: true,
+    description: 'Library retrieved',
+  })
   async getLibrary(
     @CurrentUser() user: IUser,
   ): Promise<ResponseDto<LibraryItemDto[]>> {
