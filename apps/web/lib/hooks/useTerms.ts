@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  getTermsByModuleId,
   createTerm,
   updateTerm,
   deleteTerm,
   getTermProgress,
+  getTermsWithProgress,
+  toggleTermStar,
   updateTermProgress,
   CreateTermData,
   UpdateTermData,
@@ -35,8 +36,34 @@ export const termKeys = {
 export function useTerms(moduleId: string) {
   return useQuery({
     queryKey: termKeys.list(moduleId),
-    queryFn: () => getTermsByModuleId(moduleId),
+    // Bulk cards-with-progress so mastery dots + starred state populate
+    // in a single request instead of one-per-card lookups.
+    queryFn: () => getTermsWithProgress(moduleId),
     enabled: !!moduleId,
+  });
+}
+
+export function useToggleTermStar(moduleId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isStarred }: { id: string; isStarred: boolean }) =>
+      toggleTermStar(id, isStarred),
+    onMutate: async ({ id, isStarred }) => {
+      await queryClient.cancelQueries({ queryKey: termKeys.list(moduleId) });
+      const previous = queryClient.getQueryData<Term[]>(
+        termKeys.list(moduleId),
+      );
+      queryClient.setQueryData<Term[]>(termKeys.list(moduleId), (old) =>
+        old ? old.map((t) => (t.id === id ? { ...t, isStarred } : t)) : old,
+      );
+      return { previous };
+    },
+    onError: (error: Error, _vars, ctx) => {
+      if (ctx?.previous) {
+        queryClient.setQueryData(termKeys.list(moduleId), ctx.previous);
+      }
+      toast.error(error.message || "Failed to update star");
+    },
   });
 }
 

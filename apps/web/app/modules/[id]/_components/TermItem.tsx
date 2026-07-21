@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Star, Edit2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Star, MoreHorizontal } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,33 @@ interface TermItemProps {
   isCollected: boolean;
 }
 
+/**
+ * Status pill — reflects the card's mastery bucket from the backend
+ * (NEW / LEARNING / MASTERED, mapped to `not_started / in_progress /
+ * completed` on the wire). A small colored dot is not enough to be
+ * accessible; pair it with a text label.
+ */
+const STATUS_STYLES: Record<
+  string,
+  { dot: string; label: string; badge: string }
+> = {
+  completed: {
+    dot: "bg-emerald-500",
+    label: "Mastered",
+    badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
+  in_progress: {
+    dot: "bg-amber-500",
+    label: "Learning",
+    badge: "bg-amber-50 text-amber-700 border-amber-200",
+  },
+  not_started: {
+    dot: "bg-gray-300",
+    label: "New",
+    badge: "bg-gray-100 text-gray-600 border-gray-200",
+  },
+};
+
 export default function TermItem({
   term,
   onDelete,
@@ -40,93 +67,127 @@ export default function TermItem({
   const [isEditing, setIsEditing] = useState(false);
   const [editTermValue, setEditTermValue] = useState(term.term);
   const [editDefValue, setEditDefValue] = useState(term.definition);
+  const editTermRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing) editTermRef.current?.focus();
+  }, [isEditing]);
 
   const handleStartEditing = () => {
+    setEditTermValue(term.term);
+    setEditDefValue(term.definition);
     setIsEditing(true);
   };
 
   const handleSaveEdit = () => {
-    onSaveEdit(term.id, editTermValue, editDefValue);
+    if (!editTermValue.trim() || !editDefValue.trim()) return;
+    onSaveEdit(term.id, editTermValue.trim(), editDefValue.trim());
     setIsEditing(false);
   };
-  return (
-    <Card className="bg-white rounded-2xl h-16 w-full flex p-4 items-center flex-row">
-      <div
-        className={`size-4 rounded-full ${
-          term.status === "completed"
-            ? "bg-green-100 text-green-800"
-            : term.status === "in_progress"
-            ? "bg-yellow-100 text-yellow-800"
-            : "bg-gray-100 text-gray-800"
-        }`}
-      ></div>
 
-      <div className="flex-1 ml-4">
+  const handleEditKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSaveEdit();
+    } else if (e.key === "Escape") {
+      setIsEditing(false);
+    }
+  };
+
+  const status = STATUS_STYLES[term.status ?? "not_started"] ?? STATUS_STYLES.not_started;
+
+  return (
+    <Card className="bg-white rounded-2xl w-full flex p-4 items-center flex-row gap-3">
+      {/* Status pill */}
+      <div
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium shrink-0",
+          status.badge,
+        )}
+        title={`Mastery: ${status.label}`}
+        aria-label={`Mastery: ${status.label}`}
+      >
+        <span className={cn("size-2 rounded-full", status.dot)} />
+        {status.label}
+      </div>
+
+      <div className="flex-1 min-w-0">
         {isEditing ? (
-          <div className="flex gap-4 items-center">
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
             <input
-              className="p-2  rounded-lg flex-1"
+              ref={editTermRef}
+              className="p-2 border border-gray-200 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40"
               value={editTermValue}
               onChange={(e) => setEditTermValue(e.target.value)}
+              onKeyDown={handleEditKey}
+              placeholder="Term"
             />
             <input
-              className="p-2  rounded-lg flex-1"
+              className="p-2 border border-gray-200 rounded-lg flex-1 focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40"
               value={editDefValue}
               onChange={(e) => setEditDefValue(e.target.value)}
+              onKeyDown={handleEditKey}
+              placeholder="Definition"
             />
-
-            <button
-              onClick={handleSaveEdit}
-              className="px-5 py-2 bg-blue-500 text-white rounded-xl text-sm"
-            >
-              Save
-            </button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleSaveEdit}>
+                Save
+              </Button>
+            </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between">
-            <div className="flex gap-3">
-              <div className="font-semibold text-lg">{term.term}</div>
-              <div className="w-1 bg-gray-300 rounded-full"></div>
-              <div className="font-semibold text-lg">
-                {term.definition.slice(0, 40)}
-                {term.definition.length > 30 ? "..." : ""}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex gap-3 min-w-0">
+              <div className="font-semibold text-base sm:text-lg truncate">
+                {term.term}
+              </div>
+              <div className="w-px bg-gray-200 shrink-0" />
+              <div className="text-gray-700 text-base sm:text-lg truncate">
+                {term.definition}
               </div>
             </div>
 
-            <div className="flex items-center gap-x-2">
+            <div className="flex items-center gap-1 shrink-0">
+              {isCollected && (
+                <Button
+                  onClick={onToggleStar}
+                  variant="ghost"
+                  size="icon"
+                  aria-label={term.isStarred ? "Remove star" : "Add star"}
+                  aria-pressed={term.isStarred}
+                >
+                  <Star
+                    className={cn(
+                      "size-5 transition-colors",
+                      term.isStarred
+                        ? "text-yellow-400 fill-yellow-400"
+                        : "text-gray-300 hover:text-gray-500",
+                    )}
+                  />
+                </Button>
+              )}
+
               {isOwned && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size={"icon"}>
-                      <Edit2 className="text-gray-500 cursor-pointer hover:scale-110 transition size-5" />
+                    <Button variant="ghost" size="icon" aria-label="Term actions">
+                      <MoreHorizontal className="text-gray-500 size-5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuLabel>Edit Term</DropdownMenuLabel>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Term</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleStartEditing}>
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-red-600"
-                      onClick={onDelete}
-                    >
+                    <DropdownMenuItem className="text-red-600" onClick={onDelete}>
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              )}
-
-              {isCollected && (
-                <Button onClick={onToggleStar} variant="ghost" size={"icon"}>
-                  <Star
-                    className={cn(
-                      "text-gray-300 size-5 cursor-pointer hover:scale-110 transition",
-                      term.isStarred && "text-yellow-400"
-                    )}
-                    fill="currentColor"
-                  />
-                </Button>
               )}
             </div>
           </div>
