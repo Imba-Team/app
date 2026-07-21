@@ -1,68 +1,42 @@
-/**
- * Authentication utility functions for cookie and session management
- */
-
-import { API_BASE_URL, buildApiUrl } from '@/lib/env';
+import { apiClient } from '@/lib/axios';
+import { isAxiosError } from 'axios';
 
 export interface AuthStatus {
   isAuthenticated: boolean;
   needsRefresh: boolean;
 }
 
-/**
- * Checks if the user is authenticated by making a request to the /users/me endpoint
- * This will validate if the cookies are still valid on the backend
- */
+function clearHintCookie() {
+  if (typeof document !== 'undefined') {
+    document.cookie = 'isLoggedIn=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  }
+}
+
 export async function checkAuth(): Promise<AuthStatus> {
+  if (typeof document !== 'undefined' && !hasValidLoginCookie()) {
+    return { isAuthenticated: false, needsRefresh: false };
+  }
+
   try {
-    const res = await fetch(buildApiUrl('/users/me'), {
-      method: 'GET',
-      credentials: 'include',
-    });
-
-    if (res.ok) {
-      return { isAuthenticated: true, needsRefresh: false };
-    }
-
-    // If unauthorized (401), the token has expired
-    if (res.status === 401) {
+    await apiClient.get('/users/me');
+    return { isAuthenticated: true, needsRefresh: false };
+  } catch (error) {
+    if (isAxiosError(error) && error.response?.status === 401) {
       return { isAuthenticated: false, needsRefresh: true };
     }
-
-    return { isAuthenticated: false, needsRefresh: false };
-  } catch (error) {
     console.error('Auth check failed:', error);
     return { isAuthenticated: false, needsRefresh: false };
   }
 }
 
-/**
- * Clears authentication cookies by making a logout request
- * This ensures cookies are properly cleared on both frontend and backend
- */
 export async function clearAuthCookies(): Promise<boolean> {
   try {
-    const res = await fetch(buildApiUrl('/auth/logout'), {
-      method: 'POST',
-      credentials: 'include',
-    });
-
-    // Clear client-side cookies as fallback
-    if (typeof document !== 'undefined') {
-      document.cookie = 'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'isLoggedIn=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    }
-
-    return res.ok;
+    await apiClient.post('/auth/logout');
+    clearHintCookie();
+    return true;
   } catch (error) {
     console.error('Failed to clear auth cookies:', error);
-
-    // Still try to clear client-side cookies
-    if (typeof document !== 'undefined') {
-      document.cookie = 'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'isLoggedIn=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    }
-
+    clearHintCookie();
     return false;
   }
 }

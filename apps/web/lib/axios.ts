@@ -1,85 +1,79 @@
-import axios from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import { API_BASE_URL } from '@/lib/env';
 
-// Create axios instance with default config
+type RetriableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
+
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true, // Important for cookies/sessions
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // 10 seconds
+  timeout: 10000,
 });
 
-// Request interceptor - for adding auth tokens, logging, etc.
 apiClient.interceptors.request.use(
   (config) => {
-    // You can add auth tokens here if needed
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
-
-    // Log requests in development
     if (process.env.NODE_ENV === 'development') {
       console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
     }
-
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
 
-// Response interceptor - for error handling, token refresh, etc.
+const REFRESH_URL = '/auth/refresh';
+const NO_REFRESH_URLS = new Set([REFRESH_URL, '/auth/login', '/auth/register', '/auth/logout']);
+
+let refreshPromise: Promise<void> | null = null;
+
+async function refreshSession(): Promise<void> {
+  if (!refreshPromise) {
+    refreshPromise = apiClient
+      .post(REFRESH_URL)
+      .then(() => undefined)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
 apiClient.interceptors.response.use(
   (response) => {
-    // Log responses in development
     if (process.env.NODE_ENV === 'development') {
       console.log(
         `[API Response] ${response.config.method?.toUpperCase()} ${response.config.url}`,
         response.status,
       );
     }
-
     return response;
   },
-  (error) => {
-    // Handle common errors globally
-    if (error.response) {
-      const { status, data } = error.response;
+  async (error: AxiosError) => {
+    const originalRequest = error.config as RetriableRequest | undefined;
+    const status = error.response?.status;
+    const url = originalRequest?.url ?? '';
 
-      // Log errors in development
-      if (process.env.NODE_ENV === 'development') {
-        console.error(`[API Error] ${status}:`, data);
+    if (
+      status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !NO_REFRESH_URLS.has(url)
+    ) {
+      originalRequest._retry = true;
+      try {
+        await refreshSession();
+        return apiClient.request(originalRequest as AxiosRequestConfig);
+      } catch {
+        // Fall through to normal 401 handling below.
       }
+    }
 
-      // Handle specific status codes
-      switch (status) {
-        case 401:
-          // Unauthorized - could redirect to login
-          console.error('Unauthorized - please log in');
-          // window.location.href = '/login';
-          break;
-        case 403:
-          console.error("Forbidden - you don't have permission");
-          break;
-        case 404:
-          console.error('Resource not found');
-          break;
-        case 500:
-          console.error('Server error - please try again later');
-          break;
-        default:
-          console.error(`Error ${status}: ${data?.message || 'Unknown error'}`);
-      }
-    } else if (error.request) {
-      // Request made but no response
+    if (process.env.NODE_ENV === 'development' && error.response) {
+      const { status: s, data } = error.response;
+      console.error(`[API Error] ${s}:`, data);
+    } else if (process.env.NODE_ENV === 'development' && error.request) {
       console.error('Network error - no response from server');
-    } else {
-      // Something else happened
-      console.error('Request error:', error.message);
     }
 
     return Promise.reject(error);
