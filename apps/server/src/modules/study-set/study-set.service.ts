@@ -196,7 +196,33 @@ export class StudySetService {
   async delete(userId: string, studySetId: string): Promise<void> {
     this.logger.debug(`Deleting study set: id=${studySetId}, userId=${userId}`);
     await this.ensureOwnedStudySet(userId, studySetId);
-    await this.prisma.studySet.delete({ where: { id: studySetId } });
+
+    // Most children reference StudySet or Flashcard with onDelete: Restrict.
+    // Delete them explicitly in dependency order inside one transaction:
+    //   TestQuestionAttempt -> TestAttempt          (both Restrict)
+    //   StudySession, Comment, Collaborator, Fav,
+    //   FolderStudySet, StudySetTag                 (all Restrict on set)
+    //   Flashcard                                    (Restrict on set; cascades
+    //     UserCardProgress + SrsCard on flashcard delete)
+    //   StudySet                                     (cascades UserSetProgress)
+    // Any of these left dangling would raise a FK violation on the final
+    // delete and surface as a 500 to the caller — which is what triggered
+    // this fix.
+    await this.prisma.$transaction([
+      this.prisma.testQuestionAttempt.deleteMany({
+        where: { testAttempt: { studySetId } },
+      }),
+      this.prisma.testAttempt.deleteMany({ where: { studySetId } }),
+      this.prisma.studySession.deleteMany({ where: { studySetId } }),
+      this.prisma.comment.deleteMany({ where: { studySetId } }),
+      this.prisma.studySetCollaborator.deleteMany({ where: { studySetId } }),
+      this.prisma.favouriteStudySet.deleteMany({ where: { studySetId } }),
+      this.prisma.folderStudySet.deleteMany({ where: { studySetId } }),
+      this.prisma.studySetTag.deleteMany({ where: { studySetId } }),
+      this.prisma.flashcard.deleteMany({ where: { studySetId } }),
+      this.prisma.studySet.delete({ where: { id: studySetId } }),
+    ]);
+
     await this.searchSync.enqueueDelete(studySetId);
     this.logger.log(`Study set deleted: id=${studySetId}, userId=${userId}`);
   }

@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Plus, SearchX } from "lucide-react";
 import ModuleCard from "@/components/ModuleCard";
 import ModuleListItem from "@/components/ModuleListItem";
-import AddModuleModal from "@/components/AddModuleModal";
+import CreateModuleCard from "@/components/CreateModuleCard";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { Module as ModuleType } from "@/lib/api";
 import {
@@ -16,16 +19,14 @@ import {
 } from "@/lib/hooks/useModules";
 import { toast } from "sonner";
 import { DashboardLoading } from "./DashboardSkeleton";
+import EmptyDashboard from "./EmptyDashboard";
 
 export default function DashboardTab() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [showModal, setShowModal] = useState(false);
 
-  // Queries
   const { data: modules = [], isLoading, isError } = useModules();
 
-  // Mutations
   const deleteModule = useDeleteModule();
   const updateModule = useUpdateModule();
   const uncollectModule = useUncollectModule();
@@ -40,7 +41,7 @@ export default function DashboardTab() {
 
   const handleUpdateModule = (
     id: string,
-    data: { title: string; description: string; isPrivate: boolean }
+    data: { title: string; description: string; isPrivate: boolean },
   ) => {
     updateModule.mutate({ id, data });
   };
@@ -57,8 +58,15 @@ export default function DashboardTab() {
     toast.error("Failed to load modules");
   }
 
+  // Zero-modules learner: replace the whole dashboard with a welcome
+  // hero + starter CTA. The standard grid layout with a single "+"
+  // button was hostile to first-run users.
+  if (modules.length === 0) {
+    return <EmptyDashboard />;
+  }
+
   const filteredModules = modules.filter((m: ModuleType) =>
-    m.title?.toLowerCase().includes(searchQuery.toLowerCase())
+    m.title?.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const recentModules = modules.slice(0, 4);
@@ -70,6 +78,11 @@ export default function DashboardTab() {
         {recentModules.map((m: ModuleType) => (
           <ModuleCard key={m.id} module={m} onClick={handleModuleClick} />
         ))}
+        {/* Fill the row with a Create tile when Recent has fewer than 3
+            cards, so the section never looks like a half-empty grid. */}
+        {recentModules.length > 0 && recentModules.length < 3 && (
+          <CreateModuleCard />
+        )}
       </div>
 
       <div className="mb-2">
@@ -77,11 +90,14 @@ export default function DashboardTab() {
 
         <div className="flex gap-4 mb-4 items-center">
           <Button
-            className="w-15 h-10 rounded-lg text-2xl flex items-center justify-center hover:scale-105 transition-transform cursor-pointer"
-            variant={"outline"}
-            onClick={() => setShowModal(true)}
+            asChild
+            variant="outline"
+            aria-label="Create new module"
+            className="w-15 h-10 rounded-lg flex items-center justify-center hover:scale-105 transition-transform"
           >
-            +
+            <Link href="/modules/new">
+              <Plus size={20} />
+            </Link>
           </Button>
           <Input
             type="text"
@@ -94,24 +110,38 @@ export default function DashboardTab() {
       </div>
 
       <div className="flex flex-col font-semibold text-lg">
-        {filteredModules.map((m: ModuleType) => (
-          <ModuleListItem
-            key={m.id}
-            module={m}
-            onClick={handleModuleClick}
-            onDelete={handleDeleteModule}
-            onUpdate={handleUpdateModule}
-          />
-        ))}
+        {filteredModules.length === 0 && searchQuery ? (
+          <Card className="bg-white">
+            <CardContent className="p-8 flex flex-col items-center gap-2 text-center">
+              <SearchX className="text-gray-400" size={28} />
+              <p className="text-gray-800 font-semibold">
+                No modules match &ldquo;{searchQuery}&rdquo;
+              </p>
+              <p className="text-sm text-gray-500 font-normal">
+                Try a different search, or clear the filter.
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSearchQuery("")}
+                className="mt-2 font-normal"
+              >
+                Clear search
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredModules.map((m: ModuleType) => (
+            <ModuleListItem
+              key={m.id}
+              module={m}
+              onClick={handleModuleClick}
+              onDelete={handleDeleteModule}
+              onUpdate={handleUpdateModule}
+            />
+          ))
+        )}
       </div>
-
-      {showModal && (
-        <AddModuleModal
-          onAdd={() => {
-            setShowModal(false);
-          }}
-        />
-      )}
     </main>
   );
 }
