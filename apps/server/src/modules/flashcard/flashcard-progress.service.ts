@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CardMasteryStatus } from '@prisma/client';
+import { CardMasteryStatus, Prisma } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
@@ -57,24 +57,113 @@ export class FlashcardProgressService {
    * caller's UserCardProgress (or defaults if they have never touched it).
    * Powers the module page's term list so the mastery dot reflects reality
    * without N per-card requests.
+   *
+   * `filter.starred`/`filter.status` narrow the set at the SQL layer so
+   * callers (flashcard mode with an "only starred" toggle, module page
+   * with a mastery filter) don't need to pull every card just to throw
+   * most of them away in JS.
+   *
+   * A subtle behaviour: `status = NEW` includes cards that have no
+   * UserCardProgress row yet (they're implicitly NEW). This is why the
+   * query walks flashcards first and joins optional progress, rather
+   * than the other way round.
    */
   async listWithProgress(
     userId: string,
     studySetId: string,
+    filter: { starred?: boolean; status?: CardMasteryStatus; q?: string } = {},
   ): Promise<FlashcardWithProgressDto[]> {
     const canAccess = await this.studySetService.canAccess(userId, studySetId);
     if (!canAccess) throw new ForbiddenException('Study set is private');
 
-    const [flashcards, progressRows] = await Promise.all([
-      this.prisma.flashcard.findMany({
-        where: { studySetId },
-        orderBy: { orderIndex: 'asc' },
-      }),
-      this.prisma.userCardProgress.findMany({
-        where: { userId, setId: studySetId },
-      }),
-    ]);
+    // Any non-NEW filter or `starred` filter guarantees a UserCardProgress
+    // row must exist, so we narrow the flashcard query by requiring an
+    // eligible progress row per (userId, cardId).
+    const progressRowConstraint: {
+      isStarred?: boolean;
+      status?: CardMasteryStatus;
+    } = {};
+    if (filter.starred !== undefined) {
+      progressRowConstraint.isStarred = filter.starred;
+    }
+    if (filter.status !== undefined && filter.status !== CardMasteryStatus.NEW) {
+      progressRowConstraint.status = filter.status;
+    }
 
+    const requireProgressRow = Object.keys(progressRowConstraint).length > 0;
+    // Special-case: status=NEW means "no progress row OR row with status=NEW".
+    const wantNewOnly = filter.status === CardMasteryStatus.NEW;
+
+    // Text search on term/definition. Applied as an AND against the
+    // mastery/starred filter so a search inside the "Learning" pill
+    // narrows within that bucket instead of resetting it.
+    const q = filter.q?.trim();
+    const textFilter = q
+      ? {
+          OR: [
+            { term: { contains: q, mode: 'insensitive' as const } },
+            { definition: { contains: q, mode: 'insensitive' as const } },
+          ],
+        }
+      : undefined;
+
+    const flashcardWhere: {
+      studySetId: string;
+      cardProgress?: {
+        some?: { userId: string } & typeof progressRowConstraint;
+        none?: { userId: string };
+      };
+      AND?: Array<{
+        OR: Array<{
+          term?: { contains: string; mode: 'insensitive' };
+          definition?: { contains: string; mode: 'insensitive' };
+        }>;
+      }>;
+      OR?: Array<{
+        cardProgress:
+          | { some: { userId: string; status: CardMasteryStatus } }
+          | { none: { userId: string } };
+      }>;
+    } = { studySetId };
+
+    if (wantNewOnly && filter.starred === undefined) {
+      // NEW = never studied OR studied but still in NEW bucket. Wrap
+      // in `OR` at the top level; the text filter goes inside `AND`
+      // so it composes cleanly with the mastery OR-branch.
+      flashcardWhere.OR = [
+        {
+          cardProgress: {
+            some: { userId, status: CardMasteryStatus.NEW },
+          },
+        },
+        { cardProgress: { none: { userId } } },
+      ];
+    } else if (requireProgressRow) {
+      flashcardWhere.cardProgress = {
+        some: { userId, ...progressRowConstraint },
+      };
+    }
+
+    if (textFilter) {
+      flashcardWhere.AND = [textFilter];
+    }
+
+    const flashcards = await this.prisma.flashcard.findMany({
+      // Cast our locally-typed shape to the generated Prisma input —
+      // structurally identical, but the generated type wraps things in
+      // additional utility unions we don't need to spell out.
+      where: flashcardWhere as Prisma.FlashcardWhereInput,
+      orderBy: { orderIndex: 'asc' },
+    });
+
+    if (flashcards.length === 0) return [];
+
+    const progressRows = await this.prisma.userCardProgress.findMany({
+      where: {
+        userId,
+        cardId: { in: flashcards.map((fc) => fc.id) },
+      },
+    });
     const progressByCard = new Map(progressRows.map((p) => [p.cardId, p]));
 
     return flashcards.map((fc) => {

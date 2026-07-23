@@ -1,27 +1,73 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ChevronLeft, ChevronRight, Loader2, SearchX } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import type { CommunityModule as CommunityModuleType } from '@/lib/api';
-import { useState } from 'react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import type { CommunityModule as CommunitySearchHit } from '@/lib/api';
 import { useCommunityModules } from '@/lib/hooks/useModules';
-import { buildAssetUrl } from '@/lib/env';
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 import { toast } from 'sonner';
 import { CommunityLoading } from './CommunitySkeleton';
 
+const PAGE_SIZE = 20;
+
+// A small fixed list of common languages. The API accepts any string,
+// so we could later replace this with a tags-style endpoint that
+// returns the languages actually present in the corpus.
+const LANGUAGE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'English', label: 'English' },
+  { value: 'Spanish', label: 'Spanish' },
+  { value: 'French', label: 'French' },
+  { value: 'German', label: 'German' },
+  { value: 'Italian', label: 'Italian' },
+  { value: 'Portuguese', label: 'Portuguese' },
+  { value: 'Russian', label: 'Russian' },
+  { value: 'Turkish', label: 'Turkish' },
+  { value: 'Azerbaijani', label: 'Azerbaijani' },
+  { value: 'Arabic', label: 'Arabic' },
+  { value: 'Chinese', label: 'Chinese' },
+  { value: 'Japanese', label: 'Japanese' },
+  { value: 'Korean', label: 'Korean' },
+];
+
+// Radix Select doesn't allow "" as an item value, so we use a
+// sentinel and translate at query-build time.
+const ALL_LANGUAGES = '__all__';
+
 export default function CommunityTab() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [inputValue, setInputValue] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [language, setLanguage] = useState<string>(ALL_LANGUAGES);
+  const [page, setPage] = useState(1);
+  const debouncedSearch = useDebouncedValue(searchInput);
 
-  const { data: communityModules = [], isLoading, isError } = useCommunityModules(searchQuery);
-
-  const handleSearch = () => {
-    setSearchQuery(inputValue);
+  // Reset to page 1 whenever the debounced query changes so a
+  // narrower search doesn't leave the learner staring at an empty
+  // page 4.
+  const query = {
+    q: debouncedSearch,
+    language: language === ALL_LANGUAGES ? undefined : language,
+    page,
+    limit: PAGE_SIZE,
   };
+
+  const {
+    data,
+    isLoading,
+    isError,
+    isFetching,
+  } = useCommunityModules(query);
 
   if (isLoading) {
     return <CommunityLoading />;
@@ -31,6 +77,15 @@ export default function CommunityTab() {
     toast.error('Failed to load community modules');
   }
 
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const handleSearchChange = (value: string) => {
+    setSearchInput(value);
+    setPage(1);
+  };
+
   return (
     <main className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
       {/* Header Section */}
@@ -39,93 +94,184 @@ export default function CommunityTab() {
           Community Modules
         </h2>
         <p className="text-center text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-          Search and explore modules shared by the Mimir community!
+          Search and explore modules shared by the Mimir community. Full-text
+          search across titles, descriptions, and tags.
         </p>
       </div>
 
-      {/* Search Section */}
+      {/* Search Section — debounced, no submit button. The old submit-
+          to-search pattern was cargo-culted from a client-filter world
+          where each keystroke was cheap. With an ES call per query, a
+          250 ms debounce is a better fit. */}
       <div className="mb-8 md:mb-10">
-        <div
-          className="flex flex-col sm:flex-row w-full max-w-2xl mx-auto items-stretch sm:items-center gap-3 sm:gap-2"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              handleSearch();
-            }
-          }}
-        >
-          <Input
-            type="text"
-            placeholder="Search community modules..."
-            className="h-11 sm:h-10 flex-1"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-          />
-          <Button
-            type="submit"
-            variant="default"
-            onClick={handleSearch}
-            className="h-11 sm:h-10 sm:w-auto w-full"
+        <div className="flex flex-col sm:flex-row gap-2 w-full max-w-2xl mx-auto">
+          <div className="relative flex-1">
+            <Input
+              type="text"
+              placeholder="Search titles, descriptions, and tags…"
+              className="h-11 pr-10"
+              value={searchInput}
+              onChange={(e) => handleSearchChange(e.target.value)}
+            />
+            {isFetching && (
+              <Loader2
+                size={16}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 animate-spin"
+              />
+            )}
+          </div>
+          <Select
+            value={language}
+            onValueChange={(v) => {
+              setLanguage(v);
+              setPage(1);
+            }}
           >
-            Search
-          </Button>
+            <SelectTrigger className="h-11 w-full sm:w-48">
+              <SelectValue placeholder="Language" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_LANGUAGES}>All languages</SelectItem>
+              {LANGUAGE_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+        {total > 0 && (
+          <p className="text-xs text-center text-gray-500 mt-2">
+            {total.toLocaleString()} {total === 1 ? 'result' : 'results'}
+            {debouncedSearch && ` for “${debouncedSearch}”`}
+            {language !== ALL_LANGUAGES && ` in ${language}`}
+          </p>
+        )}
       </div>
 
       {/* Results Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-        {communityModules.map((m: CommunityModuleType) => (
-          <Card key={m.id} className="flex flex-col hover:shadow-lg transition-shadow duration-200">
-            <CardHeader className="pb-3">
-              <div className="flex flex-col gap-3">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-semibold line-clamp-2 mb-2">{m.title}</h3>
-                  <p className="text-muted-foreground text-sm line-clamp-2">{m.description}</p>
-                </div>
-                <div className="flex items-center">
-                  <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-medium">
-                    {m.flashcardsCount} {m.flashcardsCount === 1 ? 'term' : 'terms'}
-                  </span>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="flex-1 flex flex-col justify-between pt-0 space-y-4">
-              {/* Owner Info */}
-              <div>
-                <p className="text-xs text-gray-500 mb-2">Shared by:</p>
-                <div className="flex gap-2 items-center">
-                  <Avatar className="size-8 border border-gray-100 shrink-0">
-                    <AvatarImage
-                      src={buildAssetUrl(m.ownerImg) || ''}
-                      alt={m.ownerName}
-                      crossOrigin="anonymous"
-                    />
-                    <AvatarFallback className="text-xs">
-                      {(m.ownerName ?? '?').slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <p className="text-sm font-medium truncate">{m.ownerName}</p>
-                </div>
-              </div>
-
-              {/* View Button */}
-              <Button size="sm" className="w-full" onClick={() => router.push(`/modules/${m.id}`)}>
-                View Module
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {items.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+          {items.map((m: CommunitySearchHit) => (
+            <CommunityCard
+              key={m.id}
+              hit={m}
+              onOpen={() => router.push(`/modules/${m.id}`)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Empty State */}
-      {communityModules.length === 0 && !isLoading && (
-        <div className="text-center py-12 md:py-16">
-          <p className="text-muted-foreground text-base md:text-lg">
-            No community modules found. Try a different search term.
+      {items.length === 0 && !isFetching && (
+        <div className="text-center py-12 md:py-16 max-w-lg mx-auto">
+          <SearchX className="mx-auto text-gray-400 mb-3" size={36} />
+          <p className="text-gray-800 font-semibold mb-1">
+            {debouncedSearch
+              ? `No modules match “${debouncedSearch}”`
+              : 'No community modules yet'}
+          </p>
+          <p className="text-sm text-gray-500">
+            {debouncedSearch
+              ? 'Try a different search — check spelling or broaden your query.'
+              : 'Be the first to share one. Public modules appear here once created.'}
           </p>
         </div>
       )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-8">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+          >
+            <ChevronLeft size={16} className="mr-1" /> Prev
+          </Button>
+          <span className="text-sm text-gray-500 min-w-24 text-center">
+            Page {page} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+          >
+            Next <ChevronRight size={16} className="ml-1" />
+          </Button>
+        </div>
+      )}
     </main>
+  );
+}
+
+function CommunityCard({
+  hit,
+  onOpen,
+}: {
+  hit: CommunitySearchHit;
+  onOpen: () => void;
+}) {
+  const ownerInitials = (hit.ownerUsername ?? '?').slice(0, 2).toUpperCase();
+  // Titles/descriptions may be returned with <em>…</em> highlight markup
+  // in the future (highlights field). For now render plain text — the
+  // highlighter would be a follow-up if we want it.
+  return (
+    <Card className="flex flex-col hover:shadow-lg transition-shadow duration-200">
+      <CardHeader className="pb-3">
+        <div className="flex flex-col gap-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-semibold line-clamp-2 mb-2">
+              {hit.title}
+            </h3>
+            {hit.description && (
+              <p className="text-muted-foreground text-sm line-clamp-2">
+                {hit.description}
+              </p>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5 items-center">
+            <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-medium">
+              {hit.cardCount} {hit.cardCount === 1 ? 'card' : 'cards'}
+            </span>
+            {hit.language && (
+              <span className="bg-[#4255FF]/10 text-[#4255FF] rounded-full px-3 py-1 text-xs font-medium">
+                {hit.language}
+              </span>
+            )}
+            {hit.tags.slice(0, 2).map((tag) => (
+              <span
+                key={tag}
+                className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 text-xs"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="flex-1 flex flex-col justify-between pt-0 space-y-4">
+        <div>
+          <p className="text-xs text-gray-500 mb-2">Shared by:</p>
+          <div className="flex gap-2 items-center">
+            <Avatar className="size-8 border border-gray-100 shrink-0">
+              <AvatarFallback className="text-xs">
+                {ownerInitials}
+              </AvatarFallback>
+            </Avatar>
+            <p className="text-sm font-medium truncate">
+              {hit.ownerUsername ?? 'Unknown'}
+            </p>
+          </div>
+        </div>
+
+        <Button size="sm" className="w-full" onClick={onOpen}>
+          View Module
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

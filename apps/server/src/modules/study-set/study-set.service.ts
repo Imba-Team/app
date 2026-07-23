@@ -166,14 +166,36 @@ export class StudySetService {
     return this.buildStudySetsForUserBatch(sorted, userId);
   }
 
-  async findCollection(userId: string) {
-    this.logger.debug(`Listing collection study sets for user: ${userId}`);
+  async findCollection(userId: string, q?: string) {
+    this.logger.debug(
+      `Listing collection study sets for user: ${userId}, q="${q ?? ''}"`,
+    );
+    // Text filter is applied at the SQL layer so we don't have to hydrate
+    // rows that will be immediately discarded. Owner-side and favourite-
+    // side each get the same OR block.
+    const queryTrimmed = q?.trim();
+    const textFilter = queryTrimmed
+      ? {
+          OR: [
+            {
+              title: { contains: queryTrimmed, mode: 'insensitive' as const },
+            },
+            {
+              description: {
+                contains: queryTrimmed,
+                mode: 'insensitive' as const,
+              },
+            },
+          ],
+        }
+      : undefined;
+
     const owned = await this.prisma.studySet.findMany({
-      where: { ownerId: userId },
+      where: { ownerId: userId, ...textFilter },
       include: { flashcards: true },
     });
     const favLinks = await this.prisma.favouriteStudySet.findMany({
-      where: { userId },
+      where: { userId, studySet: textFilter },
       include: { studySet: { include: { flashcards: true } } },
     });
 

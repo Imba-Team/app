@@ -2,7 +2,14 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
-import { ArrowLeft, History, RotateCcw, Settings2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  History,
+  Loader2,
+  RotateCcw,
+  Search,
+  Settings2,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,6 +33,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import ModuleHeader from './_components/ModuleHeader';
+import TermFilterPills, {
+  toServerFilter,
+  type TermFilterKey,
+} from '@/components/TermFilterPills';
 import type { Term } from '@/lib/api';
 import { resetSetProgress } from '@/lib/api';
 import { useModule, useCollectModule } from '@/lib/hooks/useModules';
@@ -37,13 +48,30 @@ import {
   useToggleTermStar,
   termKeys,
 } from '@/lib/hooks/useTerms';
+import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
+import { Input } from '@/components/ui/input';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 export default function LearnPageClient({ id }: { id: string }) {
   const queryClient = useQueryClient();
+  const [filter, setFilter] = useState<TermFilterKey>('all');
+  const [searchInput, setSearchInput] = useState('');
+  const debouncedSearch = useDebouncedValue(searchInput);
   const { data: moduleData, isLoading: moduleLoading } = useModule(id);
-  const { data: terms = [], isLoading: termsLoading } = useTerms(id);
+  // Total term count is used to decide whether to render the filter row
+  // at all — an empty module doesn't need it, and it should be based on
+  // the full count, not the filtered subset.
+  const { data: allTerms = [] } = useTerms(id);
+  const {
+    data: terms = [],
+    isLoading: termsLoading,
+    isFetching: termsFetching,
+  } = useTerms(id, {
+    ...toServerFilter(filter),
+    q: debouncedSearch,
+  });
+  const hasActiveFilter = filter !== 'all' || debouncedSearch.trim().length > 0;
   const createTerm = useCreateTerm();
   const updateTerm = useUpdateTerm();
   const deleteTerm = useDeleteTerm();
@@ -89,7 +117,9 @@ export default function LearnPageClient({ id }: { id: string }) {
     setResetting(true);
     try {
       await resetSetProgress(id);
-      await queryClient.invalidateQueries({ queryKey: termKeys.list(id) });
+      await queryClient.invalidateQueries({
+        queryKey: termKeys.listsForModule(id),
+      });
       toast.success('Progress reset');
     } catch (err) {
       toast.error((err as Error).message || 'Failed to reset progress');
@@ -147,7 +177,7 @@ export default function LearnPageClient({ id }: { id: string }) {
             module={{
               title: moduleInfo.title,
               description: moduleInfo.description ?? '',
-              termsCount: terms.length,
+              termsCount: allTerms.length,
               isPrivate: moduleInfo.isPrivate,
               ownerName: moduleInfo.ownerName ?? '',
               ownerImg: moduleInfo.ownerImg ?? '',
@@ -180,10 +210,10 @@ export default function LearnPageClient({ id }: { id: string }) {
               </Card>
             </Link>
 
-            <Link href={`/modules/${id}/quiz`}>
+            <Link href={`/modules/${id}/learn`}>
               <Card className="bg-white rounded-2xl p-5 text-xl font-semibold hover:shadow-md flex flex-col items-center cursor-pointer">
-                <Image src="/images/img1.png" width={150} height={150} alt="Quiz" />
-                Quiz
+                <Image src="/images/img1.png" width={150} height={150} alt="Learn" />
+                Learn
               </Card>
             </Link>
 
@@ -224,13 +254,13 @@ export default function LearnPageClient({ id }: { id: string }) {
           </div>
         ) : (
           <>
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
               <h3 className="text-2xl font-semibold text-[#4255FF]">Terms</h3>
 
               {/* Settings dropdown — collects destructive / advanced actions
                   so they don't clutter the main surface. Reset lives here
                   because it's rare and should require an extra click. */}
-              {isCollected && terms.length > 0 && (
+              {isCollected && allTerms.length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -265,21 +295,89 @@ export default function LearnPageClient({ id }: { id: string }) {
               )}
             </div>
 
-            <div className="space-y-3">
-              {terms.map((t: Term) => (
-                <TermItem
-                  isOwned={isOwner}
-                  isCollected={isCollected}
-                  key={t.id}
-                  term={t}
-                  onDelete={() => handleDeleteTerm(t.id)}
-                  onToggleStar={() =>
-                    toggleStar.mutate({ id: t.id, isStarred: !t.isStarred })
-                  }
-                  onSaveEdit={submitEdit}
-                />
-              ))}
-            </div>
+            {/* Filter + search row. Hidden for modules with a single
+                term (filtering is meaningless there) — but the search
+                stays available for guest-viewed modules too, because
+                the DTO-level `?q=` doesn't require a progress row. */}
+            {allTerms.length > 1 && (
+              <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                {isCollected && (
+                  <TermFilterPills value={filter} onChange={setFilter} />
+                )}
+                <div className="relative flex-1 sm:min-w-64">
+                  <Search
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                  />
+                  <Input
+                    type="text"
+                    placeholder="Search terms and definitions…"
+                    className="h-10 pl-9 pr-9"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                  />
+                  {termsFetching && debouncedSearch && (
+                    <Loader2
+                      size={16}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 animate-spin"
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {terms.length === 0 && hasActiveFilter ? (
+              <Card className="bg-white">
+                <CardContent className="p-8 flex flex-col items-center gap-2 text-center">
+                  <p className="text-gray-800 font-semibold">
+                    {debouncedSearch
+                      ? `No terms match “${debouncedSearch}”`
+                      : 'No terms in this bucket'}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {debouncedSearch
+                      ? 'Try a different search, or clear the filter.'
+                      : 'Study more, or switch back to All.'}
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    {debouncedSearch && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSearchInput('')}
+                      >
+                        Clear search
+                      </Button>
+                    )}
+                    {filter !== 'all' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFilter('all')}
+                      >
+                        Show all terms
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {terms.map((t: Term) => (
+                  <TermItem
+                    isOwned={isOwner}
+                    isCollected={isCollected}
+                    key={t.id}
+                    term={t}
+                    onDelete={() => handleDeleteTerm(t.id)}
+                    onToggleStar={() =>
+                      toggleStar.mutate({ id: t.id, isStarred: !t.isStarred })
+                    }
+                    onSaveEdit={submitEdit}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
 

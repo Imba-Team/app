@@ -13,9 +13,10 @@ export class LearnBatchCardDto {
   term!: string;
 
   @ApiPropertyOptional({
+    type: String,
+    nullable: true,
     description:
       'Optional hint attached to the card. Frontend only shows this if the learner clicks the hint button.',
-    nullable: true,
   })
   @Expose()
   hint!: string | null;

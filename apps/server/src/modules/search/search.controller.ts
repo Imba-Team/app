@@ -6,6 +6,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { ApiOkEnvelope } from 'src/common/decorators/api-envelope.decorator';
 import { Role, Roles } from 'src/common/decorators/roles.decorator';
 import {
   ServiceHealthResponseDto,
@@ -38,6 +39,7 @@ export class SearchController {
     summary:
       'Search public study sets via Elasticsearch (title^3 + tags^2 + description, fuzziness AUTO).',
   })
+  @ApiOkEnvelope(SearchSetsResponseDto, { description: 'Search results' })
   async searchSets(
     @Query() query: SearchSetsQueryDto,
   ): Promise<ResponseDto<SearchSetsResponseDto>> {

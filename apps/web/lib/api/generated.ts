@@ -870,7 +870,7 @@ export interface paths {
         };
         /**
          * List flashcards in a study set folded with the caller's progress
-         * @description One row per flashcard including status (NEW / LEARNING / MASTERED), weighted streak, and isStarred. Powers the module page term list — avoids N per-card requests.
+         * @description One row per flashcard including status (NEW / LEARNING / MASTERED), weighted streak, and isStarred. Supports ?starred=true / ?status= filters so clients can narrow the deck server-side (flashcard mode "only starred", module page mastery filter) instead of loading everything.
          */
         get: operations["SetFlashcardsController_listWithProgress"];
         put?: never;
@@ -948,7 +948,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List study sets in my collection */
+        /**
+         * List study sets in my collection
+         * @description Owned + favourited sets, ordered by updatedAt desc. Pass ?q= to filter on title/description (case-insensitive substring).
+         */
         get: operations["StudySetController_myCollection"];
         put?: never;
         post?: never;
@@ -1227,6 +1230,30 @@ export interface components {
             /** @description Email address */
             email: string;
         };
+        LearnBatchCardDto: {
+            /** Format: uuid */
+            cardId: string;
+            /** @description Four shuffled options for LEARN_MC prompts. Undefined for LEARN_WRITTEN. */
+            choices?: string[];
+            /** @description Index of the correct choice for LEARN_MC prompts. Same trust model as Flashcard Mode — the client uses this to render feedback. */
+            correctChoiceIndex?: number;
+            /** @description Optional hint attached to the card. Frontend only shows this if the learner clicks the hint button. */
+            hint?: string | null;
+            /**
+             * @description How the frontend should prompt: multiple choice (recognition) or free-text (recall). Chosen server-side based on the learner's current mastery streak.
+             * @enum {string}
+             */
+            promptType: "LEARN_MC" | "LEARN_WRITTEN";
+            /** @description The term shown to the learner as the prompt. */
+            term: string;
+        };
+        LearnBatchResponseDto: {
+            cards: components["schemas"]["LearnBatchCardDto"][];
+            /** @description True if more non-mastered cards remain in the set beyond this batch. When false, all cards have reached MASTERED and the frontend can offer a completion screen. */
+            hasMoreCards: boolean;
+            /** Format: uuid */
+            sessionId: string;
+        };
         LibraryItemDto: {
             /** Format: date-time */
             createdAt: string;
@@ -1287,6 +1314,38 @@ export interface components {
             meta?: Record<string, never>;
             /** @example true */
             ok: boolean;
+        };
+        SearchSetHitDto: {
+            cardCount: number;
+            description: string | null;
+            /**
+             * @description Highlighted fragments from matched fields, keyed by field name.
+             * @example {
+             *       "title": [
+             *         "<em>Photo</em>synthesis"
+             *       ]
+             *     }
+             */
+            highlights?: Record<string, never>;
+            id: string;
+            language: string | null;
+            likeCount: number;
+            ownerId: string;
+            ownerUsername?: string | null;
+            /** @description BM25 relevance score returned by Elasticsearch. */
+            score: number | null;
+            slug: string;
+            tags: string[];
+            title: string;
+        };
+        SearchSetsResponseDto: {
+            items: components["schemas"]["SearchSetHitDto"][];
+            /** @example 20 */
+            limit: number;
+            /** @example 1 */
+            page: number;
+            /** @example 137 */
+            total: number;
         };
         ServiceHealthResponseDto: {
             /** @example learning */
@@ -1510,6 +1569,34 @@ export interface components {
              */
             token: string;
         };
+        WriteEvaluationDto: {
+            /** @description Levenshtein distance between the normalized strings. */
+            editDistance: number;
+            /**
+             * @description EXACT = normalized strings match. TYPO_ACCEPTED = Levenshtein distance ≤ 1 in a 6+ character answer (still scored CORRECT). WRONG = anything else.
+             * @enum {string}
+             */
+            matchType: "EXACT" | "TYPO_ACCEPTED" | "WRONG";
+            /** @description The canonical answer after normalization. */
+            normalizedExpected: string;
+            /** @description The learner's answer after normalization. Useful for client-side diff rendering. */
+            normalizedInput: string;
+            /**
+             * @description 0.00–1.00. Computed as 1 - editDistance / max(len). Frontend can render a "you were close" screen using this even when the outcome is INCORRECT.
+             * @example 0.92
+             */
+            similarity: number;
+        };
+        WrittenAnswerResponseDto: {
+            cardProgress: components["schemas"]["CardProgressSummaryDto"];
+            correct: boolean;
+            /** @description Canonical answer text for the card. */
+            correctAnswer: string;
+            demoted: boolean;
+            evaluation: components["schemas"]["WriteEvaluationDto"];
+            graduated: boolean;
+            setProgress: components["schemas"]["SetProgressSummaryDto"];
+        };
     };
     responses: never;
     parameters: never;
@@ -1530,6 +1617,8 @@ export type SchemaCreateTagDto = components['schemas']['CreateTagDto'];
 export type SchemaFlashcardResponseDto = components['schemas']['FlashcardResponseDto'];
 export type SchemaFlashcardWithProgressDto = components['schemas']['FlashcardWithProgressDto'];
 export type SchemaForgotPasswordRequestDto = components['schemas']['ForgotPasswordRequestDto'];
+export type SchemaLearnBatchCardDto = components['schemas']['LearnBatchCardDto'];
+export type SchemaLearnBatchResponseDto = components['schemas']['LearnBatchResponseDto'];
 export type SchemaLibraryItemDto = components['schemas']['LibraryItemDto'];
 export type SchemaLoginRequestDto = components['schemas']['LoginRequestDto'];
 export type SchemaPublicProfileDto = components['schemas']['PublicProfileDto'];
@@ -1537,6 +1626,8 @@ export type SchemaRegisterRequestDto = components['schemas']['RegisterRequestDto
 export type SchemaResendVerificationRequestDto = components['schemas']['ResendVerificationRequestDto'];
 export type SchemaResetPasswordRequestDto = components['schemas']['ResetPasswordRequestDto'];
 export type SchemaResponseDto = components['schemas']['ResponseDto'];
+export type SchemaSearchSetHitDto = components['schemas']['SearchSetHitDto'];
+export type SchemaSearchSetsResponseDto = components['schemas']['SearchSetsResponseDto'];
 export type SchemaServiceHealthResponseDto = components['schemas']['ServiceHealthResponseDto'];
 export type SchemaSessionHistoryItemDto = components['schemas']['SessionHistoryItemDto'];
 export type SchemaSessionSummaryDto = components['schemas']['SessionSummaryDto'];
@@ -1556,6 +1647,8 @@ export type SchemaUpdateTagDto = components['schemas']['UpdateTagDto'];
 export type SchemaUpdateVisibilityDto = components['schemas']['UpdateVisibilityDto'];
 export type SchemaUserResponseDto = components['schemas']['UserResponseDto'];
 export type SchemaVerifyEmailRequestDto = components['schemas']['VerifyEmailRequestDto'];
+export type SchemaWriteEvaluationDto = components['schemas']['WriteEvaluationDto'];
+export type SchemaWrittenAnswerResponseDto = components['schemas']['WrittenAnswerResponseDto'];
 export type $defs = Record<string, never>;
 export interface operations {
     AdminUsersController_findAll: {
@@ -2343,11 +2436,16 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Search results */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["SearchSetsResponseDto"];
+                    };
+                };
             };
         };
     };
@@ -2618,11 +2716,16 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Written answer evaluated */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["WrittenAnswerResponseDto"];
+                    };
+                };
             };
         };
     };
@@ -2664,11 +2767,16 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Batch retrieved */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["LearnBatchResponseDto"];
+                    };
+                };
             };
         };
     };
@@ -2988,7 +3096,14 @@ export interface operations {
     };
     SetFlashcardsController_listWithProgress: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Case-insensitive substring match on term or definition. Empty / whitespace-only strings are ignored. */
+                q?: string;
+                /** @description Only return cards the caller has starred. */
+                starred?: boolean;
+                /** @description Only return cards in this mastery bucket. */
+                status?: "NEW" | "LEARNING" | "MASTERED";
+            };
             header?: never;
             path: {
                 setId: string;
@@ -3152,7 +3267,10 @@ export interface operations {
     };
     StudySetController_myCollection: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Searches title or description */
+                q?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, SearchX } from "lucide-react";
+import { Loader2, Plus, SearchX } from "lucide-react";
 import ModuleCard from "@/components/ModuleCard";
 import ModuleListItem from "@/components/ModuleListItem";
 import CreateModuleCard from "@/components/CreateModuleCard";
@@ -17,15 +17,33 @@ import {
   useUpdateModule,
   useUncollectModule,
 } from "@/lib/hooks/useModules";
+import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import { toast } from "sonner";
 import { DashboardLoading } from "./DashboardSkeleton";
 import EmptyDashboard from "./EmptyDashboard";
 
 export default function DashboardTab() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearch = useDebouncedValue(searchInput);
+  const isSearching = debouncedSearch.trim().length > 0;
 
-  const { data: modules = [], isLoading, isError } = useModules();
+  // Server-side filter — `useModules(q)` refetches when q changes, with
+  // React Query's placeholderData keeping the previous grid on screen
+  // so the layout doesn't flash.
+  const {
+    data: modules = [],
+    isLoading,
+    isError,
+    isFetching,
+  } = useModules(debouncedSearch);
+
+  // A second lightweight query with the empty search tells us whether
+  // the learner has any modules at all — needed to disambiguate
+  // "search returned nothing" from "you have no modules". Reuses the
+  // `useModules("")` cache entry so a cleared search hits it instantly.
+  const { data: hasAnyModules } = useModules("");
+  const collectionIsEmpty = (hasAnyModules?.length ?? 0) === 0;
 
   const deleteModule = useDeleteModule();
   const updateModule = useUpdateModule();
@@ -58,32 +76,34 @@ export default function DashboardTab() {
     toast.error("Failed to load modules");
   }
 
-  // Zero-modules learner: replace the whole dashboard with a welcome
-  // hero + starter CTA. The standard grid layout with a single "+"
-  // button was hostile to first-run users.
-  if (modules.length === 0) {
+  // Zero-modules learner (and not currently searching): replace the
+  // whole dashboard with a welcome hero + starter CTA.
+  if (collectionIsEmpty && !isSearching) {
     return <EmptyDashboard />;
   }
-
-  const filteredModules = modules.filter((m: ModuleType) =>
-    m.title?.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
 
   const recentModules = modules.slice(0, 4);
 
   return (
     <main>
-      <h2 className="text-2xl text-[#4255FF] font-bold mb-4">Recent Modules</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-        {recentModules.map((m: ModuleType) => (
-          <ModuleCard key={m.id} module={m} onClick={handleModuleClick} />
-        ))}
-        {/* Fill the row with a Create tile when Recent has fewer than 3
-            cards, so the section never looks like a half-empty grid. */}
-        {recentModules.length > 0 && recentModules.length < 3 && (
-          <CreateModuleCard />
-        )}
-      </div>
+      {/* Recent Modules only makes sense on the unfiltered view — the
+          Recent slice would otherwise look inconsistent next to a
+          server-filtered "All". */}
+      {!isSearching && (
+        <>
+          <h2 className="text-2xl text-[#4255FF] font-bold mb-4">
+            Recent Modules
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+            {recentModules.map((m: ModuleType) => (
+              <ModuleCard key={m.id} module={m} onClick={handleModuleClick} />
+            ))}
+            {recentModules.length > 0 && recentModules.length < 3 && (
+              <CreateModuleCard />
+            )}
+          </div>
+        </>
+      )}
 
       <div className="mb-2">
         <h2 className="text-2xl text-[#4255FF] font-bold mb-2">All Modules</h2>
@@ -99,23 +119,31 @@ export default function DashboardTab() {
               <Plus size={20} />
             </Link>
           </Button>
-          <Input
-            type="text"
-            placeholder="Search modules..."
-            className="h-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+          <div className="relative flex-1">
+            <Input
+              type="text"
+              placeholder="Search modules..."
+              className="h-10 pr-10"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
+            {isFetching && isSearching && (
+              <Loader2
+                size={16}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 animate-spin"
+              />
+            )}
+          </div>
         </div>
       </div>
 
       <div className="flex flex-col font-semibold text-lg">
-        {filteredModules.length === 0 && searchQuery ? (
+        {modules.length === 0 && isSearching ? (
           <Card className="bg-white">
             <CardContent className="p-8 flex flex-col items-center gap-2 text-center">
               <SearchX className="text-gray-400" size={28} />
               <p className="text-gray-800 font-semibold">
-                No modules match &ldquo;{searchQuery}&rdquo;
+                No modules match &ldquo;{debouncedSearch}&rdquo;
               </p>
               <p className="text-sm text-gray-500 font-normal">
                 Try a different search, or clear the filter.
@@ -123,7 +151,7 @@ export default function DashboardTab() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSearchQuery("")}
+                onClick={() => setSearchInput("")}
                 className="mt-2 font-normal"
               >
                 Clear search
@@ -131,7 +159,7 @@ export default function DashboardTab() {
             </CardContent>
           </Card>
         ) : (
-          filteredModules.map((m: ModuleType) => (
+          modules.map((m: ModuleType) => (
             <ModuleListItem
               key={m.id}
               module={m}

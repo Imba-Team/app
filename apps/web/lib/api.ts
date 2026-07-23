@@ -11,14 +11,18 @@
 
 import type { AxiosError } from 'axios';
 import { apiFetch, type Schemas } from './api/client';
-import type { TermProgress } from '@/app/modules/[id]/types';
 
 // ============================================
 // TYPE RE-EXPORTS (generated from the server)
 // ============================================
 
 export type Module = Schemas['StudySetResponseDto'];
-export type CommunityModule = Schemas['StudySetResponseDto'];
+/**
+ * Search hit from `/search/sets` (Elasticsearch-backed community search).
+ * Shape differs from `Module`: no isPrivate/isOwner/isCollected/flashcardsCount,
+ * gained cardCount/likeCount/score/highlights/tags/ownerUsername.
+ */
+export type CommunityModule = Schemas['SearchSetHitDto'];
 export type CreateModuleData = Schemas['CreateStudySetDto'];
 export type UpdateModuleData = Schemas['UpdateStudySetDto'];
 
@@ -106,9 +110,15 @@ function flashcardWithProgressToTerm(
 // MODULES
 // ============================================
 
-export async function getModules(): Promise<Module[]> {
+export async function getModules(q?: string): Promise<Module[]> {
   try {
-    const res = await apiFetch('get', '/study-sets/collection');
+    // Server-side title/description substring filter.  Trimmed empty
+    // strings are omitted so React Query cache-keys aren't polluted
+    // with the same "unfiltered" list under multiple keys.
+    const trimmed = q?.trim();
+    const res = await apiFetch('get', '/study-sets/collection', {
+      query: trimmed ? { q: trimmed } : undefined,
+    });
     return unwrap(res, 'Failed to fetch modules');
   } catch (error) {
     throw extractError(error, 'Failed to fetch modules');
@@ -120,14 +130,40 @@ export async function getRecentModules(limit = 4): Promise<Module[]> {
   return all.slice(0, limit);
 }
 
-export async function getCommunityModules(q?: string): Promise<CommunityModule[]> {
+// ============================================
+// COMMUNITY (Elasticsearch-backed /search/sets)
+// ============================================
+
+export type CommunitySearchHit = Schemas['SearchSetHitDto'];
+export type CommunitySearchResult = Schemas['SearchSetsResponseDto'];
+
+export interface CommunitySearchParams {
+  q?: string;
+  language?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function searchCommunity(
+  params: CommunitySearchParams = {},
+): Promise<CommunitySearchResult> {
   try {
-    const res = await apiFetch('get', '/study-sets/public', {
-      query: q ? { q } : undefined,
-    });
-    return unwrap(res, 'Failed to fetch community modules');
+    const query: {
+      q?: string;
+      language?: string;
+      page?: number;
+      limit?: number;
+    } = {};
+    const trimmed = params.q?.trim();
+    if (trimmed) query.q = trimmed;
+    if (params.language) query.language = params.language;
+    if (params.page !== undefined) query.page = params.page;
+    if (params.limit !== undefined) query.limit = params.limit;
+
+    const res = await apiFetch('get', '/search/sets', { query });
+    return unwrap(res, 'Failed to search community modules');
   } catch (error) {
-    throw extractError(error, 'Failed to fetch community modules');
+    throw extractError(error, 'Failed to search community modules');
   }
 }
 
@@ -196,10 +232,29 @@ export async function uncollectModule(id: string): Promise<void> {
 // TERMS (flashcards)
 // ============================================
 
-export async function getTermsWithProgress(moduleId: string): Promise<Term[]> {
+export type MasteryStatus = Schemas['FlashcardWithProgressDto']['status'];
+
+export interface TermsFilter {
+  starred?: boolean;
+  status?: MasteryStatus;
+  /** Case-insensitive substring on term/definition. */
+  q?: string;
+}
+
+export async function getTermsWithProgress(
+  moduleId: string,
+  filter: TermsFilter = {},
+): Promise<Term[]> {
   try {
+    const query: { starred?: boolean; status?: MasteryStatus; q?: string } = {};
+    if (filter.starred !== undefined) query.starred = filter.starred;
+    if (filter.status !== undefined) query.status = filter.status;
+    const trimmed = filter.q?.trim();
+    if (trimmed) query.q = trimmed;
+
     const res = await apiFetch('get', '/study-sets/{setId}/cards/progress', {
       path: { setId: moduleId },
+      query,
     });
     return unwrap(res, 'Failed to fetch terms').map((fc) =>
       flashcardWithProgressToTerm(fc, moduleId),
@@ -284,21 +339,6 @@ export async function getTermProgress(id: string) {
   }
 }
 
-export async function updateTermProgress(
-  _id: string,
-  _termData: { status?: TermProgress['status']; isStarred?: boolean },
-) {
-  // TODO: no `/flashcards/:id/progress` PATCH exists on the server yet.
-  // Callers should be split: use toggleTermStar() for stars and the SRS
-  // submit endpoint for status. Left as a no-op to avoid runtime errors.
-  return { ok: true, data: null };
-}
-
-export async function updateTermStatus(_id: string, _success: boolean) {
-  // TODO: same as above — no dedicated endpoint on the current backend.
-  return { ok: true, data: null };
-}
-
 export async function resetSetProgress(setId: string): Promise<void> {
   try {
     await apiFetch('delete', '/study-sets/{setId}/my-progress', {
@@ -366,6 +406,56 @@ export async function completeSession(sessionId: string): Promise<SessionSummary
     return unwrap(res, 'Failed to complete session');
   } catch (error) {
     throw extractError(error, 'Failed to complete session');
+  }
+}
+
+// ============================================
+// LEARN MODE (TDD Sprint 6)
+// ============================================
+
+export type LearnBatchCard = Schemas['LearnBatchCardDto'];
+export type LearnBatchResponse = Schemas['LearnBatchResponseDto'];
+export type LearnPromptType = LearnBatchCard['promptType'];
+
+export type WrittenAnswerResponse = Schemas['WrittenAnswerResponseDto'];
+export type WriteEvaluation = Schemas['WriteEvaluationDto'];
+export type WrittenStudyMode = Schemas['SubmitWrittenAnswerDto']['studyMode'];
+
+export async function getNextLearnBatch(
+  sessionId: string,
+  size = 10,
+): Promise<LearnBatchResponse> {
+  try {
+    const res = await apiFetch('get', '/sessions/{id}/next-batch', {
+      path: { id: sessionId },
+      query: { size },
+    });
+    return unwrap(res, 'Failed to fetch next batch');
+  } catch (error) {
+    throw extractError(error, 'Failed to fetch next batch');
+  }
+}
+
+export interface SubmitWrittenAnswerPayload {
+  attemptId: string;
+  cardId: string;
+  studyMode: WrittenStudyMode;
+  userAnswer: string;
+  hintUsed: boolean;
+}
+
+export async function submitWrittenAnswer(
+  sessionId: string,
+  payload: SubmitWrittenAnswerPayload,
+): Promise<WrittenAnswerResponse> {
+  try {
+    const res = await apiFetch('post', '/sessions/{id}/answer-written', {
+      path: { id: sessionId },
+      body: payload,
+    });
+    return unwrap(res, 'Failed to submit written answer');
+  } catch (error) {
+    throw extractError(error, 'Failed to submit written answer');
   }
 }
 

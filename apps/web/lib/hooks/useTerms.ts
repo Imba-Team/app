@@ -6,24 +6,39 @@ import {
   getTermProgress,
   getTermsWithProgress,
   toggleTermStar,
-  updateTermProgress,
   CreateTermData,
   UpdateTermData,
   Term,
-  updateTermStatus,
+  type TermsFilter,
 } from "@/lib/api";
 import { toast } from "sonner";
-import { TermProgress } from "@/app/modules/[id]/types";
-import { moduleKeys } from "./useModules";
 
 // ============================================
 // QUERY KEYS
 // ============================================
 
+/**
+ * Serialise a filter into the query key so cached variants don't
+ * collide. Missing fields are normalised to `""` so `undefined` vs
+ * `{ starred: undefined }` produce the same key. Trimming the search
+ * query keeps whitespace-only inputs from creating a distinct cache
+ * entry per keystroke.
+ */
+function filterKey(filter: TermsFilter = {}) {
+  return {
+    starred: filter.starred === undefined ? "" : filter.starred,
+    status: filter.status ?? "",
+    q: filter.q?.trim() ?? "",
+  };
+}
+
 export const termKeys = {
   all: ["terms"] as const,
   lists: () => [...termKeys.all, "list"] as const,
-  list: (moduleId: string) => [...termKeys.lists(), moduleId] as const,
+  listsForModule: (moduleId: string) =>
+    [...termKeys.lists(), moduleId] as const,
+  list: (moduleId: string, filter: TermsFilter = {}) =>
+    [...termKeys.listsForModule(moduleId), filterKey(filter)] as const,
   details: () => [...termKeys.all, "detail"] as const,
   detail: (id: string) => [...termKeys.details(), id] as const,
   progress: (id: string) => [...termKeys.all, "progress", id] as const,
@@ -33,13 +48,17 @@ export const termKeys = {
 // QUERIES
 // ============================================
 
-export function useTerms(moduleId: string) {
+export function useTerms(moduleId: string, filter: TermsFilter = {}) {
   return useQuery({
-    queryKey: termKeys.list(moduleId),
+    queryKey: termKeys.list(moduleId, filter),
     // Bulk cards-with-progress so mastery dots + starred state populate
-    // in a single request instead of one-per-card lookups.
-    queryFn: () => getTermsWithProgress(moduleId),
+    // in a single request instead of one-per-card lookups. Filter is
+    // applied server-side.
+    queryFn: () => getTermsWithProgress(moduleId, filter),
     enabled: !!moduleId,
+    // Keep the previous list visible while a filter change refetches
+    // so the term list doesn't blank out on every toggle.
+    placeholderData: (previousData) => previousData,
   });
 }
 
@@ -49,20 +68,38 @@ export function useToggleTermStar(moduleId: string) {
     mutationFn: ({ id, isStarred }: { id: string; isStarred: boolean }) =>
       toggleTermStar(id, isStarred),
     onMutate: async ({ id, isStarred }) => {
-      await queryClient.cancelQueries({ queryKey: termKeys.list(moduleId) });
-      const previous = queryClient.getQueryData<Term[]>(
-        termKeys.list(moduleId),
+      // Cancel + snapshot every cached variant for this module — the
+      // learner might have "only starred" and "all" in memory at once.
+      await queryClient.cancelQueries({
+        queryKey: termKeys.listsForModule(moduleId),
+      });
+      const previous = queryClient.getQueriesData<Term[]>({
+        queryKey: termKeys.listsForModule(moduleId),
+      });
+
+      queryClient.setQueriesData<Term[]>(
+        { queryKey: termKeys.listsForModule(moduleId) },
+        (old) =>
+          old ? old.map((t) => (t.id === id ? { ...t, isStarred } : t)) : old,
       );
-      queryClient.setQueryData<Term[]>(termKeys.list(moduleId), (old) =>
-        old ? old.map((t) => (t.id === id ? { ...t, isStarred } : t)) : old,
-      );
+
       return { previous };
     },
     onError: (error: Error, _vars, ctx) => {
       if (ctx?.previous) {
-        queryClient.setQueryData(termKeys.list(moduleId), ctx.previous);
+        for (const [key, data] of ctx.previous) {
+          queryClient.setQueryData(key, data);
+        }
       }
       toast.error(error.message || "Failed to update star");
+    },
+    onSettled: () => {
+      // Filtered views may need to re-fetch — an unstarred card should
+      // disappear from an "only starred" list, an unstudied newly-
+      // starred card should appear.
+      queryClient.invalidateQueries({
+        queryKey: termKeys.listsForModule(moduleId),
+      });
     },
   });
 }
@@ -79,6 +116,31 @@ export function useTermProgress(termId: string) {
 // MUTATIONS
 // ============================================
 
+/**
+ * Walk every list cache for the given module. Filters are keyed
+ * separately so a single card can live in {}, {starred:true},
+ * {status:LEARNING}, etc. — mutations need to touch all of them.
+ */
+function findTermInCaches(
+  queryClient: ReturnType<typeof useQueryClient>,
+  termId: string,
+): { moduleId: string | null; snapshots: [readonly unknown[], Term[]][] } {
+  const snapshots: [readonly unknown[], Term[]][] = [];
+  let moduleId: string | null = null;
+  const all = queryClient.getQueryCache().findAll({ queryKey: termKeys.lists() });
+  for (const q of all) {
+    const data = q.state.data as Term[] | undefined;
+    if (!data) continue;
+    if (data.some((t) => t.id === termId)) {
+      snapshots.push([q.queryKey, data]);
+      // Extract moduleId from the key shape:
+      //   [ ...termKeys.all, "list", moduleId, filterKey ]
+      moduleId = (q.queryKey[2] as string) ?? moduleId;
+    }
+  }
+  return { moduleId, snapshots };
+}
+
 export function useCreateTerm() {
   const queryClient = useQueryClient();
 
@@ -86,7 +148,7 @@ export function useCreateTerm() {
     mutationFn: (data: CreateTermData) => createTerm(data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: termKeys.list(variables.moduleId),
+        queryKey: termKeys.listsForModule(variables.moduleId),
       });
       toast.success("Term created successfully!");
     },
@@ -103,53 +165,31 @@ export function useUpdateTerm() {
     mutationFn: ({ id, data }: { id: string; data: UpdateTermData }) =>
       updateTerm(id, data),
     onMutate: async ({ id, data }) => {
-      // Find the module this term belongs to
-      const queryCache = queryClient.getQueryCache();
-      const termQueries = queryCache.findAll({ queryKey: termKeys.lists() });
+      const { moduleId, snapshots } = findTermInCaches(queryClient, id);
+      if (!moduleId) return { moduleId: null, snapshots };
 
-      let moduleId: string | null = null;
-      let previousTerms: Term[] | null = null;
-
-      // Find which module query contains this term
-      for (const query of termQueries) {
-        const terms = query.state.data as Term[];
-        if (terms && terms.some((t) => t.id === id)) {
-          moduleId = query.queryKey[2] as string;
-          previousTerms = terms;
-          break;
-        }
-      }
-
-      if (moduleId) {
-        await queryClient.cancelQueries({ queryKey: termKeys.list(moduleId) });
-
-        // Optimistically update
-        queryClient.setQueryData(
-          termKeys.list(moduleId),
-          (old: Term[] | undefined) => {
-            if (!old) return old;
-            return old.map((t) => (t.id === id ? { ...t, ...data } : t));
-          }
-        );
-
-        return { moduleId, previousTerms };
-      }
-
-      return { moduleId: null, previousTerms: null };
+      await queryClient.cancelQueries({
+        queryKey: termKeys.listsForModule(moduleId),
+      });
+      queryClient.setQueriesData<Term[]>(
+        { queryKey: termKeys.listsForModule(moduleId) },
+        (old) =>
+          old ? old.map((t) => (t.id === id ? { ...t, ...data } : t)) : old,
+      );
+      return { moduleId, snapshots };
     },
-    onError: (error: Error, _, context) => {
-      if (context?.moduleId && context?.previousTerms) {
-        queryClient.setQueryData(
-          termKeys.list(context.moduleId),
-          context.previousTerms
-        );
+    onError: (error: Error, _, ctx) => {
+      if (ctx?.snapshots) {
+        for (const [key, data] of ctx.snapshots) {
+          queryClient.setQueryData(key, data);
+        }
       }
       toast.error(error.message || "Failed to update term");
     },
-    onSuccess: (_, variables, context) => {
-      if (context?.moduleId) {
+    onSuccess: (_, __, ctx) => {
+      if (ctx?.moduleId) {
         queryClient.invalidateQueries({
-          queryKey: termKeys.list(context.moduleId),
+          queryKey: termKeys.listsForModule(ctx.moduleId),
         });
       }
       toast.success("Term updated successfully!");
@@ -163,52 +203,30 @@ export function useDeleteTerm() {
   return useMutation({
     mutationFn: (id: string) => deleteTerm(id),
     onMutate: async (id) => {
-      // Find the module this term belongs to
-      const queryCache = queryClient.getQueryCache();
-      const termQueries = queryCache.findAll({ queryKey: termKeys.lists() });
+      const { moduleId, snapshots } = findTermInCaches(queryClient, id);
+      if (!moduleId) return { moduleId: null, snapshots };
 
-      let moduleId: string | null = null;
-      let previousTerms: Term[] | null = null;
-
-      for (const query of termQueries) {
-        const terms = query.state.data as Term[];
-        if (terms && terms.some((t) => t.id === id)) {
-          moduleId = query.queryKey[2] as string;
-          previousTerms = terms;
-          break;
-        }
-      }
-
-      if (moduleId) {
-        await queryClient.cancelQueries({ queryKey: termKeys.list(moduleId) });
-
-        // Optimistically remove
-        queryClient.setQueryData(
-          termKeys.list(moduleId),
-          (old: Term[] | undefined) => {
-            if (!old) return old;
-            return old.filter((t) => t.id !== id);
-          }
-        );
-
-        return { moduleId, previousTerms };
-      }
-
-      return { moduleId: null, previousTerms: null };
+      await queryClient.cancelQueries({
+        queryKey: termKeys.listsForModule(moduleId),
+      });
+      queryClient.setQueriesData<Term[]>(
+        { queryKey: termKeys.listsForModule(moduleId) },
+        (old) => (old ? old.filter((t) => t.id !== id) : old),
+      );
+      return { moduleId, snapshots };
     },
-    onError: (error: Error, _, context) => {
-      if (context?.moduleId && context?.previousTerms) {
-        queryClient.setQueryData(
-          termKeys.list(context.moduleId),
-          context.previousTerms
-        );
+    onError: (error: Error, _, ctx) => {
+      if (ctx?.snapshots) {
+        for (const [key, data] of ctx.snapshots) {
+          queryClient.setQueryData(key, data);
+        }
       }
       toast.error(error.message || "Failed to delete term");
     },
-    onSuccess: (_, __, context) => {
-      if (context?.moduleId) {
+    onSuccess: (_, __, ctx) => {
+      if (ctx?.moduleId) {
         queryClient.invalidateQueries({
-          queryKey: termKeys.list(context.moduleId),
+          queryKey: termKeys.listsForModule(ctx.moduleId),
         });
       }
       toast.success("Term deleted successfully!");
@@ -216,46 +234,3 @@ export function useDeleteTerm() {
   });
 }
 
-export function useUpdateTermProgress(moduleId?: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: { status?: TermProgress["status"]; isStarred?: boolean };
-    }) => updateTermProgress(id, data),
-    onSuccess: (_, variables) => {
-      if (moduleId) {
-        queryClient.invalidateQueries({
-          queryKey: termKeys.progress(variables.id),
-        });
-        queryClient.invalidateQueries({
-          queryKey: moduleKeys.detail(moduleId),
-        });
-      }
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to update progress");
-    },
-  });
-}
-
-export function useUpdateTermStatus() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, success }: { id: string; success: boolean }) =>
-      updateTermStatus(id, success),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: termKeys.progress(variables.id),
-      });
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to update term status");
-    },
-  });
-}

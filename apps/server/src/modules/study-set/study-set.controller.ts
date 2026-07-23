@@ -122,15 +122,24 @@ export class StudySetController {
 
   @Get('collection')
   @HttpCode(200)
-  @ApiOperation({ summary: 'List study sets in my collection' })
+  @ApiQuery({ name: 'q', required: false })
+  @ApiOperation({
+    summary: 'List study sets in my collection',
+    description:
+      "Owned + favourited sets, ordered by updatedAt desc. Pass ?q= to filter on title/description (case-insensitive substring).",
+  })
   @ApiOkEnvelope(StudySetResponseDto, {
     isArray: true,
     description: 'Collection retrieved',
   })
   async myCollection(
     @CurrentUser() user: IUser,
+    @Query() query: SearchStudySetsDto,
   ): Promise<ResponseDto<StudySetResponseDto[]>> {
-    const studySets = await this.studySetService.findCollection(user.id);
+    const studySets = await this.studySetService.findCollection(
+      user.id,
+      query.q,
+    );
     const data = studySets.map((s) =>
       plainToInstance(StudySetResponseDto, s, {
         excludeExtraneousValues: true,

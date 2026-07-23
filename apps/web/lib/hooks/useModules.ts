@@ -2,15 +2,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getModules,
-  getCommunityModules,
   getModuleById,
   createModule,
   updateModule,
   deleteModule,
   collectModule,
   uncollectModule,
+  searchCommunity,
   CreateModuleData,
   UpdateModuleData,
+  type CommunitySearchParams,
 } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -21,27 +22,50 @@ import { toast } from "sonner";
 export const moduleKeys = {
   all: ["modules"] as const,
   lists: () => [...moduleKeys.all, "list"] as const,
-  list: (filters?: string) => [...moduleKeys.lists(), { filters }] as const,
+  /**
+   * Include the search query in the key so distinct searches don't
+   * collide in the cache and typing a search term doesn't clobber the
+   * unfiltered collection when the input clears.
+   */
+  list: (q?: string) => [...moduleKeys.lists(), { q: q?.trim() || "" }] as const,
   details: () => [...moduleKeys.all, "detail"] as const,
   detail: (id: string) => [...moduleKeys.details(), id] as const,
   community: () => [...moduleKeys.all, "community"] as const,
+  communitySearch: (params: CommunitySearchParams) =>
+    [
+      ...moduleKeys.community(),
+      {
+        q: params.q?.trim() || "",
+        language: params.language || "",
+        page: params.page ?? 1,
+        limit: params.limit ?? 20,
+      },
+    ] as const,
 };
 
 // ============================================
 // QUERIES
 // ============================================
 
-export function useModules() {
+export function useModules(q?: string) {
   return useQuery({
-    queryKey: moduleKeys.lists(),
-    queryFn: getModules,
+    queryKey: moduleKeys.list(q),
+    queryFn: () => getModules(q),
+    // Keep the previous list visible while a new search is in-flight so
+    // the grid doesn't flash to a skeleton on every keystroke.
+    placeholderData: (previousData) => previousData,
   });
 }
 
-export function useCommunityModules(q?: string) {
+/**
+ * Elasticsearch-backed community search (`/search/sets`). Superseded
+ * the previous Prisma-`contains` fallback on `/study-sets/public`.
+ */
+export function useCommunityModules(params: CommunitySearchParams = {}) {
   return useQuery({
-    queryKey: [...moduleKeys.community(), { q }],
-    queryFn: () => getCommunityModules(q),
+    queryKey: moduleKeys.communitySearch(params),
+    queryFn: () => searchCommunity(params),
+    placeholderData: (previousData) => previousData,
   });
 }
 

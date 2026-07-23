@@ -25,7 +25,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
   useTransition,
@@ -36,15 +35,21 @@ import {
   ArrowRight,
   CheckCircle2,
   Lightbulb,
-  RotateCcw,
   SkipForward,
   Star,
-  Trophy,
   Volume2,
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import TermFilterPills, {
+  toServerFilter,
+  type TermFilterKey,
+} from "@/components/TermFilterPills";
+import SessionResults, {
+  SessionResultsError,
+  SessionResultsLoading,
+} from "../_components/SessionResults";
 import { useModule } from "@/lib/hooks/useModules";
 import { useTerms } from "@/lib/hooks/useTerms";
 import { useFlashcardSession } from "@/lib/hooks/useFlashcardSession";
@@ -93,18 +98,38 @@ export default function FlashcardsPage() {
   const moduleId = params.id as string;
 
   const { data: moduleData, isLoading: moduleLoading } = useModule(moduleId);
-  const { data: fetchedTerms = [], isLoading: termsLoading } = useTerms(moduleId);
+  const [filter, setFilter] = useState<TermFilterKey>("all");
+  // Server-side filter: the pill selection is translated to
+  // `?starred=` / `?status=`. React Query keeps the previous result
+  // on-screen while the new filter variant loads.
+  const { data: fetchedTerms = [], isLoading: termsLoading } = useTerms(
+    moduleId,
+    toServerFilter(filter),
+  );
 
-  // Shuffle once on first successful fetch; keep across re-renders.
+  // Deck is shuffled from the filter-scoped fetched list. Re-shuffle
+  // whenever the filter changes (identity of fetchedTerms changes with
+  // the query key), otherwise stay stable across incidental refetches.
   const [deck, setDeck] = useState<Term[]>([]);
   const [starred, setStarred] = useState<Set<string>>(new Set());
-  const [showOnlyStarred, setShowOnlyStarred] = useState(false);
-  const initializedRef = useRef(false);
+  const lastFilterRef = useRef<TermFilterKey | null>(null);
   const [, startTransition] = useTransition();
 
   useEffect(() => {
-    if (fetchedTerms.length > 0 && !initializedRef.current) {
-      initializedRef.current = true;
+    if (fetchedTerms.length === 0) {
+      // Filter to zero — clear the deck so we hit the empty-state path
+      // instead of showing stale cards from the previous filter.
+      if (lastFilterRef.current !== filter) {
+        lastFilterRef.current = filter;
+        setDeck([]);
+        setStarred(new Set());
+      }
+      return;
+    }
+    const filterFlipped = lastFilterRef.current !== filter;
+    const uninitialised = lastFilterRef.current === null;
+    if (filterFlipped || uninitialised) {
+      lastFilterRef.current = filter;
       startTransition(() => {
         setDeck(shuffleArray(fetchedTerms));
         setStarred(
@@ -112,12 +137,10 @@ export default function FlashcardsPage() {
         );
       });
     }
-  }, [fetchedTerms, startTransition]);
+  }, [fetchedTerms, filter, startTransition]);
 
-  const filteredDeck = useMemo(
-    () => (showOnlyStarred ? deck.filter((t) => starred.has(t.id)) : deck),
-    [deck, starred, showOnlyStarred],
-  );
+  // No client-side filter — the deck is already scoped by the server.
+  const filteredDeck = deck;
 
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -138,7 +161,7 @@ export default function FlashcardsPage() {
       setFlipped(false);
       setShowHint(false);
     });
-  }, [showOnlyStarred, startTransition]);
+  }, [filter, startTransition]);
 
   const current = filteredDeck[index];
 
@@ -157,6 +180,24 @@ export default function FlashcardsPage() {
     moduleId,
     enabled: !moduleLoading && !termsLoading && fetchedTerms.length > 0,
   });
+
+  // Auto-finish when the learner runs out of cards. Guarded by a ref
+  // so React StrictMode's dev-only double-invoke and any late renders
+  // during the completing→complete transition don't refire finish().
+  const autoFinishedRef = useRef(false);
+  useEffect(() => {
+    if (
+      sessionId &&
+      sessionStatus === "active" &&
+      deck.length > 0 &&
+      index >= deck.length &&
+      !summary &&
+      !autoFinishedRef.current
+    ) {
+      autoFinishedRef.current = true;
+      void finish();
+    }
+  }, [sessionId, sessionStatus, deck.length, index, summary, finish]);
 
   const advance = useCallback(() => {
     setFlipped(false);
@@ -305,21 +346,59 @@ export default function FlashcardsPage() {
   }
 
   if (summary) {
-    return <SummaryScreen summary={summary} moduleId={moduleId} />;
+    return (
+      <SessionResults
+        summary={summary}
+        answers={answers}
+        moduleId={moduleId}
+        modeRoute="flashcards"
+        latestProgress={latestProgress}
+      />
+    );
+  }
+
+  // Session finish is in flight — server call already fired below via
+  // the auto-finish effect. Hold the completion loader instead of
+  // flashing the intermediate deck-done panel.
+  if (sessionStatus === "completing") {
+    return <SessionResultsLoading />;
+  }
+
+  if (sessionStatus === "error" && sessionError && sessionId) {
+    // Session start error is caught earlier as a banner over the deck;
+    // this branch is specifically when finish() failed after we ran
+    // out of cards.
+    return (
+      <SessionResultsError
+        error={sessionError}
+        onRetry={finish}
+        moduleId={moduleId}
+      />
+    );
   }
 
   // Order matters. An empty filtered deck is NOT a completed session —
   // otherwise "only starred" with no starred cards jumps straight to the
   // end panel. Handle that first.
   if (filteredDeck.length === 0) {
+    const emptyLabel =
+      filter === "starred"
+        ? "No starred cards"
+        : filter === "new"
+          ? "No new cards"
+          : filter === "in_progress"
+            ? "No cards you're still learning"
+            : filter === "mastered"
+              ? "No mastered cards yet"
+              : "No cards in this bucket";
     return (
       <main className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
         <Card className="max-w-lg w-full">
           <CardHeader>
-            <CardTitle>No starred cards</CardTitle>
+            <CardTitle>{emptyLabel}</CardTitle>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" onClick={() => setShowOnlyStarred(false)}>
+            <Button variant="outline" onClick={() => setFilter("all")}>
               Show all cards
             </Button>
           </CardContent>
@@ -328,71 +407,12 @@ export default function FlashcardsPage() {
     );
   }
 
+  // Deck exhausted. Auto-finish takes over via the effect below and
+  // routes to the SessionResults screen once the summary lands. Show
+  // the completion loader in the meantime.
   const isSessionEnd = index >= filteredDeck.length;
   if (isSessionEnd) {
-    // Restart: reset the deck AND drop the filter. If the user finished a
-    // filtered pass and hits Shuffle, they almost certainly want to keep
-    // studying, and preserving an "only starred" filter that then narrows
-    // to zero would just bounce them right back here.
-    const restart = () => {
-      setShowOnlyStarred(false);
-      setDeck(shuffleArray(fetchedTerms));
-      setIndex(0);
-      setPendingOutcome(null);
-      setFlipped(false);
-      setShowHint(false);
-    };
-
-    return (
-      <main className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
-        <Card className="max-w-lg w-full">
-          <CardHeader>
-            <CardTitle className="text-2xl text-[#4255FF]">
-              You went through every card.
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-sm text-gray-600">
-              <p>
-                Answered: {answeredCount} / {total}
-              </p>
-              {graduatedInSession > 0 && (
-                <p>{graduatedInSession} newly mastered</p>
-              )}
-              {latestProgress && (
-                <p className="mt-2">
-                  Mastered {latestProgress.masteredCount} of{" "}
-                  {latestProgress.totalCards} in this set.
-                </p>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button
-                onClick={finish}
-                disabled={!sessionId || sessionStatus === "completing"}
-              >
-                Finish session
-              </Button>
-              <Button
-                variant="outline"
-                onClick={restart}
-                disabled={sessionStatus === "completing"}
-              >
-                <RotateCcw size={16} className="mr-1" /> Shuffle & restart
-              </Button>
-              {!sessionId && (
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push(`/modules/${moduleId}`)}
-                >
-                  Back to module
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </main>
-    );
+    return <SessionResultsLoading />;
   }
 
   const isStarred = starred.has(current.id);
@@ -433,20 +453,11 @@ export default function FlashcardsPage() {
           </div>
         </div>
 
-        {/* Filter */}
+        {/* Filter — mutually-exclusive pill row across mastery buckets +
+            starred. Changing the filter forces a new session-scope of
+            cards (server re-fetch) and a fresh shuffle. */}
         <div className="mt-4 flex justify-end">
-          <Button
-            variant={showOnlyStarred ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowOnlyStarred((v) => !v)}
-            className="rounded-full"
-          >
-            <Star
-              size={14}
-              className={`mr-1 ${showOnlyStarred ? "fill-current" : ""}`}
-            />
-            {showOnlyStarred ? "Showing starred" : "Only starred"}
-          </Button>
+          <TermFilterPills value={filter} onChange={setFilter} />
         </div>
 
         {/* Session-start error banner. Buttons are disabled until we have a
@@ -606,67 +617,3 @@ export default function FlashcardsPage() {
   );
 }
 
-// ============================================
-// summary sub-view
-// ============================================
-
-function SummaryScreen({
-  summary,
-  moduleId,
-}: {
-  summary: NonNullable<ReturnType<typeof useFlashcardSession>["summary"]>;
-  moduleId: string;
-}) {
-  const router = useRouter();
-  const accuracyPct = Math.round((summary.accuracy ?? 0) * 100);
-  const mins = Math.floor(summary.durationSeconds / 60);
-  const secs = summary.durationSeconds % 60;
-
-  return (
-    <main className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
-      <Card className="max-w-lg w-full">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Trophy size={28} className="text-amber-500" />
-            <CardTitle className="text-2xl text-[#4255FF]">
-              Session complete
-            </CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <dt className="text-gray-500">Cards studied</dt>
-            <dd className="font-semibold">{summary.cardsStudied}</dd>
-            <dt className="text-gray-500">Correct</dt>
-            <dd className="font-semibold text-emerald-600">
-              {summary.correctAnswers}
-            </dd>
-            <dt className="text-gray-500">Incorrect</dt>
-            <dd className="font-semibold text-rose-600">
-              {summary.incorrectAnswers}
-            </dd>
-            <dt className="text-gray-500">Accuracy</dt>
-            <dd className="font-semibold">{accuracyPct}%</dd>
-            <dt className="text-gray-500">Time</dt>
-            <dd className="font-semibold">
-              {mins}m {secs}s
-            </dd>
-          </dl>
-          <div className="flex gap-3 pt-2">
-            <Button
-              onClick={() => router.push(`/modules/${moduleId}/flashcards`)}
-            >
-              <RotateCcw size={16} className="mr-1" /> Study again
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => router.push(`/modules/${moduleId}`)}
-            >
-              Back to module
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </main>
-  );
-}

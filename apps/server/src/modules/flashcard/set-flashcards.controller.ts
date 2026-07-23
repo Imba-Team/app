@@ -41,6 +41,7 @@ import {
 } from './dtos/csv-import.dto';
 import { FlashcardResponseDto } from './dtos/flashcard-response.dto';
 import { FlashcardWithProgressDto } from './dtos/flashcard-with-progress.dto';
+import { ListCardsWithProgressQueryDto } from './dtos/list-cards-with-progress-query.dto';
 import { CSV_MAX_BYTES, CsvImportService } from './csv-import.service';
 import { FlashcardProgressService } from './flashcard-progress.service';
 import { FlashcardService } from './flashcard.service';
@@ -120,7 +121,7 @@ export class SetFlashcardsController {
   @ApiOperation({
     summary: "List flashcards in a study set folded with the caller's progress",
     description:
-      'One row per flashcard including status (NEW / LEARNING / MASTERED), weighted streak, and isStarred. Powers the module page term list — avoids N per-card requests.',
+      'One row per flashcard including status (NEW / LEARNING / MASTERED), weighted streak, and isStarred. Supports ?starred=true / ?status= filters so clients can narrow the deck server-side (flashcard mode "only starred", module page mastery filter) instead of loading everything.',
   })
   @ApiOkEnvelope(FlashcardWithProgressDto, {
     isArray: true,
@@ -129,10 +130,12 @@ export class SetFlashcardsController {
   async listWithProgress(
     @CurrentUser() user: IUser,
     @Param('setId') setId: string,
+    @Query() query: ListCardsWithProgressQueryDto,
   ): Promise<ResponseDto<FlashcardWithProgressDto[]>> {
     const data = await this.flashcardProgressService.listWithProgress(
       user.id,
       setId,
+      { starred: query.starred, status: query.status, q: query.q },
     );
     return { ok: true, message: 'Flashcards with progress retrieved', data };
   }

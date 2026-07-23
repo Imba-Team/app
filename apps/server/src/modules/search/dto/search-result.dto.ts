@@ -10,10 +10,10 @@ export class SearchSetHitDto {
   @ApiProperty()
   title!: string;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   description?: string | null;
 
-  @ApiProperty({ nullable: true })
+  @ApiProperty({ type: String, nullable: true })
   language?: string | null;
 
   @ApiProperty({ type: [String] })
@@ -22,7 +22,7 @@ export class SearchSetHitDto {
   @ApiProperty()
   ownerId!: string;
 
-  @ApiPropertyOptional({ nullable: true })
+  @ApiPropertyOptional({ type: String, nullable: true })
   ownerUsername?: string | null;
 
   @ApiProperty()
@@ -32,8 +32,9 @@ export class SearchSetHitDto {
   likeCount!: number;
 
   @ApiProperty({
-    description: 'BM25 relevance score returned by Elasticsearch.',
+    type: Number,
     nullable: true,
+    description: 'BM25 relevance score returned by Elasticsearch.',
   })
   score?: number | null;
 

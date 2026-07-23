@@ -1068,8 +1068,20 @@
     },
     "/study-sets/collection": {
       "get": {
+        "description": "Owned + favourited sets, ordered by updatedAt desc. Pass ?q= to filter on title/description (case-insensitive substring).",
         "operationId": "StudySetController_myCollection",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Searches title or description",
+            "schema": {
+              "example": "biology",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Collection retrieved",
@@ -1248,7 +1260,25 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SearchSetsResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1472,7 +1502,7 @@
     },
     "/study-sets/{setId}/cards/progress": {
       "get": {
-        "description": "One row per flashcard including status (NEW / LEARNING / MASTERED), weighted streak, and isStarred. Powers the module page term list — avoids N per-card requests.",
+        "description": "One row per flashcard including status (NEW / LEARNING / MASTERED), weighted streak, and isStarred. Supports ?starred=true / ?status= filters so clients can narrow the deck server-side (flashcard mode \"only starred\", module page mastery filter) instead of loading everything.",
         "operationId": "SetFlashcardsController_listWithProgress",
         "parameters": [
           {
@@ -1480,6 +1510,40 @@
             "required": true,
             "in": "path",
             "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "starred",
+            "required": false,
+            "in": "query",
+            "description": "Only return cards the caller has starred.",
+            "schema": {
+              "example": true,
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Only return cards in this mastery bucket.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "NEW",
+                "LEARNING",
+                "MASTERED"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match on term or definition. Empty / whitespace-only strings are ignored.",
+            "schema": {
+              "example": "photo",
               "type": "string"
             }
           }
@@ -2867,7 +2931,25 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Written answer evaluated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/WrittenAnswerResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2909,7 +2991,25 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Batch retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/LearnBatchResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3594,6 +3694,102 @@
           "isPrivate"
         ]
       },
+      "SearchSetHitDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "ownerId": {
+            "type": "string"
+          },
+          "ownerUsername": {
+            "type": "string",
+            "nullable": true
+          },
+          "cardCount": {
+            "type": "number"
+          },
+          "likeCount": {
+            "type": "number"
+          },
+          "score": {
+            "type": "number",
+            "nullable": true,
+            "description": "BM25 relevance score returned by Elasticsearch."
+          },
+          "highlights": {
+            "type": "object",
+            "description": "Highlighted fragments from matched fields, keyed by field name.",
+            "example": {
+              "title": [
+                "<em>Photo</em>synthesis"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "description",
+          "language",
+          "tags",
+          "ownerId",
+          "cardCount",
+          "likeCount",
+          "score"
+        ]
+      },
+      "SearchSetsResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchSetHitDto"
+            }
+          },
+          "total": {
+            "type": "number",
+            "example": 137
+          },
+          "page": {
+            "type": "number",
+            "example": 1
+          },
+          "limit": {
+            "type": "number",
+            "example": 20
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "limit"
+        ]
+      },
       "FlashcardResponseDto": {
         "type": "object",
         "properties": {
@@ -4221,6 +4417,80 @@
           "hintUsed"
         ]
       },
+      "WriteEvaluationDto": {
+        "type": "object",
+        "properties": {
+          "matchType": {
+            "type": "string",
+            "enum": [
+              "EXACT",
+              "TYPO_ACCEPTED",
+              "WRONG"
+            ],
+            "description": "EXACT = normalized strings match. TYPO_ACCEPTED = Levenshtein distance ≤ 1 in a 6+ character answer (still scored CORRECT). WRONG = anything else."
+          },
+          "similarity": {
+            "type": "number",
+            "description": "0.00–1.00. Computed as 1 - editDistance / max(len). Frontend can render a \"you were close\" screen using this even when the outcome is INCORRECT.",
+            "example": 0.92
+          },
+          "editDistance": {
+            "type": "number",
+            "description": "Levenshtein distance between the normalized strings."
+          },
+          "normalizedInput": {
+            "type": "string",
+            "description": "The learner's answer after normalization. Useful for client-side diff rendering."
+          },
+          "normalizedExpected": {
+            "type": "string",
+            "description": "The canonical answer after normalization."
+          }
+        },
+        "required": [
+          "matchType",
+          "similarity",
+          "editDistance",
+          "normalizedInput",
+          "normalizedExpected"
+        ]
+      },
+      "WrittenAnswerResponseDto": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "correctAnswer": {
+            "type": "string",
+            "description": "Canonical answer text for the card."
+          },
+          "graduated": {
+            "type": "boolean"
+          },
+          "demoted": {
+            "type": "boolean"
+          },
+          "cardProgress": {
+            "$ref": "#/components/schemas/CardProgressSummaryDto"
+          },
+          "setProgress": {
+            "$ref": "#/components/schemas/SetProgressSummaryDto"
+          },
+          "evaluation": {
+            "$ref": "#/components/schemas/WriteEvaluationDto"
+          }
+        },
+        "required": [
+          "correct",
+          "correctAnswer",
+          "graduated",
+          "demoted",
+          "cardProgress",
+          "setProgress",
+          "evaluation"
+        ]
+      },
       "SubmitWrittenAnswerDto": {
         "type": "object",
         "properties": {
@@ -4260,6 +4530,72 @@
           "studyMode",
           "userAnswer",
           "hintUsed"
+        ]
+      },
+      "LearnBatchCardDto": {
+        "type": "object",
+        "properties": {
+          "cardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "term": {
+            "type": "string",
+            "description": "The term shown to the learner as the prompt."
+          },
+          "hint": {
+            "type": "string",
+            "nullable": true,
+            "description": "Optional hint attached to the card. Frontend only shows this if the learner clicks the hint button."
+          },
+          "promptType": {
+            "type": "string",
+            "enum": [
+              "LEARN_MC",
+              "LEARN_WRITTEN"
+            ],
+            "description": "How the frontend should prompt: multiple choice (recognition) or free-text (recall). Chosen server-side based on the learner's current mastery streak."
+          },
+          "choices": {
+            "description": "Four shuffled options for LEARN_MC prompts. Undefined for LEARN_WRITTEN.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correctChoiceIndex": {
+            "type": "number",
+            "description": "Index of the correct choice for LEARN_MC prompts. Same trust model as Flashcard Mode — the client uses this to render feedback."
+          }
+        },
+        "required": [
+          "cardId",
+          "term",
+          "promptType"
+        ]
+      },
+      "LearnBatchResponseDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LearnBatchCardDto"
+            }
+          },
+          "hasMoreCards": {
+            "type": "boolean",
+            "description": "True if more non-mastered cards remain in the set beyond this batch. When false, all cards have reached MASTERED and the frontend can offer a completion screen."
+          }
+        },
+        "required": [
+          "sessionId",
+          "cards",
+          "hasMoreCards"
         ]
       },
       "SessionSummaryDto": {

@@ -112,6 +112,7 @@ export class SessionController {
     description:
       "For Write / Learn-written / Test-written / AI-generated modes. The server runs the Levenshtein-tolerant evaluator against the card's canonical definition, translates the result into a mastery-engine outcome, and returns both the applied progress and the evaluation details (matchType, similarity, edit distance, normalized strings) so the frontend can render a diff and helpful feedback.",
   })
+  @ApiOkEnvelope(WrittenAnswerResponseDto, { description: 'Written answer evaluated' })
   async answerWritten(
     @CurrentUser() user: IUser,
     @Param('id', new ParseUUIDPipe()) sessionId: string,
@@ -132,6 +133,7 @@ export class SessionController {
     description:
       "Returns 7–10 non-mastered cards mixed between multiple-choice (recognition) and free-text (recall) prompts based on each card's current weighted streak. Only supported for sessions started with mode LEARN.",
   })
+  @ApiOkEnvelope(LearnBatchResponseDto, { description: 'Batch retrieved' })
   async nextBatch(
     @CurrentUser() user: IUser,
     @Param('id', new ParseUUIDPipe()) sessionId: string,
