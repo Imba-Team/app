@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Play,
   Target,
   XCircle,
 } from "lucide-react";
@@ -41,6 +42,15 @@ const MODE_LABEL: Record<SessionHistoryItem["mode"], string> = {
   MATCH: "Match",
   AI_FILL_BLANK: "Fill in the blank",
   AI_GUESS_WORD: "Guess the word",
+};
+
+// Modes that have a built UI today. Others render "In progress" without
+// a resume button — we don't want to link into a route that doesn't exist.
+const RESUMABLE_MODE_ROUTE: Partial<
+  Record<SessionHistoryItem["mode"], string>
+> = {
+  FLASHCARD: "flashcards",
+  LEARN: "learn",
 };
 
 const MODE_BADGE: Record<SessionHistoryItem["mode"], string> = {
@@ -179,7 +189,11 @@ export default function SessionsPageClient({ moduleId }: { moduleId: string }) {
           <>
             <ul className="space-y-3">
               {data.items.map((s) => (
-                <SessionRow key={s.sessionId} session={s} />
+                <SessionRow
+                  key={s.sessionId}
+                  session={s}
+                  moduleId={moduleId}
+                />
               ))}
             </ul>
 
@@ -215,12 +229,24 @@ export default function SessionsPageClient({ moduleId }: { moduleId: string }) {
   );
 }
 
-function SessionRow({ session }: { session: SessionHistoryItem }) {
+function SessionRow({
+  session,
+  moduleId,
+}: {
+  session: SessionHistoryItem;
+  moduleId: string;
+}) {
   const label = MODE_LABEL[session.mode] ?? session.mode;
   const badge = MODE_BADGE[session.mode] ?? "bg-gray-100 text-gray-700 border-gray-200";
   const accuracyPct = Math.round((session.accuracy ?? 0) * 100);
   const isInProgress = !session.completedAt;
   const totalAnswers = session.correctAnswers + session.incorrectAnswers;
+  // Resume is only offered for modes that have a built UI. Incomplete
+  // sessions in other modes still render "In progress" so the learner
+  // can see the state, but without a link that goes nowhere useful.
+  const resumeRoute = isInProgress
+    ? RESUMABLE_MODE_ROUTE[session.mode]
+    : undefined;
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -233,9 +259,29 @@ function SessionRow({ session }: { session: SessionHistoryItem }) {
             {label}
           </span>
           {isInProgress ? (
-            <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 text-amber-700 px-2 py-0.5 text-xs font-medium">
-              In progress
-            </span>
+            <>
+              <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 text-amber-700 px-2 py-0.5 text-xs font-medium">
+                In progress
+              </span>
+              <span className="text-xs text-gray-400">
+                Started {formatWhen(session.startedAt)}
+              </span>
+              {resumeRoute && (
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  className="ml-auto h-7 rounded-full text-xs"
+                >
+                  <Link
+                    href={`/modules/${moduleId}/${resumeRoute}?sessionId=${session.sessionId}`}
+                  >
+                    <Play size={12} className="mr-1" />
+                    Resume
+                  </Link>
+                </Button>
+              )}
+            </>
           ) : (
             <span className="text-xs text-gray-500">
               {formatWhen(session.completedAt)}

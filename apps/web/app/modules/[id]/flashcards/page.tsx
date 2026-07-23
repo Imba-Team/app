@@ -29,7 +29,7 @@ import {
   useState,
   useTransition,
 } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -95,7 +95,12 @@ function speak(text: string) {
 export default function FlashcardsPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const moduleId = params.id as string;
+  // Optional resume — set when the learner clicked "Resume" on a
+  // still-live session in history. See useFlashcardSession for how
+  // this bypasses the POST /sessions call.
+  const resumeSessionId = searchParams.get("sessionId") ?? undefined;
 
   const { data: moduleData, isLoading: moduleLoading } = useModule(moduleId);
   const [filter, setFilter] = useState<TermFilterKey>("all");
@@ -179,6 +184,7 @@ export default function FlashcardsPage() {
   } = useFlashcardSession({
     moduleId,
     enabled: !moduleLoading && !termsLoading && fetchedTerms.length > 0,
+    resumeSessionId,
   });
 
   // Auto-finish when the learner runs out of cards. Guarded by a ref

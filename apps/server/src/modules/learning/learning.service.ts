@@ -73,6 +73,13 @@ interface AnswerRawResult {
   };
 }
 
+/**
+ * How long a not-yet-completed session may sit around before it counts
+ * as "abandoned" and is swept from history. Sessions younger than this
+ * remain visible in the history list with a "Resume" affordance.
+ */
+export const SESSION_RESUME_WINDOW_MS = 5 * 60 * 1000;
+
 @Injectable()
 export class LearningService {
   constructor(
@@ -81,6 +88,31 @@ export class LearningService {
     private readonly studySetService: StudySetService,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
+
+  /**
+   * Delete this user's abandoned sessions — never completed and older
+   * than the resume window. Cheap: indexed by userId and completedAt.
+   * Called opportunistically from listSessions so history stays free
+   * of noise from "started a mode, closed the tab" interactions.
+   *
+   * Per-card answers were persisted directly against UserCardProgress,
+   * so mastery isn't affected by dropping the session shell.
+   */
+  private async sweepAbandonedSessions(userId: string): Promise<void> {
+    const cutoff = new Date(Date.now() - SESSION_RESUME_WINDOW_MS);
+    const deleted = await this.prisma.studySession.deleteMany({
+      where: {
+        userId,
+        completedAt: null,
+        startedAt: { lt: cutoff },
+      },
+    });
+    if (deleted.count > 0) {
+      this.logger.debug(
+        `Swept ${deleted.count} abandoned session(s) for userId=${userId}`,
+      );
+    }
+  }
 
   async startSession(
     userId: string,
@@ -439,6 +471,15 @@ export class LearningService {
     limit: number;
     offset: number;
   }> {
+    // Sweep abandoned sessions — started but never completed and older
+    // than the resume window (5 min). Individual per-card answers were
+    // already recorded against UserCardProgress at submission time, so
+    // the learner's mastery isn't lost by dropping the session shell.
+    // Keeps the history free of noise from "start mode, close tab"
+    // interactions while still letting the learner resume a session
+    // they left seconds ago.
+    await this.sweepAbandonedSessions(userId);
+
     const limit = query.limit ?? 20;
     const offset = query.offset ?? 0;
     const where: Prisma.StudySessionWhereInput = {

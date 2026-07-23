@@ -75,6 +75,13 @@ interface UseLearnSessionOptions {
   /** Enabled once the caller knows the module has at least one non-mastered card. */
   enabled: boolean;
   batchSize?: number;
+  /**
+   * If provided, resume this existing session instead of creating a
+   * new one. The first-batch fetch still runs — the server has state,
+   * we just skip POST /sessions. If the id is stale, the batch call
+   * will 404 and surface as a normal error.
+   */
+  resumeSessionId?: string;
 }
 
 export interface UseLearnSessionReturn {
@@ -118,8 +125,11 @@ export function useLearnSession({
   moduleId,
   enabled,
   batchSize = 10,
+  resumeSessionId,
 }: UseLearnSessionOptions): UseLearnSessionReturn {
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(
+    resumeSessionId ?? null,
+  );
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
@@ -146,9 +156,14 @@ export function useLearnSession({
 
     (async () => {
       try {
-        const session = await startSession(moduleId, "LEARN");
-        const first = await getNextLearnBatch(session.sessionId, batchSize);
-        setSessionId(session.sessionId);
+        // Resume path: skip the POST /sessions round-trip; the server
+        // has the session row already. Batch fetch is unchanged and
+        // gives us the current non-mastered pool.
+        const startedSessionId =
+          resumeSessionId ??
+          (await startSession(moduleId, "LEARN")).sessionId;
+        const first = await getNextLearnBatch(startedSessionId, batchSize);
+        setSessionId(startedSessionId);
         setBatch(first.cards);
         setBatchIndex(0);
         setHasMoreCards(first.hasMoreCards);
@@ -159,7 +174,7 @@ export function useLearnSession({
         setStatus("error");
       }
     })();
-  }, [enabled, moduleId, batchSize, attemptKey]);
+  }, [enabled, moduleId, batchSize, attemptKey, resumeSessionId]);
 
   const retry = useCallback(() => {
     if (startedRef.current) return;

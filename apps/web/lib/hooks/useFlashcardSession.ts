@@ -35,6 +35,14 @@ interface UseFlashcardSessionOptions {
   moduleId: string;
   /** Enable the effect once the caller has terms loaded — avoids starting an empty session. */
   enabled: boolean;
+  /**
+   * If provided, resume this existing session instead of creating a new
+   * one via POST /sessions. Used when the learner clicks "Resume" on a
+   * still-live entry (< 5 min old) in the session history. If the id is
+   * stale or wrong (server-side sweep raced the click), the first
+   * answer submission will 404 and surface as a normal error.
+   */
+  resumeSessionId?: string;
 }
 
 interface UseFlashcardSessionReturn {
@@ -69,8 +77,11 @@ function newAttemptId(): string {
 export function useFlashcardSession({
   moduleId,
   enabled,
+  resumeSessionId,
 }: UseFlashcardSessionOptions): UseFlashcardSessionReturn {
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(
+    resumeSessionId ?? null,
+  );
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
@@ -97,6 +108,15 @@ export function useFlashcardSession({
   useEffect(() => {
     if (!enabled || startedRef.current) return;
     startedRef.current = true;
+
+    // Resume path: caller handed us a live sessionId (from the history
+    // Resume button). Skip POST /sessions entirely; the existing
+    // session row on the server is fine to keep using.
+    if (resumeSessionId) {
+      setStatus("active");
+      return;
+    }
+
     setStatus("starting");
     setError(null);
 
@@ -111,7 +131,7 @@ export function useFlashcardSession({
         setError(err.message);
         setStatus("error");
       });
-  }, [enabled, moduleId, attemptKey]);
+  }, [enabled, moduleId, attemptKey, resumeSessionId]);
 
   const retry = useCallback(() => {
     if (startedRef.current) return;

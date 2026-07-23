@@ -20,7 +20,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -55,6 +55,8 @@ type EmptyReason = "no-terms" | "all-mastered" | null;
 
 export default function LearnModeClient({ moduleId }: { moduleId: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resumeSessionId = searchParams.get("sessionId") ?? undefined;
   const { data: moduleData, isLoading: moduleLoading } = useModule(moduleId);
   const { data: allTerms = [], isLoading: termsLoading } = useTerms(moduleId);
   const enabled = !moduleLoading && !termsLoading && allTerms.length > 0;
@@ -74,7 +76,7 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
     advance,
     finish,
     retry,
-  } = useLearnSession({ moduleId, enabled });
+  } = useLearnSession({ moduleId, enabled, resumeSessionId });
 
   // Auto-advance timer. Held in a ref so we can cancel on unmount /
   // manual advance.
