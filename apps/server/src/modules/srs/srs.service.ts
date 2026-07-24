@@ -1,0 +1,304 @@
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { plainToInstance } from 'class-transformer';
+import { Redis } from 'ioredis';
+import { LoggerService } from 'src/common/logger/logger.service';
+import { PrismaService } from 'src/common/prisma/prisma.service';
+import { REDIS_CLIENT } from 'src/common/redis/redis.constants';
+
+import {
+  ForecastBucketDto,
+  ForecastResponseDto,
+} from './dtos/forecast.dto';
+import { ReviewSrsCardDto } from './dtos/review-srs-card.dto';
+import { SrsCardDto } from './dtos/srs-card.dto';
+import { SrsReviewResponseDto } from './dtos/srs-review-response.dto';
+import { processReview, Sm2Rating } from './domain/sm2';
+
+const IDEMPOTENCY_TTL_SECONDS = 300;
+
+/**
+ * SRS = Spaced Repetition Scheduler. Wraps the pure SM-2 function
+ * ([sm2.ts](./domain/sm2.ts)) with the persistence + HTTP query layer.
+ *
+ * "Today" is UTC-based for now — per-user timezone lands in Sprint 4
+ * when the User.timezone column is added.
+ */
+@Injectable()
+export class SrsService {
+  constructor(
+    private readonly logger: LoggerService,
+    private readonly prisma: PrismaService,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+  ) {}
+
+  /** UTC midnight for the given date. */
+  private static startOfUtcDay(now: Date = new Date()): Date {
+    const d = new Date(now);
+    d.setUTCHours(0, 0, 0, 0);
+    return d;
+  }
+
+  private static addDays(date: Date, days: number): Date {
+    const d = new Date(date);
+    d.setUTCDate(d.getUTCDate() + days);
+    return d;
+  }
+
+  private static toDateString(date: Date): string {
+    return date.toISOString().slice(0, 10);
+  }
+
+  async getTodayQueue(
+    userId: string,
+    limit = 50,
+    offset = 0,
+  ): Promise<{ items: SrsCardDto[]; total: number }> {
+    const today = SrsService.startOfUtcDay();
+    const upperBound = SrsService.addDays(today, 1);
+
+    const where: Prisma.SrsCardWhereInput = {
+      userId,
+      dueDate: { lt: upperBound },
+    };
+
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.srsCard.findMany({
+        where,
+        include: {
+          card: {
+            select: {
+              id: true,
+              term: true,
+              definition: true,
+              hint: true,
+              studySetId: true,
+            },
+          },
+        },
+        orderBy: [{ dueDate: 'asc' }, { createdAt: 'asc' }],
+        take: limit,
+        skip: offset,
+      }),
+      this.prisma.srsCard.count({ where }),
+    ]);
+
+    const items = rows.map((row) =>
+      plainToInstance(
+        SrsCardDto,
+        {
+          id: row.id,
+          cardId: row.cardId,
+          studySetId: row.card.studySetId,
+          term: row.card.term,
+          definition: row.card.definition,
+          hint: row.card.hint,
+          easeFactor: row.easeFactor.toString(),
+          intervalDays: row.intervalDays,
+          repetitions: row.repetitions,
+          lapses: row.lapses,
+          dueDate: SrsService.toDateString(row.dueDate),
+          lastReviewed: row.lastReviewed,
+          isLeech: row.isLeech,
+        },
+        { excludeExtraneousValues: true },
+      ),
+    );
+
+    return { items, total };
+  }
+
+  async review(
+    userId: string,
+    srsCardId: string,
+    dto: ReviewSrsCardDto,
+  ): Promise<SrsReviewResponseDto> {
+    const cached = await this.readIdempotentResponse(dto.attemptId);
+    if (cached) return cached;
+
+    const applied = await this.applyReview(userId, srsCardId, dto.rating);
+    await this.storeIdempotentResponse(dto.attemptId, applied);
+    return applied;
+  }
+
+  private async applyReview(
+    userId: string,
+    srsCardId: string,
+    rating: Sm2Rating,
+  ): Promise<SrsReviewResponseDto> {
+    return this.prisma.$transaction(async (tx) => {
+      const row = await tx.srsCard.findUnique({
+        where: { id: srsCardId },
+        include: {
+          card: {
+            select: {
+              id: true,
+              term: true,
+              definition: true,
+              hint: true,
+              studySetId: true,
+            },
+          },
+        },
+      });
+      if (!row) throw new NotFoundException('SRS card not found');
+      if (row.userId !== userId) {
+        throw new ForbiddenException('Not your SRS card');
+      }
+
+      const next = processReview(
+        {
+          easeFactor: Number(row.easeFactor),
+          intervalDays: row.intervalDays,
+          repetitions: row.repetitions,
+          lapses: row.lapses,
+        },
+        rating,
+      );
+
+      const now = new Date();
+      const today = SrsService.startOfUtcDay(now);
+      const nextDue = SrsService.addDays(today, next.intervalDays);
+
+      const updated = await tx.srsCard.update({
+        where: { id: srsCardId },
+        data: {
+          easeFactor: new Prisma.Decimal(next.easeFactor.toFixed(2)),
+          intervalDays: next.intervalDays,
+          repetitions: next.repetitions,
+          lapses: next.lapses,
+          isLeech: next.isLeech,
+          dueDate: nextDue,
+          lastReviewed: now,
+        },
+      });
+
+      const remainingDueToday = await tx.srsCard.count({
+        where: {
+          userId,
+          dueDate: { lt: SrsService.addDays(today, 1) },
+        },
+      });
+
+      this.logger.log(
+        `SRS review applied: userId=${userId} srsCardId=${srsCardId} ` +
+          `rating=${rating} intervalDays=${next.intervalDays} ` +
+          `dueDate=${SrsService.toDateString(nextDue)}`,
+      );
+
+      return plainToInstance(
+        SrsReviewResponseDto,
+        {
+          card: plainToInstance(
+            SrsCardDto,
+            {
+              id: updated.id,
+              cardId: updated.cardId,
+              studySetId: row.card.studySetId,
+              term: row.card.term,
+              definition: row.card.definition,
+              hint: row.card.hint,
+              easeFactor: updated.easeFactor.toString(),
+              intervalDays: updated.intervalDays,
+              repetitions: updated.repetitions,
+              lapses: updated.lapses,
+              dueDate: SrsService.toDateString(updated.dueDate),
+              lastReviewed: updated.lastReviewed,
+              isLeech: updated.isLeech,
+            },
+            { excludeExtraneousValues: true },
+          ),
+          remainingDueToday,
+        },
+        { excludeExtraneousValues: true },
+      );
+    });
+  }
+
+  async getForecast(
+    userId: string,
+    days = 30,
+  ): Promise<ForecastResponseDto> {
+    const today = SrsService.startOfUtcDay();
+    // Cards due before today collapse into today's bucket, so we scan
+    // from the epoch of the user's earliest due date up to today+days.
+    const upperBound = SrsService.addDays(today, days);
+
+    const grouped = await this.prisma.srsCard.groupBy({
+      by: ['dueDate'],
+      where: {
+        userId,
+        dueDate: { lt: upperBound },
+      },
+      _count: { _all: true },
+    });
+
+    // Bucket: date-string → count. Overdue cards fold into today.
+    const counts = new Map<string, number>();
+    for (let i = 0; i < days; i++) {
+      counts.set(SrsService.toDateString(SrsService.addDays(today, i)), 0);
+    }
+    const todayKey = SrsService.toDateString(today);
+
+    for (const g of grouped) {
+      const due = g.dueDate < today ? today : g.dueDate;
+      const key = SrsService.toDateString(due);
+      const bucket = due <= today ? todayKey : key;
+      counts.set(bucket, (counts.get(bucket) ?? 0) + g._count._all);
+    }
+
+    const buckets: ForecastBucketDto[] = Array.from(counts.entries()).map(
+      ([date, dueCount]) =>
+        plainToInstance(
+          ForecastBucketDto,
+          { date, dueCount },
+          { excludeExtraneousValues: true },
+        ),
+    );
+
+    return plainToInstance(
+      ForecastResponseDto,
+      { days, buckets },
+      { excludeExtraneousValues: true },
+    );
+  }
+
+  private idempotencyKey(attemptId: string): string {
+    return `srs:review:${attemptId}`;
+  }
+
+  private async readIdempotentResponse(
+    attemptId: string,
+  ): Promise<SrsReviewResponseDto | null> {
+    const raw = await this.redis.get(this.idempotencyKey(attemptId));
+    if (!raw) return null;
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      return plainToInstance(SrsReviewResponseDto, parsed, {
+        excludeExtraneousValues: true,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Invalid SRS idempotency cache entry for attemptId=${attemptId}, ignoring: ${(err as Error).message}`,
+      );
+      return null;
+    }
+  }
+
+  private async storeIdempotentResponse(
+    attemptId: string,
+    response: SrsReviewResponseDto,
+  ): Promise<void> {
+    await this.redis.set(
+      this.idempotencyKey(attemptId),
+      JSON.stringify(response),
+      'EX',
+      IDEMPOTENCY_TTL_SECONDS,
+    );
+  }
+}

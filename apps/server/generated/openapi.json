@@ -46,7 +46,18 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserResponseDto"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/UserResponseDto"
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             }
@@ -81,7 +92,18 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserResponseDto"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/UserResponseDto"
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             }
@@ -106,7 +128,18 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserResponseDto"
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/UserResponseDto"
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             }
@@ -148,7 +181,25 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Profile picture updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/UserResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -182,11 +233,19 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "example": {
-                    "ok": true,
-                    "message": "Password updated successfully",
-                    "data": null
-                  }
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "null",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             }
@@ -3186,6 +3245,179 @@
         ]
       }
     },
+    "/srs/queue/today": {
+      "get": {
+        "description": "Includes overdue cards. Ordered by dueDate ascending. UTC-based until per-user timezone lands.",
+        "operationId": "SrsController_todayQueue",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 0,
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Due queue retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SrsCardDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List today's due SRS cards for the caller",
+        "tags": [
+          "srs"
+        ]
+      }
+    },
+    "/srs/cards/{id}/review": {
+      "post": {
+        "description": "Runs SM-2 with the given rating, updates the card, and returns the new schedule plus remaining-due count for today.",
+        "operationId": "SrsController_review",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewSrsCardDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review applied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SrsReviewResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Submit a rating for a due SRS card",
+        "tags": [
+          "srs"
+        ]
+      }
+    },
+    "/srs/forecast": {
+      "get": {
+        "description": "Returns one bucket per day for the next `days` days (default 30). Overdue cards fold into today's bucket.",
+        "operationId": "SrsController_forecast",
+        "parameters": [
+          {
+            "name": "days",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 365,
+              "default": 30,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Forecast retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ForecastResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a per-day forecast of due SRS cards",
+        "tags": [
+          "srs"
+        ]
+      }
+    },
     "/services/ai/health": {
       "get": {
         "operationId": "AiController_health",
@@ -3323,6 +3555,32 @@
           "service",
           "timestamp",
           "uptimeSeconds"
+        ]
+      },
+      "ResponseDto": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "example": "Operation successful"
+          },
+          "data": {
+            "type": "object"
+          },
+          "error": {
+            "type": "string"
+          },
+          "meta": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "ok",
+          "message"
         ]
       },
       "UserResponseDto": {
@@ -3543,32 +3801,6 @@
           "token",
           "password",
           "confirmPassword"
-        ]
-      },
-      "ResponseDto": {
-        "type": "object",
-        "properties": {
-          "ok": {
-            "type": "boolean",
-            "example": true
-          },
-          "message": {
-            "type": "string",
-            "example": "Operation successful"
-          },
-          "data": {
-            "type": "object"
-          },
-          "error": {
-            "type": "string"
-          },
-          "meta": {
-            "type": "object"
-          }
-        },
-        "required": [
-          "ok",
-          "message"
         ]
       },
       "StudySetResponseDto": {
@@ -4660,6 +4892,145 @@
           "accuracy",
           "startedAt",
           "completedAt"
+        ]
+      },
+      "SrsCardDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studySetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "term": {
+            "type": "string"
+          },
+          "definition": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string",
+            "nullable": true
+          },
+          "easeFactor": {
+            "type": "string",
+            "example": "2.50"
+          },
+          "intervalDays": {
+            "type": "number"
+          },
+          "repetitions": {
+            "type": "number"
+          },
+          "lapses": {
+            "type": "number"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "lastReviewed": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "isLeech": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "cardId",
+          "studySetId",
+          "term",
+          "definition",
+          "easeFactor",
+          "intervalDays",
+          "repetitions",
+          "lapses",
+          "dueDate",
+          "isLeech"
+        ]
+      },
+      "SrsReviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "card": {
+            "$ref": "#/components/schemas/SrsCardDto"
+          },
+          "remainingDueToday": {
+            "type": "number",
+            "description": "Number of cards still due today for the caller after this review is applied."
+          }
+        },
+        "required": [
+          "card",
+          "remainingDueToday"
+        ]
+      },
+      "ReviewSrsCardDto": {
+        "type": "object",
+        "properties": {
+          "attemptId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Client-generated UUID used to make retries idempotent. Second submit with the same attemptId returns the first result without re-applying it."
+          },
+          "rating": {
+            "type": "string",
+            "enum": [
+              "AGAIN",
+              "HARD",
+              "GOOD",
+              "EASY"
+            ]
+          }
+        },
+        "required": [
+          "attemptId",
+          "rating"
+        ]
+      },
+      "ForecastBucketDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-07-24"
+          },
+          "dueCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "date",
+          "dueCount"
+        ]
+      },
+      "ForecastResponseDto": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "number"
+          },
+          "buckets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ForecastBucketDto"
+            }
+          }
+        },
+        "required": [
+          "days",
+          "buckets"
         ]
       }
     }

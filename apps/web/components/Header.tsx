@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
-import { LogOut } from 'lucide-react';
+import { Brain, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from './ui/skeleton';
 import { useMe } from '@/lib/hooks/useUser';
@@ -29,6 +29,17 @@ export default function Header() {
 
       {isAuthenticated ? (
         <div className="flex items-center gap-3 mr-4">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="text-[#4255FF] hover:bg-[#4255FF]/5"
+          >
+            <Link href="/srs" className="flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              <span>Review</span>
+            </Link>
+          </Button>
           <Link href="/account" className="flex items-center gap-3 hover:opacity-80 transition">
             {isLoading ? (
               <Skeleton className="size-12 rounded-full bg-gray-200" />

@@ -1,7 +1,11 @@
 import { Global, Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MAIL_QUEUE, SEARCH_SYNC_QUEUE } from './queue.constants';
+import {
+  MAIL_QUEUE,
+  SEARCH_SYNC_QUEUE,
+  SRS_REMINDERS_QUEUE,
+} from './queue.constants';
 
 /**
  * Wires the BullMQ connection (Redis) and registers all queues we own.
@@ -40,6 +44,7 @@ import { MAIL_QUEUE, SEARCH_SYNC_QUEUE } from './queue.constants';
     }),
     BullModule.registerQueue({ name: MAIL_QUEUE }),
     BullModule.registerQueue({ name: SEARCH_SYNC_QUEUE }),
+    BullModule.registerQueue({ name: SRS_REMINDERS_QUEUE }),
   ],
   exports: [BullModule],
 })

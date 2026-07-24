@@ -160,6 +160,29 @@ export default function SessionResults({
           </CardContent>
         </Card>
 
+        {/* SRS graduation callout — only render when the session actually
+            graduated cards. Each graduation writes an SrsCard row that
+            surfaces on `/srs` the next day. */}
+        {newlyMastered > 0 && (
+          <Card className="border-emerald-200 bg-emerald-50/60">
+            <CardContent className="flex items-center justify-between gap-3 p-4">
+              <div className="flex items-center gap-3 text-sm">
+                <Sparkles size={18} className="text-emerald-600" />
+                <span className="text-gray-800">
+                  <span className="font-semibold">{newlyMastered}</span> card
+                  {newlyMastered === 1 ? "" : "s"} graduated to Spaced Review.
+                </span>
+              </div>
+              <Link
+                href="/srs"
+                className="text-sm font-medium text-emerald-700 hover:text-emerald-800"
+              >
+                See queue →
+              </Link>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Overall mastery — only render if we have the rollup */}
         {latestProgress && (
           <Card>

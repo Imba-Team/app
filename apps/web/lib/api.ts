@@ -502,3 +502,60 @@ export async function getSessionHistory(params: {
     throw extractError(error, 'Failed to fetch sessions');
   }
 }
+
+// ============================================
+// SRS (Sprint 1)
+// ============================================
+
+export type SrsCard = Schemas['SrsCardDto'];
+export type SrsReviewResponse = Schemas['SrsReviewResponseDto'];
+export type SrsForecast = Schemas['ForecastResponseDto'];
+export type SrsRating = Schemas['ReviewSrsCardDto']['rating'];
+
+export interface SrsQueuePage {
+  items: SrsCard[];
+  total: number;
+}
+
+export async function getSrsQueueToday(
+  limit = 50,
+  offset = 0,
+): Promise<SrsQueuePage> {
+  try {
+    const res = await apiFetch('get', '/srs/queue/today', {
+      query: { limit, offset },
+    });
+    const items = unwrap(res, 'Failed to fetch SRS queue');
+    const meta = (res as unknown as { meta?: { total?: number } }).meta ?? {};
+    return { items, total: meta.total ?? items.length };
+  } catch (error) {
+    throw extractError(error, 'Failed to fetch SRS queue');
+  }
+}
+
+export async function reviewSrsCard(
+  srsCardId: string,
+  attemptId: string,
+  rating: SrsRating,
+): Promise<SrsReviewResponse> {
+  try {
+    const res = await apiFetch('post', '/srs/cards/{id}/review', {
+      path: { id: srsCardId },
+      body: { attemptId, rating },
+    });
+    return unwrap(res, 'Failed to submit SRS review');
+  } catch (error) {
+    throw extractError(error, 'Failed to submit SRS review');
+  }
+}
+
+export async function getSrsForecast(days = 30): Promise<SrsForecast> {
+  try {
+    const res = await apiFetch('get', '/srs/forecast', {
+      query: { days },
+    });
+    return unwrap(res, 'Failed to fetch SRS forecast');
+  } catch (error) {
+    throw extractError(error, 'Failed to fetch SRS forecast');
+  }
+}

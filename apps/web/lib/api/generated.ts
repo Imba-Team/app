@@ -688,6 +688,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/srs/cards/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a rating for a due SRS card
+         * @description Runs SM-2 with the given rating, updates the card, and returns the new schedule plus remaining-due count for today.
+         */
+        post: operations["SrsController_review"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/srs/forecast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a per-day forecast of due SRS cards
+         * @description Returns one bucket per day for the next `days` days (default 30). Overdue cards fold into today's bucket.
+         */
+        get: operations["SrsController_forecast"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/srs/queue/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List today's due SRS cards for the caller
+         * @description Includes overdue cards. Ordered by dueDate ascending. UTC-based until per-user timezone lands.
+         */
+        get: operations["SrsController_todayQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/study-set-tags": {
         parameters: {
             query?: never;
@@ -1226,6 +1286,18 @@ export interface components {
              */
             weightedStreak: string;
         };
+        ForecastBucketDto: {
+            /**
+             * Format: date
+             * @example 2026-07-24
+             */
+            date: string;
+            dueCount: number;
+        };
+        ForecastResponseDto: {
+            buckets: components["schemas"]["ForecastBucketDto"][];
+            days: number;
+        };
         ForgotPasswordRequestDto: {
             /** @description Email address */
             email: string;
@@ -1314,6 +1386,15 @@ export interface components {
             meta?: Record<string, never>;
             /** @example true */
             ok: boolean;
+        };
+        ReviewSrsCardDto: {
+            /**
+             * Format: uuid
+             * @description Client-generated UUID used to make retries idempotent. Second submit with the same attemptId returns the first result without re-applying it.
+             */
+            attemptId: string;
+            /** @enum {string} */
+            rating: "AGAIN" | "HARD" | "GOOD" | "EASY";
         };
         SearchSetHitDto: {
             cardCount: number;
@@ -1408,6 +1489,32 @@ export interface components {
             masteredCount: number;
             newCount: number;
             totalCards: number;
+        };
+        SrsCardDto: {
+            /** Format: uuid */
+            cardId: string;
+            definition: string;
+            /** Format: date */
+            dueDate: string;
+            /** @example 2.50 */
+            easeFactor: string;
+            hint?: string | null;
+            /** Format: uuid */
+            id: string;
+            intervalDays: number;
+            isLeech: boolean;
+            lapses: number;
+            /** Format: date-time */
+            lastReviewed?: string | null;
+            repetitions: number;
+            /** Format: uuid */
+            studySetId: string;
+            term: string;
+        };
+        SrsReviewResponseDto: {
+            card: components["schemas"]["SrsCardDto"];
+            /** @description Number of cards still due today for the caller after this review is applied. */
+            remainingDueToday: number;
         };
         StartSessionDto: {
             /** @enum {string} */
@@ -1616,6 +1723,8 @@ export type SchemaCreateStudySetTagDto = components['schemas']['CreateStudySetTa
 export type SchemaCreateTagDto = components['schemas']['CreateTagDto'];
 export type SchemaFlashcardResponseDto = components['schemas']['FlashcardResponseDto'];
 export type SchemaFlashcardWithProgressDto = components['schemas']['FlashcardWithProgressDto'];
+export type SchemaForecastBucketDto = components['schemas']['ForecastBucketDto'];
+export type SchemaForecastResponseDto = components['schemas']['ForecastResponseDto'];
 export type SchemaForgotPasswordRequestDto = components['schemas']['ForgotPasswordRequestDto'];
 export type SchemaLearnBatchCardDto = components['schemas']['LearnBatchCardDto'];
 export type SchemaLearnBatchResponseDto = components['schemas']['LearnBatchResponseDto'];
@@ -1626,12 +1735,15 @@ export type SchemaRegisterRequestDto = components['schemas']['RegisterRequestDto
 export type SchemaResendVerificationRequestDto = components['schemas']['ResendVerificationRequestDto'];
 export type SchemaResetPasswordRequestDto = components['schemas']['ResetPasswordRequestDto'];
 export type SchemaResponseDto = components['schemas']['ResponseDto'];
+export type SchemaReviewSrsCardDto = components['schemas']['ReviewSrsCardDto'];
 export type SchemaSearchSetHitDto = components['schemas']['SearchSetHitDto'];
 export type SchemaSearchSetsResponseDto = components['schemas']['SearchSetsResponseDto'];
 export type SchemaServiceHealthResponseDto = components['schemas']['ServiceHealthResponseDto'];
 export type SchemaSessionHistoryItemDto = components['schemas']['SessionHistoryItemDto'];
 export type SchemaSessionSummaryDto = components['schemas']['SessionSummaryDto'];
 export type SchemaSetProgressSummaryDto = components['schemas']['SetProgressSummaryDto'];
+export type SchemaSrsCardDto = components['schemas']['SrsCardDto'];
+export type SchemaSrsReviewResponseDto = components['schemas']['SrsReviewResponseDto'];
 export type SchemaStartSessionDto = components['schemas']['StartSessionDto'];
 export type SchemaStartSessionResponseDto = components['schemas']['StartSessionResponseDto'];
 export type SchemaStudySetResponseDto = components['schemas']['StudySetResponseDto'];
@@ -2780,6 +2892,83 @@ export interface operations {
             };
         };
     };
+    SrsController_review: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewSrsCardDto"];
+            };
+        };
+        responses: {
+            /** @description Review applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["SrsReviewResponseDto"];
+                    };
+                };
+            };
+        };
+    };
+    SrsController_forecast: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Forecast retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["ForecastResponseDto"];
+                    };
+                };
+            };
+        };
+    };
+    SrsController_todayQueue: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Due queue retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["SrsCardDto"][];
+                    };
+                };
+            };
+        };
+    };
     StudySetTagController_addTagToStudySet: {
         parameters: {
             query?: never;
@@ -3483,7 +3672,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserResponseDto"];
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["UserResponseDto"];
+                    };
                 };
             };
         };
@@ -3503,7 +3694,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserResponseDto"];
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["UserResponseDto"];
+                    };
                 };
             };
         };
@@ -3527,7 +3720,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserResponseDto"];
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["UserResponseDto"];
+                    };
                 };
             };
         };
@@ -3551,7 +3746,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: null | null;
+                    };
                 };
             };
         };
@@ -3572,11 +3769,16 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Profile picture updated successfully */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["UserResponseDto"];
+                    };
+                };
             };
         };
     };
