@@ -20,6 +20,7 @@ import {
 import { UsersService } from './user.service';
 import { UpdateMyProfileDto } from './dtos/update-my-profile.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { ApiOkEnvelope } from 'src/common/decorators/api-envelope.decorator';
 import { IUser } from 'src/common/interfaces/user.interface';
 import { JwtGuard } from 'src/guards/jwt.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
@@ -102,10 +103,8 @@ export class UsersController {
 
   @Get('me')
   @ApiOperation({ summary: 'Get current authenticated user' })
-  @ApiResponse({
-    status: 200,
+  @ApiOkEnvelope(UserResponseDto, {
     description: 'User profile returned successfully',
-    type: UserResponseDto,
   })
   async getMe(
     @CurrentUser() user: IUser,
@@ -126,11 +125,7 @@ export class UsersController {
   @Patch('me')
   @HttpCode(200)
   @ApiOperation({ summary: 'Update current user' })
-  @ApiResponse({
-    status: 200,
-    description: 'User updated successfully',
-    type: UserResponseDto,
-  })
+  @ApiOkEnvelope(UserResponseDto, { description: 'User updated successfully' })
   async updateMe(
     @CurrentUser() user: IUser,
     @Body() dto: UpdateMyProfileDto,
@@ -165,6 +160,9 @@ export class UsersController {
     },
   })
   @ApiOperation({ summary: "Upload / update user's profile picture" })
+  @ApiOkEnvelope(UserResponseDto, {
+    description: 'Profile picture updated successfully',
+  })
   async uploadProfilePicture(
     @CurrentUser() user: IUser,
     @UploadedFile() file: MulterFile,
@@ -215,17 +213,7 @@ export class UsersController {
   @HttpCode(200)
   @UseGuards(JwtGuard, StatusGuard)
   @ApiOperation({ summary: 'Update current user password' })
-  @ApiResponse({
-    status: 200,
-    description: 'Password updated successfully',
-    schema: {
-      example: {
-        ok: true,
-        message: 'Password updated successfully',
-        data: null,
-      },
-    },
-  })
+  @ApiOkEnvelope(null, { description: 'Password updated successfully' })
   async updatePassword(
     @CurrentUser() user: IUser,
     @Body() data: ChangePasswordDto,
@@ -242,11 +230,7 @@ export class UsersController {
   @HttpCode(200)
   @UseGuards(JwtGuard, StatusGuard)
   @ApiOperation({ summary: 'Delete current user' })
-  @ApiResponse({
-    status: 200,
-    description: 'User deleted successfully',
-    type: UserResponseDto,
-  })
+  @ApiOkEnvelope(UserResponseDto, { description: 'User deleted successfully' })
   async deleteMe(
     @CurrentUser() user: IUser,
   ): Promise<ResponseDto<UserResponseDto | null>> {

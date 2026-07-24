@@ -1,74 +1,82 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import ProfileSection from "@/app/account/_components/profile-section";
-import EditProfileForm from "@/app/account/_components/edit-profile-form";
-import PasswordChangeForm from "@/app/account/_components/password-change-form";
+/**
+ * Account settings page.
+ *
+ * Layout mirrors the module / sessions pages: top back-link, a plain
+ * header, and stacked cards with the same visual language (white
+ * background, subtle border, standard CardHeader/Content). No more
+ * gradient headers or negative-margin hacks.
+ *
+ * Sections:
+ *   1. ProfileCard   — avatar + display name + bio (inline edit),
+ *                       read-only email + verified badge + member-since.
+ *   2. PreferencesCard — placeholder for language / timezone (Sprint 1b).
+ *   3. SecurityCard  — change password + sign out.
+ *   4. DangerZone    — delete account (was orphaned before).
+ */
+
+import { useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
+import { ArrowLeft } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/hooks/useUser";
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import ProfileCard from "./_components/ProfileCard";
+import SecurityCard from "./_components/SecurityCard";
+import PreferencesCard from "./_components/PreferencesCard";
+import DangerZone from "./_components/DangerZone";
 
 export default function AccountPage() {
-  const { data: me, isLoading: meLoading } = useMe();
-  const [isEditing, setIsEditing] = useState(false);
   const router = useRouter();
-  const { logout } = useAuth();
+  const { data: me, isLoading, isError } = useMe();
+
   useEffect(() => {
-    if (!meLoading && !me) {
+    // The /users/me endpoint returns 401 when unauthenticated; the
+    // axios refresh-on-401 interceptor tries once, and if that also
+    // fails the query lands in `error`. Bounce to login.
+    if (isError) {
       router.push("/login");
     }
-  }, [meLoading, router, me]);
-
-  if (meLoading) return <p className="p-8">loading…</p>;
-  if (!me) return null;
+  }, [isError, router]);
 
   return (
-    <>
-      <main className="min-h-screen bg-linear-to-br from-background to-secondary/20 py-8 px-4">
-        <div className="mx-auto max-w-4xl">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold text-[#4255ff]">
-                Account Settings
-              </h1>
-              <p className="mt-2 text-muted-foreground">
-                Manage your account information and preferences
-              </p>
-            </div>
-
-            <Button
-              onClick={logout}
-              variant="outline"
-              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-
-          <div className="space-y-6">
-            {!isEditing
-              ? me && (
-                  <ProfileSection
-                    userData={me}
-                    isEditing={isEditing}
-                    setIsEditing={setIsEditing}
-                  />
-                )
-              : me && (
-                  <EditProfileForm
-                    userData={me}
-                    onCancel={() => setIsEditing(false)}
-                    onSuccess={() => setIsEditing(false)}
-                  />
-                )}
-
-            <PasswordChangeForm />
-          </div>
+    <main className="min-h-screen bg-gray-50 py-8 px-4 pb-16">
+      <div className="mx-auto w-full max-w-3xl">
+        {/* Top nav */}
+        <div className="mb-6">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-x-2 text-sm text-gray-500 hover:text-[#4255FF] hover:underline underline-offset-4 transition"
+          >
+            <ArrowLeft size={16} /> Back to dashboard
+          </Link>
         </div>
-      </main>
-    </>
+
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-[#4255FF]">Account</h1>
+          <p className="text-gray-500 mt-1">
+            Manage your profile, security, and preferences.
+          </p>
+        </div>
+
+        {/* Sections */}
+        {isLoading ? (
+          <div className="space-y-6">
+            <Skeleton className="h-52 w-full rounded-lg bg-gray-200" />
+            <Skeleton className="h-32 w-full rounded-lg bg-gray-200" />
+            <Skeleton className="h-80 w-full rounded-lg bg-gray-200" />
+          </div>
+        ) : me ? (
+          <div className="space-y-6">
+            <ProfileCard user={me} />
+            <PreferencesCard />
+            <SecurityCard />
+            <DangerZone />
+          </div>
+        ) : null}
+      </div>
+    </main>
   );
 }
