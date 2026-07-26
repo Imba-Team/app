@@ -229,6 +229,102 @@ export async function uncollectModule(id: string): Promise<void> {
 }
 
 // ============================================
+// LIBRARY + FOLDERS (Sprint 2)
+// ============================================
+
+export type LibraryItem = Schemas['LibraryItemDto'];
+export type Folder = Schemas['FolderResponseDto'];
+export type FolderStudySetItem = Schemas['FolderStudySetItemDto'];
+export type CreateFolderData = Schemas['CreateFolderDto'];
+export type UpdateFolderData = Schemas['UpdateFolderDto'];
+
+export async function getLibrary(): Promise<LibraryItem[]> {
+  try {
+    const res = await apiFetch('get', '/me/library');
+    return unwrap(res, 'Failed to load library');
+  } catch (error) {
+    throw extractError(error, 'Failed to load library');
+  }
+}
+
+export async function getFolders(): Promise<Folder[]> {
+  try {
+    const res = await apiFetch('get', '/folders');
+    return unwrap(res, 'Failed to load folders');
+  } catch (error) {
+    throw extractError(error, 'Failed to load folders');
+  }
+}
+
+export async function getFolderById(id: string): Promise<Folder> {
+  try {
+    const res = await apiFetch('get', '/folders/{id}', { path: { id } });
+    return unwrap(res, 'Failed to load folder');
+  } catch (error) {
+    throw extractError(error, 'Failed to load folder');
+  }
+}
+
+export async function createFolder(data: CreateFolderData): Promise<Folder> {
+  try {
+    const res = await apiFetch('post', '/folders', { body: data });
+    return unwrap(res, 'Failed to create folder');
+  } catch (error) {
+    throw extractError(error, 'Failed to create folder');
+  }
+}
+
+export async function updateFolder(
+  id: string,
+  data: UpdateFolderData,
+): Promise<Folder> {
+  try {
+    const res = await apiFetch('patch', '/folders/{id}', {
+      path: { id },
+      body: data,
+    });
+    return unwrap(res, 'Failed to update folder');
+  } catch (error) {
+    throw extractError(error, 'Failed to update folder');
+  }
+}
+
+export async function deleteFolder(id: string): Promise<void> {
+  try {
+    await apiFetch('delete', '/folders/{id}', { path: { id } });
+  } catch (error) {
+    throw extractError(error, 'Failed to delete folder');
+  }
+}
+
+export async function addSetsToFolder(
+  folderId: string,
+  studySetIds: string[],
+): Promise<void> {
+  try {
+    await apiFetch('post', '/folders/{id}/study-sets', {
+      path: { id: folderId },
+      body: { studySetIds },
+    });
+  } catch (error) {
+    throw extractError(error, 'Failed to add sets to folder');
+  }
+}
+
+export async function removeSetFromFolder(
+  folderId: string,
+  studySetId: string,
+): Promise<void> {
+  try {
+    await apiFetch('delete', '/folders/{id}/study-sets/{studySetId}', {
+      path: { id: folderId, studySetId },
+    });
+  } catch (error) {
+    throw extractError(error, 'Failed to remove set from folder');
+  }
+}
+
+// ============================================
 // TERMS (flashcards)
 // ============================================
 

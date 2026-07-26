@@ -13,7 +13,7 @@ export class FolderResponseDto {
   name!: string;
 
   @Expose()
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, nullable: true, type: String })
   description?: string | null;
 
   @Expose()

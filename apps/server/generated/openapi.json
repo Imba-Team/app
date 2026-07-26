@@ -2267,7 +2267,28 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Folders fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/FolderResponseDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2294,8 +2315,26 @@
           }
         },
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "Folder created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/FolderResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2324,7 +2363,25 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Folder fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/FolderResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2361,7 +2418,25 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Folder updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/FolderResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2388,7 +2463,26 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Folder deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "null",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -3844,6 +3938,11 @@
             "type": "number",
             "example": 0
           },
+          "viewCount": {
+            "type": "number",
+            "example": 0,
+            "description": "Total non-owner views of this set."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -3862,6 +3961,7 @@
           "ownerId",
           "isOwner",
           "flashcardsCount",
+          "viewCount",
           "createdAt",
           "updatedAt"
         ]
@@ -4216,7 +4316,7 @@
             "type": "string"
           },
           "description": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           },
           "visibility": {
@@ -4228,7 +4328,7 @@
             ]
           },
           "language": {
-            "type": "object",
+            "type": "string",
             "nullable": true
           },
           "ownerId": {
@@ -4299,6 +4399,78 @@
         "required": [
           "studySetId",
           "tagName"
+        ]
+      },
+      "FolderStudySetItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "isPrivate": {
+            "type": "boolean",
+            "description": "true = private, false = public"
+          },
+          "ownerId": {
+            "type": "string",
+            "description": "Owner id"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "isPrivate",
+          "ownerId"
+        ]
+      },
+      "FolderResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "userId": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "studySets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FolderStudySetItemDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "userId",
+          "createdAt",
+          "updatedAt"
         ]
       },
       "CreateFolderDto": {

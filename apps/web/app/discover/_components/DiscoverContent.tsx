@@ -18,7 +18,7 @@ import type { CommunityModule as CommunitySearchHit } from '@/lib/api';
 import { useCommunityModules } from '@/lib/hooks/useModules';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 import { toast } from 'sonner';
-import { CommunityLoading } from './CommunitySkeleton';
+import { DiscoverLoading } from './DiscoverSkeleton';
 
 const PAGE_SIZE = 20;
 
@@ -45,7 +45,7 @@ const LANGUAGE_OPTIONS: { value: string; label: string }[] = [
 // sentinel and translate at query-build time.
 const ALL_LANGUAGES = '__all__';
 
-export default function CommunityTab() {
+export default function DiscoverContent() {
   const router = useRouter();
   const [searchInput, setSearchInput] = useState('');
   const [language, setLanguage] = useState<string>(ALL_LANGUAGES);
@@ -70,7 +70,7 @@ export default function CommunityTab() {
   } = useCommunityModules(query);
 
   if (isLoading) {
-    return <CommunityLoading />;
+    return <DiscoverLoading />;
   }
 
   if (isError) {

@@ -1286,6 +1286,27 @@ export interface components {
              */
             weightedStreak: string;
         };
+        FolderResponseDto: {
+            /** Format: date-time */
+            createdAt: string;
+            description?: string | null;
+            id: string;
+            name: string;
+            studySets?: components["schemas"]["FolderStudySetItemDto"][];
+            /** Format: date-time */
+            updatedAt: string;
+            userId: string;
+        };
+        FolderStudySetItemDto: {
+            description?: string | null;
+            id: string;
+            /** @description true = private, false = public */
+            isPrivate: boolean;
+            /** @description Owner id */
+            ownerId: string;
+            slug: string;
+            title: string;
+        };
         ForecastBucketDto: {
             /**
              * Format: date
@@ -1329,13 +1350,13 @@ export interface components {
         LibraryItemDto: {
             /** Format: date-time */
             createdAt: string;
-            description?: Record<string, never> | null;
+            description?: string | null;
             id: string;
             /** @example false */
             isFavourited: boolean;
             /** @example true */
             isOwner: boolean;
-            language?: Record<string, never> | null;
+            language?: string | null;
             ownerId: string;
             slug: string;
             title: string;
@@ -1553,6 +1574,11 @@ export interface components {
             title: string;
             /** Format: date-time */
             updatedAt: string;
+            /**
+             * @description Total non-owner views of this set.
+             * @example 0
+             */
+            viewCount: number;
         };
         SubmitAnswerDto: {
             /**
@@ -1723,6 +1749,8 @@ export type SchemaCreateStudySetTagDto = components['schemas']['CreateStudySetTa
 export type SchemaCreateTagDto = components['schemas']['CreateTagDto'];
 export type SchemaFlashcardResponseDto = components['schemas']['FlashcardResponseDto'];
 export type SchemaFlashcardWithProgressDto = components['schemas']['FlashcardWithProgressDto'];
+export type SchemaFolderResponseDto = components['schemas']['FolderResponseDto'];
+export type SchemaFolderStudySetItemDto = components['schemas']['FolderStudySetItemDto'];
 export type SchemaForecastBucketDto = components['schemas']['ForecastBucketDto'];
 export type SchemaForecastResponseDto = components['schemas']['ForecastResponseDto'];
 export type SchemaForgotPasswordRequestDto = components['schemas']['ForgotPasswordRequestDto'];
@@ -2270,11 +2298,16 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Folders fetched successfully */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["FolderResponseDto"][];
+                    };
+                };
             };
         };
     };
@@ -2291,11 +2324,16 @@ export interface operations {
             };
         };
         responses: {
-            201: {
+            /** @description Folder created successfully */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["FolderResponseDto"];
+                    };
+                };
             };
         };
     };
@@ -2310,11 +2348,16 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Folder fetched successfully */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["FolderResponseDto"];
+                    };
+                };
             };
         };
     };
@@ -2329,11 +2372,16 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Folder deleted successfully */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: null | null;
+                    };
+                };
             };
         };
     };
@@ -2352,11 +2400,16 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Folder updated successfully */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["FolderResponseDto"];
+                    };
+                };
             };
         };
     };

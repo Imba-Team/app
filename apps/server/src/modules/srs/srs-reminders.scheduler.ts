@@ -8,12 +8,19 @@ import {
   SrsRemindersJob,
 } from 'src/common/queue/queue.constants';
 
+const SCHEDULER_ID = 'srs-reminders-daily';
+
 /**
  * Registers the nightly SRS reminder fan-out as a BullMQ repeatable job.
  *
  * We deliberately avoid `@nestjs/schedule` here — BullMQ already supports
  * cron-style repeats, and going through the queue means the fan-out job
  * inherits the same retry + observability we use everywhere else.
+ *
+ * Registration is fire-and-forget: `onModuleInit` must never block the
+ * app from binding to its port, even if Redis is briefly slow or the
+ * BullMQ handshake stalls. A missed schedule is recoverable on the next
+ * boot; a stuck `app.listen()` is not.
  */
 @Injectable()
 export class SrsRemindersScheduler implements OnModuleInit {
@@ -27,7 +34,7 @@ export class SrsRemindersScheduler implements OnModuleInit {
     this.logger.setContext(this.context);
   }
 
-  async onModuleInit(): Promise<void> {
+  onModuleInit(): void {
     if (this.config.get<string>('SRS_REMINDERS_DISABLED') === 'true') {
       this.logger.warn(
         'SRS reminders scheduler disabled via SRS_REMINDERS_DISABLED=true',
@@ -39,16 +46,24 @@ export class SrsRemindersScheduler implements OnModuleInit {
     // we expect once the notifications module delivers reminders.
     const cron = this.config.get<string>('SRS_REMINDERS_CRON') ?? '0 3 * * *';
 
-    await this.queue.add(
-      SrsRemindersJob.SCHEDULE_DAILY,
-      {},
-      {
-        repeat: { pattern: cron, tz: 'UTC' },
-        // Stable jobId keeps repeated boots from stacking duplicate schedules.
-        jobId: 'srs-reminders-daily',
-      },
-    );
-
-    this.logger.log(`SRS reminders scheduled with cron="${cron}" tz=UTC`);
+    // Fire-and-forget. `upsertJobScheduler` is idempotent — same
+    // schedulerId replaces the entry, so repeated boots don't stack
+    // duplicates.
+    this.queue
+      .upsertJobScheduler(
+        SCHEDULER_ID,
+        { pattern: cron, tz: 'UTC' },
+        { name: SrsRemindersJob.SCHEDULE_DAILY, data: {} },
+      )
+      .then(() => {
+        this.logger.log(`SRS reminders scheduled with cron="${cron}" tz=UTC`);
+      })
+      .catch((err: unknown) => {
+        this.logger.warn(
+          `Failed to register SRS reminders scheduler: ${
+            err instanceof Error ? err.message : String(err)
+          }. Will retry on next boot.`,
+        );
+      });
   }
 }

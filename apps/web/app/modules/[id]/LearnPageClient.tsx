@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import {
   ArrowLeft,
+  Edit,
   History,
   Loader2,
   RotateCcw,
@@ -142,12 +143,22 @@ export default function LearnPageClient({ id }: { id: string }) {
         >
           <ArrowLeft size={16} /> Back to dashboard
         </Link>
-        <Link
-          href={`/modules/${id}/sessions`}
-          className="inline-flex items-center gap-x-1.5 text-sm text-gray-500 hover:text-[#4255FF] hover:underline underline-offset-4 transition"
-        >
-          <History size={16} /> Session history
-        </Link>
+        <div className="inline-flex items-center gap-4">
+          {isOwner && (
+            <Link
+              href={`/sets/${id}/edit`}
+              className="inline-flex items-center gap-x-1.5 text-sm text-gray-500 hover:text-[#4255FF] hover:underline underline-offset-4 transition"
+            >
+              <Edit size={16} /> Edit
+            </Link>
+          )}
+          <Link
+            href={`/modules/${id}/sessions`}
+            className="inline-flex items-center gap-x-1.5 text-sm text-gray-500 hover:text-[#4255FF] hover:underline underline-offset-4 transition"
+          >
+            <History size={16} /> Session history
+          </Link>
+        </div>
       </div>
 
       <div className="w-full max-w-4xl mb-8">

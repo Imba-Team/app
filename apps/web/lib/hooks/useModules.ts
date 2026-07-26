@@ -14,6 +14,7 @@ import {
   type CommunitySearchParams,
 } from "@/lib/api";
 import { toast } from "sonner";
+import { libraryKeys } from "./useLibrary";
 
 // ============================================
 // QUERY KEYS
@@ -81,13 +82,25 @@ export function useModule(id: string) {
 // MUTATIONS
 // ============================================
 
+/**
+ * Any mutation that alters the caller's set collection has to bust both
+ * cache trees — the legacy `moduleKeys.lists()` powers the dashboard,
+ * `libraryKeys.sets()` powers `/library`. Leaving either stale means
+ * users see one view refresh and the other lag behind.
+ */
+function invalidateCollections(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: moduleKeys.lists() });
+  queryClient.invalidateQueries({ queryKey: libraryKeys.sets() });
+  queryClient.invalidateQueries({ queryKey: libraryKeys.folders() });
+}
+
 export function useCreateModule() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: CreateModuleData) => createModule(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: moduleKeys.lists() });
+      invalidateCollections(queryClient);
       toast.success("Module created successfully!");
     },
     onError: (error: Error) => {
@@ -103,7 +116,7 @@ export function useUpdateModule() {
     mutationFn: ({ id, data }: { id: string; data: UpdateModuleData }) =>
       updateModule(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: moduleKeys.lists() });
+      invalidateCollections(queryClient);
       queryClient.invalidateQueries({
         queryKey: moduleKeys.detail(variables.id),
       });
@@ -146,7 +159,7 @@ export function useDeleteModule() {
       toast.success("Module deleted successfully!");
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: moduleKeys.lists() });
+      invalidateCollections(queryClient);
     },
   });
 }
@@ -157,7 +170,7 @@ export function useCollectModule() {
   return useMutation({
     mutationFn: (id: string) => collectModule(id),
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: moduleKeys.lists() });
+      invalidateCollections(queryClient);
       queryClient.invalidateQueries({ queryKey: moduleKeys.detail(id) });
       toast.success("Module added to collection");
     },
@@ -173,7 +186,7 @@ export function useUncollectModule() {
   return useMutation({
     mutationFn: (id: string) => uncollectModule(id),
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: moduleKeys.lists() });
+      invalidateCollections(queryClient);
       queryClient.invalidateQueries({ queryKey: moduleKeys.detail(id) });
       toast.success("Module removed from collection");
     },

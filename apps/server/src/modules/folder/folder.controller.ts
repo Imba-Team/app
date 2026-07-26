@@ -13,6 +13,7 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { ApiOkEnvelope } from 'src/common/decorators/api-envelope.decorator';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
 import { IUser } from 'src/common/interfaces/user.interface';
 import { JwtGuard } from 'src/guards/jwt.guard';
@@ -32,6 +33,10 @@ export class FolderController {
   @Get()
   @HttpCode(200)
   @ApiOperation({ summary: 'List all folders of the current user' })
+  @ApiOkEnvelope(FolderResponseDto, {
+    isArray: true,
+    description: 'Folders fetched successfully',
+  })
   async findAll(
     @CurrentUser() user: IUser,
   ): Promise<ResponseDto<FolderResponseDto[]>> {
@@ -47,6 +52,7 @@ export class FolderController {
   @HttpCode(201)
   @ApiOperation({ summary: 'Create a new folder' })
   @ApiBody({ type: CreateFolderDto })
+  @ApiOkEnvelope(FolderResponseDto, { description: 'Folder created successfully' })
   async create(
     @CurrentUser() user: IUser,
     @Body() dto: CreateFolderDto,
@@ -62,6 +68,7 @@ export class FolderController {
   @Get(':id')
   @HttpCode(200)
   @ApiOperation({ summary: 'Get folder by id with its study sets' })
+  @ApiOkEnvelope(FolderResponseDto, { description: 'Folder fetched successfully' })
   async findOne(
     @CurrentUser() user: IUser,
     @Param('id') id: string,
@@ -78,6 +85,7 @@ export class FolderController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Update folder name or description' })
   @ApiBody({ type: UpdateFolderDto })
+  @ApiOkEnvelope(FolderResponseDto, { description: 'Folder updated successfully' })
   async update(
     @CurrentUser() user: IUser,
     @Param('id') id: string,
@@ -94,6 +102,7 @@ export class FolderController {
   @Delete(':id')
   @HttpCode(200)
   @ApiOperation({ summary: 'Delete a folder without deleting study sets' })
+  @ApiOkEnvelope(null, { description: 'Folder deleted successfully' })
   async delete(
     @CurrentUser() user: IUser,
     @Param('id') id: string,

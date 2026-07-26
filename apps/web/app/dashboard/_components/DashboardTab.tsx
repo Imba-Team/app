@@ -14,7 +14,6 @@ import type { Module as ModuleType } from "@/lib/api";
 import {
   useModules,
   useDeleteModule,
-  useUpdateModule,
   useUncollectModule,
 } from "@/lib/hooks/useModules";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
@@ -46,7 +45,6 @@ export default function DashboardTab() {
   const collectionIsEmpty = (hasAnyModules?.length ?? 0) === 0;
 
   const deleteModule = useDeleteModule();
-  const updateModule = useUpdateModule();
   const uncollectModule = useUncollectModule();
 
   const handleDeleteModule = (module: ModuleType) => {
@@ -55,13 +53,6 @@ export default function DashboardTab() {
       return;
     }
     uncollectModule.mutate(module.id);
-  };
-
-  const handleUpdateModule = (
-    id: string,
-    data: { title: string; description: string; isPrivate: boolean },
-  ) => {
-    updateModule.mutate({ id, data });
   };
 
   const handleModuleClick = (m: ModuleType) => {
@@ -165,7 +156,6 @@ export default function DashboardTab() {
               module={m}
               onClick={handleModuleClick}
               onDelete={handleDeleteModule}
-              onUpdate={handleUpdateModule}
             />
           ))
         )}

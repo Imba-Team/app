@@ -33,6 +33,11 @@ export class LibraryService {
   async getLibrary(currentUserId: string): Promise<LibraryItemDto[]> {
     this.logger.debug(`Loading library for user: ${currentUserId}`);
 
+    // NOTE: every parameter that compares against a uuid column needs an
+    // explicit ::uuid cast. Prisma binds string parameters as text, and
+    // Postgres refuses `uuid = text` (error 42883) without the cast.
+    // `study_set.ownerId`, `study_set.id`, `favorite_study_set.studySetId`,
+    // and `favorite_study_set.userId` are all uuid.
     const rows = await this.prisma.$queryRaw<LibraryRawRow[]>(Prisma.sql`
       SELECT
         s."id",
@@ -44,14 +49,14 @@ export class LibraryService {
         s."ownerId",
         s."createdAt",
         s."updatedAt",
-        (s."ownerId" = ${currentUserId}) AS "isOwner",
+        (s."ownerId" = ${currentUserId}::uuid) AS "isOwner",
         (f."id" IS NOT NULL) AS "isFavourited"
       FROM "study_set" s
       LEFT JOIN "favorite_study_set" f
         ON f."studySetId" = s."id"
-       AND f."userId" = ${currentUserId}
-      WHERE s."ownerId" = ${currentUserId}
-         OR f."userId" = ${currentUserId}
+       AND f."userId" = ${currentUserId}::uuid
+      WHERE s."ownerId" = ${currentUserId}::uuid
+         OR f."userId" = ${currentUserId}::uuid
       ORDER BY s."createdAt" DESC
     `);
 

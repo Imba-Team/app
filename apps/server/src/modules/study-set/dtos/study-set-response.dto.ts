@@ -46,6 +46,13 @@ export class StudySetResponseDto {
   @Expose()
   flashcardsCount?: number;
 
+  @ApiProperty({
+    example: 0,
+    description: 'Total non-owner views of this set.',
+  })
+  @Expose()
+  viewCount!: number;
+
   @ApiProperty({ type: String, format: 'date-time' })
   @Expose()
   createdAt: Date;

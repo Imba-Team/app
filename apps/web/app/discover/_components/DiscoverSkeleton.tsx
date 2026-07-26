@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-export const CommunityLoading = () => {
+export const DiscoverLoading = () => {
   return (
     <div className="w-full">
       <div className="mb-8">

@@ -19,6 +19,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Globe,
@@ -30,7 +31,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { useCreateModule } from "@/lib/hooks/useModules";
+import { moduleKeys, useCreateModule } from "@/lib/hooks/useModules";
+import { libraryKeys } from "@/lib/hooks/useLibrary";
 import { useCreateTerm } from "@/lib/hooks/useTerms";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +61,7 @@ function makeEmpty(): DraftCard {
 
 export default function NewModuleClient() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
@@ -135,6 +138,20 @@ export default function NewModuleClient() {
           `${failed} card${failed === 1 ? "" : "s"} couldn't be saved — open the module to retry.`,
         );
       }
+
+      // `useCreateModule.onSuccess` already invalidates these caches,
+      // but `invalidateQueries` only auto-refetches queries with an
+      // active subscriber — since neither /library nor /dashboard is
+      // mounted from /modules/new, those caches would just be marked
+      // stale and the next visit would repaint from stale data until
+      // its own refetch settled. `refetchQueries` forces the fetch
+      // now, so when we redirect the destination page already has
+      // fresh data (including the module we just created).
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: moduleKeys.lists() }),
+        queryClient.refetchQueries({ queryKey: libraryKeys.sets() }),
+      ]);
+
       router.push(`/modules/${moduleId}`);
     } catch (err) {
       toast.error((err as Error).message || "Failed to create module");

@@ -15,7 +15,7 @@ export class LibraryItemDto {
   @Expose()
   title: string;
 
-  @ApiProperty({ required: false, nullable: true })
+  @ApiProperty({ required: false, nullable: true, type: String })
   @Expose()
   description: string | null;
 
@@ -23,7 +23,7 @@ export class LibraryItemDto {
   @Expose()
   visibility: StudySetVisibility;
 
-  @ApiProperty({ required: false, nullable: true })
+  @ApiProperty({ required: false, nullable: true, type: String })
   @Expose()
   language: string | null;
 

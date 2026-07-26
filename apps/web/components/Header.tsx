@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Button } from './ui/button';
-import { Brain, LogOut } from 'lucide-react';
+import { Brain, Compass, Library, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from './ui/skeleton';
 import { useMe } from '@/lib/hooks/useUser';
@@ -29,6 +29,28 @@ export default function Header() {
 
       {isAuthenticated ? (
         <div className="flex items-center gap-3 mr-4">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="text-[#4255FF] hover:bg-[#4255FF]/5"
+          >
+            <Link href="/library" className="flex items-center gap-2">
+              <Library className="h-4 w-4" />
+              <span>Library</span>
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="text-[#4255FF] hover:bg-[#4255FF]/5"
+          >
+            <Link href="/discover" className="flex items-center gap-2">
+              <Compass className="h-4 w-4" />
+              <span>Discover</span>
+            </Link>
+          </Button>
           <Button
             asChild
             variant="ghost"

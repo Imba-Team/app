@@ -303,6 +303,22 @@ export class StudySetService {
         },
       }));
 
+    // Only count non-owner views — otherwise the owner refreshing their
+    // own set inflates the popularity metric. Fire-and-forget: a failed
+    // increment must not fail the read.
+    if (!isOwner) {
+      this.prisma.studySet
+        .update({
+          where: { id: studySetId },
+          data: { viewCount: { increment: 1 } },
+        })
+        .catch((err: unknown) => {
+          this.logger.warn(
+            `viewCount increment failed for studySetId=${studySetId}: ${(err as Error).message}`,
+          );
+        });
+    }
+
     return this.buildStudySetForUser(sorted, userId, isCollected);
   }
 
