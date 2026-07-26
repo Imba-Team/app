@@ -1139,6 +1139,20 @@
               "example": "biology",
               "type": "string"
             }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "description": "Only honoured by /study-sets/public. 'popular' sorts by viewCount desc.",
+            "schema": {
+              "default": "recent",
+              "type": "string",
+              "enum": [
+                "recent",
+                "popular"
+              ]
+            }
           }
         ],
         "responses": {
@@ -1178,6 +1192,58 @@
         ]
       }
     },
+    "/study-sets/recent": {
+      "get": {
+        "description": "Ordered by UserSetProgress.lastStudiedAt desc. Excludes sets I have never opened a session for (those live in /library, not here).",
+        "operationId": "StudySetController_recentStudySets",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 5,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent study sets retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/RecentStudySetDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List study sets I've studied most recently",
+        "tags": [
+          "Study Sets"
+        ]
+      }
+    },
     "/study-sets/public": {
       "get": {
         "operationId": "StudySetController_publicStudySets",
@@ -1190,6 +1256,20 @@
             "schema": {
               "example": "biology",
               "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "description": "Only honoured by /study-sets/public. 'popular' sorts by viewCount desc.",
+            "schema": {
+              "default": "recent",
+              "type": "string",
+              "enum": [
+                "recent",
+                "popular"
+              ]
             }
           }
         ],
@@ -4024,6 +4104,118 @@
         },
         "required": [
           "isPrivate"
+        ]
+      },
+      "StudySetProgressDto": {
+        "type": "object",
+        "properties": {
+          "totalCards": {
+            "type": "number",
+            "example": 20
+          },
+          "newCount": {
+            "type": "number",
+            "example": 8
+          },
+          "learningCount": {
+            "type": "number",
+            "example": 7
+          },
+          "masteredCount": {
+            "type": "number",
+            "example": 5
+          }
+        },
+        "required": [
+          "totalCards",
+          "newCount",
+          "learningCount",
+          "masteredCount"
+        ]
+      },
+      "RecentStudySetDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "isPrivate": {
+            "type": "boolean",
+            "description": "true = private, false = public"
+          },
+          "ownerId": {
+            "type": "string",
+            "description": "Owner id"
+          },
+          "ownerName": {
+            "type": "string"
+          },
+          "ownerImg": {
+            "type": "string"
+          },
+          "isOwner": {
+            "type": "boolean",
+            "example": false
+          },
+          "isCollected": {
+            "type": "boolean",
+            "example": true
+          },
+          "flashcardsCount": {
+            "type": "number",
+            "example": 0
+          },
+          "viewCount": {
+            "type": "number",
+            "example": 0,
+            "description": "Total non-owner views of this set."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastStudiedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Last time the caller opened a study session for this set. Null if they have never studied it (owned/favourited but untouched)."
+          },
+          "progress": {
+            "nullable": true,
+            "description": "Per-user mastery breakdown, sourced from UserSetProgress. Null if no session has ever been started for this set.",
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StudySetProgressDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "description",
+          "isPrivate",
+          "ownerId",
+          "isOwner",
+          "flashcardsCount",
+          "viewCount",
+          "createdAt",
+          "updatedAt"
         ]
       },
       "SearchSetHitDto": {

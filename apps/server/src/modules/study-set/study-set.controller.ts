@@ -35,6 +35,7 @@ import { CreateStudySetDto } from './dtos/create-study-set.dto';
 import { UpdateStudySetDto } from './dtos/update-study-set.dto';
 import { UpdateVisibilityDto } from './dtos/update-visibility.dto';
 import { SearchStudySetsDto } from './dtos/search-study-sets.dto';
+import { RecentStudySetDto } from './dtos/recent-study-set.dto';
 import { StudySetResponseDto } from './dtos/study-set-response.dto';
 
 @ApiTags('Study Sets')
@@ -146,6 +147,29 @@ export class StudySetController {
       }),
     );
     return { ok: true, message: 'Collection retrieved', data };
+  }
+
+  @Get('recent')
+  @HttpCode(200)
+  @ApiQuery({ name: 'limit', required: false, example: 5 })
+  @ApiOperation({
+    summary: "List study sets I've studied most recently",
+    description:
+      'Ordered by UserSetProgress.lastStudiedAt desc. Excludes sets I have never opened a session for (those live in /library, not here).',
+  })
+  @ApiOkEnvelope(RecentStudySetDto, {
+    isArray: true,
+    description: 'Recent study sets retrieved',
+  })
+  async recentStudySets(
+    @CurrentUser() user: IUser,
+    @Query('limit') limit?: string,
+  ): Promise<ResponseDto<RecentStudySetDto[]>> {
+    const parsed = limit ? Number.parseInt(limit, 10) : NaN;
+    const safeLimit =
+      Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 20) : 5;
+    const data = await this.studySetService.findRecent(user.id, safeLimit);
+    return { ok: true, message: 'Recent study sets retrieved', data };
   }
 
   @Get('public')

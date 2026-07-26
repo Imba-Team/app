@@ -53,9 +53,9 @@ export default function EmptyDashboard() {
               variant="ghost"
               className="bg-transparent! border border-white/40 text-white hover:bg-white/10! hover:text-white"
             >
-              <Link href="/dashboard?tab=community">
+              <Link href="/discover">
                 <Compass size={18} className="mr-1" />
-                Browse the community
+                Browse Discover
               </Link>
             </Button>
           </div>

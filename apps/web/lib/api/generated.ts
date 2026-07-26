@@ -1055,6 +1055,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/study-sets/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List study sets I've studied most recently
+         * @description Ordered by UserSetProgress.lastStudiedAt desc. Excludes sets I have never opened a session for (those live in /library, not here).
+         */
+        get: operations["StudySetController_recentStudySets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tags": {
         parameters: {
             query?: never;
@@ -1379,6 +1399,40 @@ export interface components {
             profilePicture: Record<string, never> | null;
             username: string;
         };
+        RecentStudySetDto: {
+            /** Format: date-time */
+            createdAt: string;
+            description: string;
+            /** @example 0 */
+            flashcardsCount: number;
+            id: string;
+            /** @example true */
+            isCollected?: boolean;
+            /** @example false */
+            isOwner: boolean;
+            /** @description true = private, false = public */
+            isPrivate: boolean;
+            /**
+             * Format: date-time
+             * @description Last time the caller opened a study session for this set. Null if they have never studied it (owned/favourited but untouched).
+             */
+            lastStudiedAt?: string | null;
+            /** @description Owner id */
+            ownerId: string;
+            ownerImg?: string;
+            ownerName?: string;
+            /** @description Per-user mastery breakdown, sourced from UserSetProgress. Null if no session has ever been started for this set. */
+            progress?: components["schemas"]["StudySetProgressDto"] | null;
+            slug: string;
+            title: string;
+            /** Format: date-time */
+            updatedAt: string;
+            /**
+             * @description Total non-owner views of this set.
+             * @example 0
+             */
+            viewCount: number;
+        };
         RegisterRequestDto: {
             /** @example john@example.com */
             email: string;
@@ -1552,6 +1606,16 @@ export interface components {
             startedAt: string;
             /** Format: uuid */
             studySetId: string;
+        };
+        StudySetProgressDto: {
+            /** @example 7 */
+            learningCount: number;
+            /** @example 5 */
+            masteredCount: number;
+            /** @example 8 */
+            newCount: number;
+            /** @example 20 */
+            totalCards: number;
         };
         StudySetResponseDto: {
             /** Format: date-time */
@@ -1759,6 +1823,7 @@ export type SchemaLearnBatchResponseDto = components['schemas']['LearnBatchRespo
 export type SchemaLibraryItemDto = components['schemas']['LibraryItemDto'];
 export type SchemaLoginRequestDto = components['schemas']['LoginRequestDto'];
 export type SchemaPublicProfileDto = components['schemas']['PublicProfileDto'];
+export type SchemaRecentStudySetDto = components['schemas']['RecentStudySetDto'];
 export type SchemaRegisterRequestDto = components['schemas']['RegisterRequestDto'];
 export type SchemaResendVerificationRequestDto = components['schemas']['ResendVerificationRequestDto'];
 export type SchemaResetPasswordRequestDto = components['schemas']['ResetPasswordRequestDto'];
@@ -1774,6 +1839,7 @@ export type SchemaSrsCardDto = components['schemas']['SrsCardDto'];
 export type SchemaSrsReviewResponseDto = components['schemas']['SrsReviewResponseDto'];
 export type SchemaStartSessionDto = components['schemas']['StartSessionDto'];
 export type SchemaStartSessionResponseDto = components['schemas']['StartSessionResponseDto'];
+export type SchemaStudySetProgressDto = components['schemas']['StudySetProgressDto'];
 export type SchemaStudySetResponseDto = components['schemas']['StudySetResponseDto'];
 export type SchemaSubmitAnswerDto = components['schemas']['SubmitAnswerDto'];
 export type SchemaSubmitWrittenAnswerDto = components['schemas']['SubmitWrittenAnswerDto'];
@@ -3512,6 +3578,8 @@ export interface operations {
             query?: {
                 /** @description Searches title or description */
                 q?: string;
+                /** @description Only honoured by /study-sets/public. 'popular' sorts by viewCount desc. */
+                sort?: "recent" | "popular";
             };
             header?: never;
             path?: never;
@@ -3559,6 +3627,8 @@ export interface operations {
             query?: {
                 /** @description Searches title or description */
                 q?: string;
+                /** @description Only honoured by /study-sets/public. 'popular' sorts by viewCount desc. */
+                sort?: "recent" | "popular";
             };
             header?: never;
             path?: never;
@@ -3574,6 +3644,30 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ResponseDto"] & {
                         data?: components["schemas"]["StudySetResponseDto"][];
+                    };
+                };
+            };
+        };
+    };
+    StudySetController_recentStudySets: {
+        parameters: {
+            query?: {
+                limit?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recent study sets retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["RecentStudySetDto"][];
                     };
                 };
             };

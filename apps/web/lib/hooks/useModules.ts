@@ -9,6 +9,8 @@ import {
   collectModule,
   uncollectModule,
   searchCommunity,
+  getRecentStudiedSets,
+  getPopularPublicSets,
   CreateModuleData,
   UpdateModuleData,
   type CommunitySearchParams,
@@ -42,6 +44,10 @@ export const moduleKeys = {
         limit: params.limit ?? 20,
       },
     ] as const,
+  recentStudied: (limit: number) =>
+    [...moduleKeys.all, "recent-studied", { limit }] as const,
+  popularPublic: (limit: number) =>
+    [...moduleKeys.all, "popular-public", { limit }] as const,
 };
 
 // ============================================
@@ -75,6 +81,25 @@ export function useModule(id: string) {
     queryKey: moduleKeys.detail(id),
     queryFn: () => getModuleById(id),
     enabled: !!id,
+  });
+}
+
+/**
+ * Sets I have actually studied, most recent first. Powers the
+ * dashboard "Continue studying" strip.
+ */
+export function useRecentStudiedSets(limit = 5) {
+  return useQuery({
+    queryKey: moduleKeys.recentStudied(limit),
+    queryFn: () => getRecentStudiedSets(limit),
+  });
+}
+
+/** Popular public sets, for the dashboard Discover strip. */
+export function usePopularPublicSets(limit = 6) {
+  return useQuery({
+    queryKey: moduleKeys.popularPublic(limit),
+    queryFn: () => getPopularPublicSets(limit),
   });
 }
 

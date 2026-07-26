@@ -130,6 +130,39 @@ export async function getRecentModules(limit = 4): Promise<Module[]> {
   return all.slice(0, limit);
 }
 
+export type RecentStudySet = Schemas['RecentStudySetDto'];
+
+/**
+ * Sets I've actually studied, most recent first. Distinct from
+ * `getRecentModules` — that one is a client-side slice of the entire
+ * collection (owned+favourited) sorted by updatedAt. This one is
+ * server-driven, sorted by UserSetProgress.lastStudiedAt, and carries
+ * per-user mastery counts.
+ */
+export async function getRecentStudiedSets(limit = 5): Promise<RecentStudySet[]> {
+  try {
+    const res = await apiFetch('get', '/study-sets/recent', {
+      query: { limit: String(limit) },
+    });
+    return unwrap(res, 'Failed to load recent sets');
+  } catch (error) {
+    throw extractError(error, 'Failed to load recent sets');
+  }
+}
+
+/** Popular public sets for the dashboard Discover strip. */
+export async function getPopularPublicSets(limit = 6): Promise<Module[]> {
+  try {
+    const res = await apiFetch('get', '/study-sets/public', {
+      query: { sort: 'popular' },
+    });
+    const all = unwrap(res, 'Failed to load popular sets');
+    return all.slice(0, limit);
+  } catch (error) {
+    throw extractError(error, 'Failed to load popular sets');
+  }
+}
+
 // ============================================
 // COMMUNITY (Elasticsearch-backed /search/sets)
 // ============================================

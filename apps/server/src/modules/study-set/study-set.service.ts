@@ -25,7 +25,14 @@ import { UsersService } from 'src/modules/users/user.service';
 
 // DTOs
 import { CreateStudySetDto } from './dtos/create-study-set.dto';
-import { SearchStudySetsDto } from './dtos/search-study-sets.dto';
+import {
+  PublicSetSort,
+  SearchStudySetsDto,
+} from './dtos/search-study-sets.dto';
+import {
+  RecentStudySetDto,
+  StudySetProgressDto,
+} from './dtos/recent-study-set.dto';
 import { StudySetResponseDto } from './dtos/study-set-response.dto';
 import { UpdateStudySetDto } from './dtos/update-study-set.dto';
 import { UpdateVisibilityDto } from './dtos/update-visibility.dto';
@@ -251,7 +258,8 @@ export class StudySetService {
 
   async searchPublic(userId: string, query: SearchStudySetsDto) {
     this.logger.debug(
-      `Searching public study sets for user: ${userId}, query="${query.q ?? ''}"`,
+      `Searching public study sets for user: ${userId}, ` +
+        `query="${query.q ?? ''}", sort=${query.sort ?? PublicSetSort.RECENT}`,
     );
     const where: Prisma.StudySetWhereInput = {
       visibility: StudySetVisibility.PUBLIC,
@@ -265,15 +273,95 @@ export class StudySetService {
         : {}),
     };
 
+    // `sort=popular` powers the dashboard Discover strip. Default stays
+    // `recent` (updatedAt desc) so existing callers of /study-sets/public
+    // — which never sent a `sort` — see no behavior change.
+    const orderBy: Prisma.StudySetOrderByWithRelationInput =
+      query.sort === PublicSetSort.POPULAR
+        ? { viewCount: 'desc' }
+        : { updatedAt: 'desc' };
+
     const sets = await this.prisma.studySet.findMany({
       where,
       include: {
         flashcards: { orderBy: { orderIndex: 'asc' } },
       },
+      orderBy,
     });
 
     const sorted = sets.map((s) => this.withSortedFlashcards(s));
     return this.buildStudySetsForUserBatch(sorted, userId);
+  }
+
+  /**
+   * Sets the caller has actually opened a session for, most-recent first.
+   * Powers the dashboard "Continue studying" strip; if the user has
+   * never studied anything, returns []. Owned/favourited-but-untouched
+   * sets are intentionally excluded — those belong in /library, not in
+   * a "continue" surface.
+   */
+  async findRecent(
+    userId: string,
+    limit: number,
+  ): Promise<RecentStudySetDto[]> {
+    this.logger.debug(
+      `Listing recently-studied sets for user: ${userId}, limit=${limit}`,
+    );
+
+    const progressRows = await this.prisma.userSetProgress.findMany({
+      where: {
+        userId,
+        lastStudiedAt: { not: null },
+      },
+      orderBy: { lastStudiedAt: 'desc' },
+      take: limit,
+    });
+
+    if (progressRows.length === 0) return [];
+
+    const setIds = progressRows.map((r) => r.setId);
+    const sets = await this.prisma.studySet.findMany({
+      where: { id: { in: setIds } },
+      include: { flashcards: true },
+    });
+
+    // Preserve the lastStudiedAt ordering — findMany({ in }) doesn't
+    // honour input order. Hydrate to StudySetResponseDto first, then
+    // attach the progress payload we already have on hand.
+    const setById = new Map(sets.map((s) => [s.id, this.withSortedFlashcards(s)]));
+    const base = await this.buildStudySetsForUserBatch(
+      progressRows
+        .map((r) => setById.get(r.setId))
+        .filter((s): s is StudySetWithFlashcards => Boolean(s)),
+      userId,
+    );
+
+    const progressById = new Map(progressRows.map((r) => [r.setId, r]));
+    return base.map((set) => {
+      const p = progressById.get(set.id);
+      const progressDto = p
+        ? plainToInstance(
+            StudySetProgressDto,
+            {
+              totalCards: p.totalCards,
+              newCount: p.newCount,
+              learningCount: p.learningCount,
+              masteredCount: p.masteredCount,
+            },
+            { excludeExtraneousValues: true },
+          )
+        : null;
+
+      return plainToInstance(
+        RecentStudySetDto,
+        {
+          ...set,
+          lastStudiedAt: p?.lastStudiedAt ?? null,
+          progress: progressDto,
+        },
+        { excludeExtraneousValues: true },
+      );
+    });
   }
 
   // Section: Single study set retrieval
