@@ -123,7 +123,7 @@ export default function FolderDetailPage({
       </div>
 
       {(f.studySets?.length ?? 0) === 0 ? (
-        <Card className="border-dashed">
+        <Card>
           <CardContent className="p-10 text-center">
             <p className="font-semibold text-gray-800">Empty folder.</p>
             <p className="text-sm text-gray-500">
@@ -134,10 +134,7 @@ export default function FolderDetailPage({
       ) : (
         <div className="space-y-3">
           {f.studySets?.map((s) => (
-            <Card
-              key={s.id}
-              className="border-none shadow-sm transition hover:shadow-md"
-            >
+            <Card key={s.id}>
               <CardContent className="flex items-center gap-3 p-4">
                 <div className="rounded-md bg-emerald-100 p-2 text-emerald-700">
                   <Layers className="h-5 w-5" />

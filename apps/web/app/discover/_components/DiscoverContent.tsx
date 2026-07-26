@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Loader2, SearchX } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Search, SearchX } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -62,12 +62,7 @@ export default function DiscoverContent() {
     limit: PAGE_SIZE,
   };
 
-  const {
-    data,
-    isLoading,
-    isError,
-    isFetching,
-  } = useCommunityModules(query);
+  const { data, isLoading, isError, isFetching } = useCommunityModules(query);
 
   if (isLoading) {
     return <DiscoverLoading />;
@@ -90,12 +85,12 @@ export default function DiscoverContent() {
     <main className="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
       {/* Header Section */}
       <div className="mb-8 md:mb-12 space-y-3">
-        <h2 className="text-2xl md:text-3xl lg:text-4xl text-[#4255FF] font-bold text-center">
+        <h2 className="text-2xl md:text-3xl lg:text-4xl text-neutral-700 font-bold text-center">
           Community Modules
         </h2>
         <p className="text-center text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-          Search and explore modules shared by the Mimir community. Full-text
-          search across titles, descriptions, and tags.
+          Search and explore modules shared by the Mimir community. Full-text search across titles,
+          descriptions, and tags.
         </p>
       </div>
 
@@ -108,8 +103,9 @@ export default function DiscoverContent() {
           <div className="relative flex-1">
             <Input
               type="text"
+              startIcon={<Search />}
               placeholder="Search titles, descriptions, and tags…"
-              className="h-11 pr-10"
+              className="pr-10"
               value={searchInput}
               onChange={(e) => handleSearchChange(e.target.value)}
             />
@@ -127,7 +123,7 @@ export default function DiscoverContent() {
               setPage(1);
             }}
           >
-            <SelectTrigger className="h-11 w-full sm:w-48">
+            <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Language" />
             </SelectTrigger>
             <SelectContent>
@@ -153,11 +149,7 @@ export default function DiscoverContent() {
       {items.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {items.map((m: CommunitySearchHit) => (
-            <CommunityCard
-              key={m.id}
-              hit={m}
-              onOpen={() => router.push(`/modules/${m.id}`)}
-            />
+            <CommunityCard key={m.id} hit={m} onOpen={() => router.push(`/modules/${m.id}`)} />
           ))}
         </div>
       )}
@@ -167,9 +159,7 @@ export default function DiscoverContent() {
         <div className="text-center py-12 md:py-16 max-w-lg mx-auto">
           <SearchX className="mx-auto text-gray-400 mb-3" size={36} />
           <p className="text-gray-800 font-semibold mb-1">
-            {debouncedSearch
-              ? `No modules match “${debouncedSearch}”`
-              : 'No community modules yet'}
+            {debouncedSearch ? `No modules match “${debouncedSearch}”` : 'No community modules yet'}
           </p>
           <p className="text-sm text-gray-500">
             {debouncedSearch
@@ -207,29 +197,19 @@ export default function DiscoverContent() {
   );
 }
 
-function CommunityCard({
-  hit,
-  onOpen,
-}: {
-  hit: CommunitySearchHit;
-  onOpen: () => void;
-}) {
+function CommunityCard({ hit, onOpen }: { hit: CommunitySearchHit; onOpen: () => void }) {
   const ownerInitials = (hit.ownerUsername ?? '?').slice(0, 2).toUpperCase();
   // Titles/descriptions may be returned with <em>…</em> highlight markup
   // in the future (highlights field). For now render plain text — the
   // highlighter would be a follow-up if we want it.
   return (
-    <Card className="flex flex-col hover:shadow-lg transition-shadow duration-200">
+    <Card className="flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-3">
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold line-clamp-2 mb-2">
-              {hit.title}
-            </h3>
+            <h3 className="text-lg font-semibold line-clamp-2 mb-2">{hit.title}</h3>
             {hit.description && (
-              <p className="text-muted-foreground text-sm line-clamp-2">
-                {hit.description}
-              </p>
+              <p className="text-muted-foreground text-sm line-clamp-2">{hit.description}</p>
             )}
           </div>
           <div className="flex flex-wrap gap-1.5 items-center">
@@ -258,13 +238,9 @@ function CommunityCard({
           <p className="text-xs text-gray-500 mb-2">Shared by:</p>
           <div className="flex gap-2 items-center">
             <Avatar className="size-8 border border-gray-100 shrink-0">
-              <AvatarFallback className="text-xs">
-                {ownerInitials}
-              </AvatarFallback>
+              <AvatarFallback className="text-xs">{ownerInitials}</AvatarFallback>
             </Avatar>
-            <p className="text-sm font-medium truncate">
-              {hit.ownerUsername ?? 'Unknown'}
-            </p>
+            <p className="text-sm font-medium truncate">{hit.ownerUsername ?? 'Unknown'}</p>
           </div>
         </div>
 

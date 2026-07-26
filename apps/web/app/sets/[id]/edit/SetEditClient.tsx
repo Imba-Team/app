@@ -220,7 +220,7 @@ export default function SetEditClient({ id }: Props) {
         </CardContent>
       </Card>
 
-      <Card className="mb-6 border-red-100">
+      <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-lg text-red-600">Danger zone</CardTitle>
         </CardHeader>

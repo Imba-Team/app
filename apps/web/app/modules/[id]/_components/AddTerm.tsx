@@ -110,7 +110,7 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
             setIsAdding(true);
           }
         }}
-        className="rounded-2xl w-full mt-4 py-4 flex items-center justify-center gap-2 font-medium cursor-pointer border-dashed border-2 border-gray-300 hover:border-[#4255FF] hover:text-[#4255FF] transition-colors"
+        className="w-full mt-4 py-4 flex items-center justify-center gap-2 font-medium cursor-pointer hover:text-[#4255FF] transition-colors"
         aria-label="Add new term (Ctrl+N)"
       >
         <Plus size={18} />
@@ -123,7 +123,7 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
   }
 
   return (
-    <Card className="rounded-2xl w-full mt-4 p-4 space-y-3 shadow-sm">
+    <Card className="w-full mt-4 p-4 space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <label htmlFor="new-term" className="text-xs font-medium text-gray-500">

@@ -119,7 +119,7 @@ export default function TermItem({
   const status = STATUS_STYLES[term.status ?? "not_started"] ?? STATUS_STYLES.not_started;
 
   return (
-    <Card className="bg-white rounded-2xl w-full flex p-4 items-center flex-row gap-3">
+    <Card className="w-full flex p-4 items-center flex-row gap-3">
       {/* Status pill */}
       <div
         className={cn(

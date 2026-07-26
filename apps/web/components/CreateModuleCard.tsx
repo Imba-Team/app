@@ -12,7 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function CreateModuleCard() {
   return (
     <Link href="/modules/new" className="block">
-      <Card className="bg-white p-4 border-dashed border-2 border-gray-300 hover:border-[#4255FF] hover:shadow-md transition-all cursor-pointer h-32 flex items-center justify-center">
+      <Card className="p-4 cursor-pointer h-32 flex items-center justify-center">
         <CardContent className="p-0 text-center">
           <div className="mx-auto mb-2 rounded-full bg-[#4255FF]/10 p-2 w-fit">
             <Plus size={18} className="text-[#4255FF]" />

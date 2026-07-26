@@ -10,7 +10,7 @@ type ModuleCardProps = {
 export default function ModuleCard({ module, onClick }: ModuleCardProps) {
   return (
     <Card
-      className="bg-white p-4 hover:shadow-md cursor-pointer transition h-32 w-full"
+      className="p-4 cursor-pointer transition h-32 w-full"
       onClick={() => onClick(module)}
     >
       <h3 className="font-bold text-lg">{module.title}</h3>

@@ -28,7 +28,7 @@ export default function ModuleListItem({
   const [confirming, setConfirming] = useState(false);
 
   return (
-    <Card className=" bg-white p-4 mb-4 hover:shadow-md cursor-pointer transition w-full">
+    <Card className="p-4 mb-4 cursor-pointer transition w-full">
       <div className="flex items-center justify-between">
         <div
           className="cursor-pointer hover:underline"

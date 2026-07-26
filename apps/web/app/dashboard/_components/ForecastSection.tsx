@@ -22,7 +22,7 @@ export function ForecastSection() {
       {forecast.isLoading ? (
         <Skeleton className="h-40 w-full rounded-lg bg-gray-100" />
       ) : (
-        <Card className="border-none shadow-sm">
+        <Card>
           <CardContent className="p-4">
             <ForecastChart buckets={buckets} />
           </CardContent>

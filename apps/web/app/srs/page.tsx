@@ -1,40 +1,36 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
-import Link from "next/link";
-import { Loader2, RotateCcw } from "lucide-react";
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { Loader2, RotateCcw } from 'lucide-react';
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import type { SrsRating } from "@/lib/api";
-import {
-  useReviewSrsCard,
-  useSrsForecast,
-  useSrsQueue,
-} from "@/lib/hooks/useSrs";
-import { ForecastChart } from "./_components/ForecastChart";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { SrsRating } from '@/lib/api';
+import { useReviewSrsCard, useSrsForecast, useSrsQueue } from '@/lib/hooks/useSrs';
+import { ForecastChart } from './_components/ForecastChart';
 
 const RATINGS: { rating: SrsRating; label: string; className: string }[] = [
   {
-    rating: "AGAIN",
-    label: "Again",
-    className: "bg-red-100 text-red-700 hover:bg-red-200",
+    rating: 'AGAIN',
+    label: 'Again',
+    className: 'bg-red-100 text-red-700 hover:bg-red-200',
   },
   {
-    rating: "HARD",
-    label: "Hard",
-    className: "bg-orange-100 text-orange-700 hover:bg-orange-200",
+    rating: 'HARD',
+    label: 'Hard',
+    className: 'bg-orange-100 text-orange-700 hover:bg-orange-200',
   },
   {
-    rating: "GOOD",
-    label: "Good",
-    className: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200",
+    rating: 'GOOD',
+    label: 'Good',
+    className: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
   },
   {
-    rating: "EASY",
-    label: "Easy",
-    className: "bg-blue-100 text-blue-700 hover:bg-blue-200",
+    rating: 'EASY',
+    label: 'Easy',
+    className: 'bg-blue-100 text-blue-700 hover:bg-blue-200',
   },
 ];
 
@@ -73,20 +69,17 @@ export default function SrsPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-6 flex items-baseline justify-between">
-        <h1 className="text-3xl font-bold text-[#4255FF]">Spaced Review</h1>
-        <Link
-          href="/dashboard"
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          ← Back to dashboard
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-neutral-700">Spaced Review</h1>
+        <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-700">
+          <Button variant="outline" size="sm">
+            ← Back to dashboard
+          </Button>
         </Link>
       </div>
 
       <section className="mb-8">
-        <h2 className="mb-3 text-lg font-semibold text-gray-800">
-          Due today
-        </h2>
+        <h2 className="mb-3 text-lg font-semibold text-gray-800">Due today</h2>
 
         {queue.isLoading ? (
           <Skeleton className="h-56 w-full rounded-lg bg-gray-100" />
@@ -95,28 +88,21 @@ export default function SrsPage() {
         ) : cursor >= cards.length ? (
           <SessionDone total={cards.length} onReset={() => setCursor(0)} />
         ) : (
-          <Card className="border-none shadow-md">
+          <Card>
             <CardContent className="flex flex-col items-center gap-6 p-8">
               <div className="w-full text-center">
                 <p className="mb-1 text-xs uppercase tracking-wide text-gray-400">
-                  {remainingLocal} of {cards.length} remaining · {totalDue} due
-                  today
+                  {remainingLocal} of {cards.length} remaining · {totalDue} due today
                 </p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {current.term}
-                </p>
+                <p className="text-2xl font-semibold text-gray-900">{current.term}</p>
                 {current.hint && !revealed && (
-                  <p className="mt-2 text-sm text-gray-500">
-                    Hint: {current.hint}
-                  </p>
+                  <p className="mt-2 text-sm text-gray-500">Hint: {current.hint}</p>
                 )}
               </div>
 
               {revealed ? (
                 <div className="w-full text-center">
-                  <p className="mb-4 text-lg text-gray-800">
-                    {current.definition}
-                  </p>
+                  <p className="mb-4 text-lg text-gray-800">{current.definition}</p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {RATINGS.map(({ rating, label, className }) => (
                       <Button
@@ -133,11 +119,7 @@ export default function SrsPage() {
                 </div>
               ) : (
                 <Button onClick={() => setRevealed(true)} className="min-w-40">
-                  {review.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "Show answer"
-                  )}
+                  {review.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Show answer'}
                 </Button>
               )}
             </CardContent>
@@ -146,25 +128,22 @@ export default function SrsPage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold text-gray-800">
-          Forecast · next 30 days
-        </h2>
+        <h2 className="mb-3 text-lg font-semibold text-gray-800">Forecast – next 30 days</h2>
         {forecast.isLoading ? (
           <Skeleton className="h-32 w-full rounded-lg bg-gray-100" />
         ) : (
           <ForecastChart buckets={forecast.data?.buckets ?? []} />
         )}
         <p className="mt-3 text-xs text-gray-500">
-          Overdue cards fold into today. Reviews you complete now push their
-          next-due dates further out along this curve.
+          Overdue cards fold into today. Reviews you complete now push their next-due dates further
+          out along this curve.
         </p>
       </section>
 
       {dueTodayCount === 0 && (
         <p className="mt-6 flex items-center gap-2 text-sm text-gray-500">
           <RotateCcw className="h-4 w-4" />
-          Nothing due right now. Cards graduate into this queue as you finish
-          Learn sessions.
+          Nothing due right now. Cards graduate into this queue as you finish Learn sessions.
         </p>
       )}
     </div>
@@ -173,16 +152,14 @@ export default function SrsPage() {
 
 function EmptyQueue() {
   return (
-    <Card className="border-dashed">
+    <Card>
       <CardContent className="flex flex-col items-center gap-2 p-8 text-center">
-        <p className="text-lg font-semibold text-gray-800">
-          Nothing due today.
-        </p>
+        <p className="text-lg font-semibold text-gray-800">Nothing due today.</p>
         <p className="text-sm text-gray-500">
-          Cards move into the SRS queue after you master them in a Learn
-          session. Come back tomorrow — or graduate more cards now.
+          Cards move into the SRS queue after you master them in a Learn session. Come back tomorrow
+          – or graduate more cards now.
         </p>
-        <Button asChild variant="outline" className="mt-2">
+        <Button asChild variant="default" className="mt-2">
           <Link href="/dashboard">Study a module</Link>
         </Button>
       </CardContent>
@@ -190,21 +167,13 @@ function EmptyQueue() {
   );
 }
 
-function SessionDone({
-  total,
-  onReset,
-}: {
-  total: number;
-  onReset: () => void;
-}) {
+function SessionDone({ total, onReset }: { total: number; onReset: () => void }) {
   return (
-    <Card className="border-none shadow-md">
+    <Card>
       <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
-        <p className="text-lg font-semibold text-gray-800">
-          You&apos;re done for today.
-        </p>
+        <p className="text-lg font-semibold text-gray-800">You&apos;re done for today.</p>
         <p className="text-sm text-gray-500">
-          {total} card{total === 1 ? "" : "s"} reviewed. See you tomorrow.
+          {total} card{total === 1 ? '' : 's'} reviewed. See you tomorrow.
         </p>
         <Button variant="ghost" size="sm" onClick={onReset} className="mt-2">
           Review again

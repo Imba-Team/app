@@ -40,7 +40,7 @@ export function ContinueStudying() {
 function SectionShell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="mb-3 text-xl font-bold text-[#4255FF]">{title}</h2>
+      <h2 className="mb-3 text-xl font-bold text-neutral-700">{title}</h2>
       {children}
     </section>
   );
@@ -56,7 +56,7 @@ function RecentSetCard({ set }: { set: RecentStudySet }) {
 
   return (
     <Link href={`/modules/${set.id}`} className="group block">
-      <Card className="border-none shadow-sm transition group-hover:shadow-md">
+      <Card>
         <CardContent className="flex items-center gap-">
           <div className="min-w-0 flex-1">
             <p className="truncate font-semibold text-gray-900">{set.title}</p>

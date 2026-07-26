@@ -46,7 +46,7 @@ export function SrsHero() {
 
   if (total === 0) {
     return (
-      <Card className="border border-gray-100 bg-white shadow-sm">
+      <Card>
         <CardContent className="flex items-center justify-between gap-4 px-5 py-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="rounded-full bg-emerald-50 p-2 text-emerald-600">
@@ -70,7 +70,7 @@ export function SrsHero() {
   }
 
   return (
-    <Card className="border-none bg-linear-to-br from-[#4255FF] to-[#7B49E7] text-white shadow-lg">
+    <Card className="bg-linear-to-br from-[#4255FF] to-[#7B49E7] text-white">
       <CardContent className="flex flex-col gap-6 p-6 sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-4">

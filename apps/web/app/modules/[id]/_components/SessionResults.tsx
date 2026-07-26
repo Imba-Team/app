@@ -164,7 +164,7 @@ export default function SessionResults({
             graduated cards. Each graduation writes an SrsCard row that
             surfaces on `/srs` the next day. */}
         {newlyMastered > 0 && (
-          <Card className="border-emerald-200 bg-emerald-50/60">
+          <Card className="bg-emerald-50/60">
             <CardContent className="flex items-center justify-between gap-3 p-4">
               <div className="flex items-center gap-3 text-sm">
                 <Sparkles size={18} className="text-emerald-600" />

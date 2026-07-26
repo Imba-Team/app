@@ -215,21 +215,21 @@ export default function LearnPageClient({ id }: { id: string }) {
           <h2 className="text-2xl font-semibold mb-6">Choose your mode</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
             <Link href={`/modules/${id}/flashcards`}>
-              <Card className="bg-white rounded-2xl p-5 text-xl font-semibold hover:shadow-md flex flex-col items-center cursor-pointer">
+              <Card className="p-5 text-xl font-semibold flex flex-col items-center cursor-pointer">
                 <Image src="/images/img3.png" width={150} height={150} alt="Flashcards" />
                 Flashcards
               </Card>
             </Link>
 
             <Link href={`/modules/${id}/learn`}>
-              <Card className="bg-white rounded-2xl p-5 text-xl font-semibold hover:shadow-md flex flex-col items-center cursor-pointer">
+              <Card className="p-5 text-xl font-semibold flex flex-col items-center cursor-pointer">
                 <Image src="/images/img1.png" width={150} height={150} alt="Learn" />
                 Learn
               </Card>
             </Link>
 
             <Link href={`/modules/${id}/test`}>
-              <Card className="bg-white rounded-2xl p-5 text-xl font-semibold hover:shadow-md flex flex-col items-center cursor-pointer">
+              <Card className="p-5 text-xl font-semibold flex flex-col items-center cursor-pointer">
                 <Image src="/images/img4.png" width={150} height={150} alt="Test" />
                 Test
               </Card>
@@ -338,7 +338,7 @@ export default function LearnPageClient({ id }: { id: string }) {
             )}
 
             {terms.length === 0 && hasActiveFilter ? (
-              <Card className="bg-white">
+              <Card>
                 <CardContent className="p-8 flex flex-col items-center gap-2 text-center">
                   <p className="text-gray-800 font-semibold">
                     {debouncedSearch

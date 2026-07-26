@@ -42,7 +42,7 @@ export default function DangerZone() {
   };
 
   return (
-    <Card className="border-rose-200">
+    <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
           <AlertTriangle size={18} className="text-rose-600" />

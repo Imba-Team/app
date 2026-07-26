@@ -153,7 +153,7 @@ export default function SessionsPageClient({ moduleId }: { moduleId: string }) {
         )}
 
         {isError && (
-          <Card className="bg-rose-50 border-rose-200">
+          <Card className="bg-rose-50">
             <CardHeader>
               <CardTitle className="text-rose-700">
                 Couldn&apos;t load session history
@@ -249,7 +249,7 @@ function SessionRow({
     : undefined;
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card>
       <CardContent className="p-4 sm:p-5">
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <span

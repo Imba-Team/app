@@ -71,7 +71,7 @@ export default function EmptyDashboard() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <Link href="/modules/new" className="block">
-            <Card className="bg-white p-6 border-dashed border-2 border-gray-300 hover:border-[#4255FF] hover:shadow-md transition-all cursor-pointer h-32 flex items-center justify-center">
+            <Card className="p-6 cursor-pointer h-32 flex items-center justify-center">
               <CardContent className="p-0 text-center">
                 <div className="mx-auto mb-2 rounded-full bg-[#4255FF]/10 p-2 w-fit">
                   <Plus size={20} className="text-[#4255FF]" />
@@ -85,7 +85,7 @@ export default function EmptyDashboard() {
               </CardContent>
             </Card>
           </Link>
-          <Card className="bg-gray-50 p-6 border-dashed border-2 border-gray-200 h-32 flex items-center justify-center">
+          <Card className="bg-gray-50 p-6 h-32 flex items-center justify-center">
             <CardContent className="p-0 text-center text-gray-400">
               <BookOpen size={20} className="mx-auto mb-1" />
               <p className="text-sm">
@@ -94,7 +94,7 @@ export default function EmptyDashboard() {
             </CardContent>
           </Card>
           <div className="hidden md:block">
-            <Card className="bg-gray-50 p-6 border-dashed border-2 border-gray-200 h-32 flex items-center justify-center">
+            <Card className="bg-gray-50 p-6 h-32 flex items-center justify-center">
               <CardContent className="p-0 text-center text-gray-400">
                 <BookOpen size={20} className="mx-auto mb-1" />
                 <p className="text-sm">Ready when you are.</p>
