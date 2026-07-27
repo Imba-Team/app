@@ -20,6 +20,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/hooks/useUser";
 import ProfileCard from "./_components/ProfileCard";
@@ -41,21 +42,20 @@ export default function AccountPage() {
   }, [isError, router]);
 
   return (
-    <main className="min-h-screen bg-gray-50 py-8 px-4 pb-16">
+    <main className="min-h-screen py-8 px-4 pb-16">
       <div className="mx-auto w-full max-w-3xl">
         {/* Top nav */}
         <div className="mb-6">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-x-2 text-sm text-gray-500 hover:text-[#4255FF] hover:underline underline-offset-4 transition"
-          >
-            <ArrowLeft size={16} /> Back to dashboard
-          </Link>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/dashboard">
+              <ArrowLeft className="h-4 w-4" /> Back to dashboard
+            </Link>
+          </Button>
         </div>
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#4255FF]">Account</h1>
+          <h1 className="text-3xl font-bold text-neutral-700">Account</h1>
           <p className="text-gray-500 mt-1">
             Manage your profile, security, and preferences.
           </p>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, Settings, User2 } from 'lucide-react';
+import { Bell, LogIn, Settings, User2 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMe } from '@/lib/hooks/useUser';
 import { buildAssetUrl } from '@/lib/env';
 import { cn } from '@/lib/utils';
+import { Button } from './ui/button';
 
 type NavLink = { label: string; href: string };
 
@@ -96,9 +97,9 @@ export default function Navbar({ variant }: { variant: NavbarVariant }) {
 
 const pillBase =
   'inline-flex h-11 items-center justify-center rounded-full border border-black/5 bg-white text-neutral-800 transition-colors hover:bg-black/5';
-const iconPill = `${pillBase} w-11`;
-const textPill = `${pillBase} gap-2 px-4 text-sm font-medium`;
-const avatarPill = `${pillBase} w-11 p-1`;
+const iconPill = `${pillBase} w-9 h-9! border-0`;
+const textPill = `${pillBase} gap-2 px-4 text-sm font-medium h-9! border-0`;
+const avatarPill = `${pillBase} w-9! h-9! border-0`;
 
 type AvatarProps = {
   isLoading?: boolean;
@@ -141,21 +142,27 @@ function AppActions({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <Link href="/account" aria-label="Settings" className={textPill}>
-        <Settings className="size-4" />
-        <span>Settings</span>
-      </Link>
-      <button type="button" aria-label="Notifications" className={iconPill}>
-        <Bell className="h-4 w-4" />
-      </button>
-      <Link href="/account" aria-label="Profile" className={avatarPill}>
-        <ProfileAvatar
-          isLoading={isLoading}
-          hasProfilePicture={hasProfilePicture}
-          avatarSrc={avatarSrc}
-          avatarAlt={avatarAlt}
-        />
-      </Link>
+      <span className="bg-white rounded-full p-1">
+        <Link href="/account" aria-label="Settings" className={textPill}>
+          <Settings className="size-4" />
+          <span>Settings</span>
+        </Link>
+      </span>
+      <span className="bg-white rounded-full p-1">
+        <button type="button" aria-label="Notifications" className={iconPill}>
+          <Bell className="h-4 w-4" />
+        </button>
+      </span>
+      <span className="bg-white rounded-full p-1">
+        <Link href="/account" aria-label="Profile" className={avatarPill}>
+          <ProfileAvatar
+            isLoading={isLoading}
+            hasProfilePicture={hasProfilePicture}
+            avatarSrc={avatarSrc}
+            avatarAlt={avatarAlt}
+          />
+        </Link>
+      </span>
     </div>
   );
 }
@@ -179,26 +186,31 @@ function LandingActions({
 
   if (isAuthenticated) {
     return (
-      <Link href="/dashboard" aria-label="Profile" className={avatarPill}>
-        <ProfileAvatar
-          hasProfilePicture={hasProfilePicture}
-          avatarSrc={avatarSrc}
-          avatarAlt={avatarAlt}
-        />
-      </Link>
+      <span className="bg-white rounded-full p-1">
+        <Link href="/dashboard" aria-label="Profile" className={avatarPill}>
+          <ProfileAvatar
+            hasProfilePicture={hasProfilePicture}
+            avatarSrc={avatarSrc}
+            avatarAlt={avatarAlt}
+          />
+        </Link>
+      </span>
     );
   }
 
   return (
     <div className="flex items-center gap-2">
-      <Link href="/login" className={`${textPill} gap-0 px-5`}>
-        Log in
+      <Link href="/login">
+        <Button variant="secondary">
+          <LogIn className="mr-1 h-4 w-4" />
+          Log in
+        </Button>
       </Link>
-      <Link
-        href="/register"
-        className="inline-flex h-11 items-center rounded-full bg-black px-5 text-sm font-medium text-white transition-colors hover:bg-black/90"
-      >
-        Sign up
+      <Link href="/register">
+        <Button variant="default">
+          <LogIn className="mr-1 h-4 w-4" />
+          Sign up
+        </Button>
       </Link>
     </div>
   );
