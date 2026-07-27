@@ -1,4 +1,4 @@
-import { BookOpen, Twitter, Instagram, Youtube, Linkedin } from 'lucide-react';
+import { Twitter, Instagram, Youtube, Linkedin } from 'lucide-react';
 import Link from 'next/link';
 
 const footerLinks = {
@@ -8,48 +8,51 @@ const footerLinks = {
   Legal: ['Privacy Policy', 'Terms of Service', 'Cookie Policy'],
 };
 
-const FooterSection = () => {
+const SOCIAL = [
+  { icon: Twitter, label: 'Twitter' },
+  { icon: Instagram, label: 'Instagram' },
+  { icon: Youtube, label: 'YouTube' },
+  { icon: Linkedin, label: 'LinkedIn' },
+];
+
+export default function FooterSection() {
   return (
-    <footer className="bg-foreground text-background py-16">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-8 mb-12">
-          {/* Logo and description */}
+    <footer className="mt-24 border-t border-black/5 bg-white/40 py-16 backdrop-blur">
+      <div className="mx-auto max-w-6xl px-6 sm:px-8">
+        <div className="mb-12 grid grid-cols-2 gap-8 md:grid-cols-6">
           <div className="col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <span className="font-display text-xl font-bold text-background">Mimir</span>
+            <Link
+              href="/"
+              className="inline-block text-xl font-bold text-neutral-800"
+            >
+              Mimir
             </Link>
-            <p className="text-background/60 text-sm mb-6 max-w-xs">
-              The world&apos;s most popular learning platform. Study smarter, not harder.
+            <p className="mt-4 max-w-xs text-sm text-neutral-600">
+              Spaced repetition, done right. Learn faster and remember longer.
             </p>
-            <div className="flex items-center gap-4">
-              <a href="#" className="text-background/60 hover:text-background transition-colors">
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a href="#" className="text-background/60 hover:text-background transition-colors">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="#" className="text-background/60 hover:text-background transition-colors">
-                <Youtube className="w-5 h-5" />
-              </a>
-              <a href="#" className="text-background/60 hover:text-background transition-colors">
-                <Linkedin className="w-5 h-5" />
-              </a>
+            <div className="mt-6 flex items-center gap-2">
+              {SOCIAL.map(({ icon: Icon, label }) => (
+                <a
+                  key={label}
+                  href="#"
+                  aria-label={label}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-neutral-600 transition-colors hover:bg-black/5 hover:text-neutral-900"
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
+              ))}
             </div>
           </div>
 
-          {/* Links */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h4 className="font-semibold text-background mb-4">{title}</h4>
+              <h4 className="mb-4 text-sm font-semibold text-neutral-900">{title}</h4>
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link}>
                     <a
                       href="#"
-                      className="text-background/60 hover:text-background text-sm transition-colors"
+                      className="text-sm text-neutral-600 transition-colors hover:text-neutral-900"
                     >
                       {link}
                     </a>
@@ -60,27 +63,18 @@ const FooterSection = () => {
           ))}
         </div>
 
-        <div className="border-t border-background/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-background/60 text-sm">
+        <div className="flex flex-col items-center justify-between gap-4 border-t border-black/5 pt-8 md:flex-row">
+          <p className="text-sm text-neutral-500">
             © {new Date().getFullYear()} Mimir. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            <a
-              href="#"
-              className="text-background/60 hover:text-background text-sm transition-colors"
-            >
+            <a href="#" className="text-sm text-neutral-500 transition-colors hover:text-neutral-900">
               Privacy
             </a>
-            <a
-              href="#"
-              className="text-background/60 hover:text-background text-sm transition-colors"
-            >
+            <a href="#" className="text-sm text-neutral-500 transition-colors hover:text-neutral-900">
               Terms
             </a>
-            <a
-              href="#"
-              className="text-background/60 hover:text-background text-sm transition-colors"
-            >
+            <a href="#" className="text-sm text-neutral-500 transition-colors hover:text-neutral-900">
               Cookies
             </a>
           </div>
@@ -88,6 +82,4 @@ const FooterSection = () => {
       </div>
     </footer>
   );
-};
-
-export default FooterSection;
+}

@@ -9,6 +9,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname.includes('/login') || pathname.includes('/register');
   const variant = pathname === '/' ? 'landing' : 'app';
+  const isLanding = variant === 'landing';
 
   return (
     <QueryProvider>
@@ -16,7 +17,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         {!isAuthPage && <Navbar variant={variant} />}
         {children}
 
-        {!isAuthPage && (
+        {!isAuthPage && !isLanding && (
           <footer className="fixed bottom-0 w-full border-t border-border bg-background/95 py-4 text-center text-sm text-muted-foreground backdrop-blur">
             <p>&copy; {new Date().getFullYear()} Mimir. All rights reserved.</p>
           </footer>

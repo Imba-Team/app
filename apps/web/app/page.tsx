@@ -1,23 +1,24 @@
-"use client";
-import { useAuth } from "@/contexts/AuthContext";
-import HeroSection from "./_components/HeroSection";
-import FeaturesSection from "./_components/FeaturesSection";
-import TestimonialsSection from "./_components/TestimonialsSection";
-import { StudyModesSection } from "./_components/StudyModesSection";
-import FooterSection from "./_components/FooterSection";
+import Hero from './_components/landing/Hero';
+import HowItWorks from './_components/landing/HowItWorks';
+import Features from './_components/landing/Features';
+import ProductShowcase from './_components/landing/ProductShowcase';
+import TrustStrip from './_components/landing/TrustStrip';
+import Faq from './_components/landing/Faq';
+import FinalCta from './_components/landing/FinalCta';
+import FooterSection from './_components/FooterSection';
 
-export default function Dashboard() {
-  const auth = useAuth();
-
+export default function LandingPage() {
   return (
     <>
-      <HeroSection
-        isLoading={auth.isLoading}
-        isAuthenticated={auth.isAuthenticated}
-      />
-      <StudyModesSection />
-      <FeaturesSection />
-      <TestimonialsSection />
+      <main className="mx-auto max-w-6xl space-y-20 px-6 py-12 sm:space-y-28 sm:px-8 sm:py-16">
+        <Hero />
+        <HowItWorks />
+        <Features />
+        <ProductShowcase />
+        <TrustStrip />
+        <Faq />
+        <FinalCta />
+      </main>
       <FooterSection />
     </>
   );
