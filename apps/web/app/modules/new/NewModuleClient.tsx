@@ -39,7 +39,7 @@ import { cn } from "@/lib/utils";
 // Shared field style — mirrors the AddTerm/TermItem edit form so the
 // flashcard rows feel like the same component across the app.
 const FIELD_CLASS =
-  "w-full min-h-24 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] disabled:bg-gray-50 text-base leading-relaxed";
+  "w-full min-h-24 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-gray-50 text-base leading-relaxed";
 
 interface DraftCard {
   /** Client-only id for React keys; never sent to the server. */
@@ -166,14 +166,14 @@ export default function NewModuleClient() {
         <div className="mb-6">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-x-2 text-sm text-gray-500 hover:text-[#4255FF] hover:underline underline-offset-4 transition"
+            className="inline-flex items-center gap-x-2 text-sm text-gray-500 hover:text-brand-500 hover:underline underline-offset-4 transition"
           >
             <ArrowLeft size={16} /> Back to dashboard
           </Link>
         </div>
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#4255FF]">
+          <h1 className="text-3xl font-bold text-brand-500">
             Create a new module
           </h1>
           <p className="text-gray-500 mt-1">
@@ -204,7 +204,7 @@ export default function NewModuleClient() {
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Advanced Biology"
                 disabled={saving}
-                className="w-full h-11 px-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] disabled:bg-gray-50 text-base"
+                className="w-full h-11 px-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-gray-50 text-base"
               />
             </div>
 
@@ -225,7 +225,7 @@ export default function NewModuleClient() {
                 placeholder="What is this module for?"
                 rows={2}
                 disabled={saving}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg resize-y min-h-20 focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] disabled:bg-gray-50 text-base leading-relaxed"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg resize-y min-h-20 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-gray-50 text-base leading-relaxed"
               />
             </div>
 
@@ -371,7 +371,7 @@ function VisibilityOption({
       className={cn(
         "text-left rounded-lg border p-3 transition-colors",
         selected
-          ? "border-[#4255FF] bg-[#4255FF]/5 text-[#4255FF]"
+          ? "border-brand-500 bg-brand-500/5 text-brand-500"
           : "border-gray-200 hover:border-gray-300 text-gray-700",
         disabled && "opacity-60 cursor-not-allowed",
       )}

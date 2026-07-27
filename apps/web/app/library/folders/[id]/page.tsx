@@ -91,7 +91,7 @@ export default function FolderDetailPage({
           >
             <ArrowLeft className="h-4 w-4" /> Library
           </Link>
-          <h1 className="truncate text-3xl font-bold text-[#4255FF]">
+          <h1 className="truncate text-3xl font-bold text-brand-500">
             {f.name}
           </h1>
           {f.description && (

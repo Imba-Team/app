@@ -54,7 +54,7 @@ const RESUMABLE_MODE_ROUTE: Partial<
 };
 
 const MODE_BADGE: Record<SessionHistoryItem["mode"], string> = {
-  FLASHCARD: "bg-[#4255FF]/10 text-[#4255FF] border-[#4255FF]/30",
+  FLASHCARD: "bg-brand-500/10 text-brand-500 border-brand-500/30",
   LEARN: "bg-emerald-50 text-emerald-700 border-emerald-200",
   WRITE: "bg-amber-50 text-amber-700 border-amber-200",
   SPELL: "bg-cyan-50 text-cyan-700 border-cyan-200",
@@ -117,14 +117,14 @@ export default function SessionsPageClient({ moduleId }: { moduleId: string }) {
       <div className="w-full max-w-4xl mx-auto">
         <Link
           href={`/modules/${moduleId}`}
-          className="inline-flex items-center gap-x-2 text-sm text-gray-500 hover:text-[#4255FF] hover:underline underline-offset-4 transition mb-6"
+          className="inline-flex items-center gap-x-2 text-sm text-gray-500 hover:text-brand-500 hover:underline underline-offset-4 transition mb-6"
         >
           <ArrowLeft size={16} /> Back to module
         </Link>
 
         <div className="mb-8 flex items-end justify-between gap-3 flex-wrap">
           <div>
-            <h1 className="text-3xl font-bold text-[#4255FF]">Session history</h1>
+            <h1 className="text-3xl font-bold text-brand-500">Session history</h1>
             {moduleData?.data && (
               <p className="text-gray-500 mt-1">
                 {moduleData.data.title}

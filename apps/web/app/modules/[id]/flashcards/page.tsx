@@ -436,12 +436,12 @@ export default function FlashcardsPage() {
           <div className="min-w-0">
             <button
               onClick={() => router.push(`/modules/${moduleId}`)}
-              className="text-sm text-gray-500 hover:text-[#4255FF] flex items-center gap-1"
+              className="text-sm text-gray-500 hover:text-brand-500 flex items-center gap-1"
             >
               <ArrowLeft size={16} /> Back to module
             </button>
             {moduleData?.data && (
-              <h1 className="text-2xl md:text-3xl font-bold text-[#4255FF] mt-2 truncate">
+              <h1 className="text-2xl md:text-3xl font-bold text-brand-500 mt-2 truncate">
                 {moduleData.data.title}
               </h1>
             )}

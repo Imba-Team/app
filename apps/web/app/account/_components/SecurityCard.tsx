@@ -213,7 +213,7 @@ function PasswordField({
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
           className={
-            "w-full h-10 pl-3 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] text-sm " +
+            "w-full h-10 pl-3 pr-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 text-sm " +
             (error
               ? "border-rose-300 bg-rose-50/40"
               : "border-gray-200")

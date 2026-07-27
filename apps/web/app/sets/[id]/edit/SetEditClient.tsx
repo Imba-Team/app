@@ -126,13 +126,13 @@ export default function SetEditClient({ id }: Props) {
       <div className="mb-6">
         <Link
           href={`/modules/${id}`}
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#4255FF]"
+          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500"
         >
           <ArrowLeft className="h-4 w-4" /> Back to module
         </Link>
       </div>
 
-      <h1 className="mb-6 text-3xl font-bold text-[#4255FF]">Edit module</h1>
+      <h1 className="mb-6 text-3xl font-bold text-brand-500">Edit module</h1>
 
       <Card className="mb-6">
         <CardHeader>
@@ -146,7 +146,7 @@ export default function SetEditClient({ id }: Props) {
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full h-11 px-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] text-base"
+              className="w-full h-11 px-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 text-base"
             />
           </div>
 
@@ -158,7 +158,7 @@ export default function SetEditClient({ id }: Props) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] text-base leading-relaxed"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 text-base leading-relaxed"
             />
           </div>
 
@@ -170,7 +170,7 @@ export default function SetEditClient({ id }: Props) {
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
               placeholder="e.g. Spanish"
-              className="w-full h-11 px-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] text-base"
+              className="w-full h-11 px-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 text-base"
             />
           </div>
 
@@ -309,7 +309,7 @@ function VisibilityOption({
       className={cn(
         "text-left rounded-lg border p-3 transition-colors",
         selected
-          ? "border-[#4255FF] bg-[#4255FF]/5 text-[#4255FF]"
+          ? "border-brand-500 bg-brand-500/5 text-brand-500"
           : "border-gray-200 hover:border-gray-300 text-gray-700",
       )}
     >

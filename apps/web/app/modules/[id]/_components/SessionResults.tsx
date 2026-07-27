@@ -82,7 +82,7 @@ export default function SessionResults({
           <div className="inline-flex items-center justify-center rounded-full bg-amber-100 p-3 mb-3">
             <Trophy size={28} className="text-amber-600" />
           </div>
-          <h1 className="text-3xl font-bold text-[#4255FF]">
+          <h1 className="text-3xl font-bold text-brand-500">
             Session complete
           </h1>
           <p className="text-gray-500 mt-1">
@@ -219,7 +219,7 @@ export default function SessionResults({
           </Button>
           <Link
             href={`/modules/${moduleId}/sessions`}
-            className="text-sm text-gray-500 hover:text-[#4255FF] inline-flex items-center gap-1 ml-auto"
+            className="text-sm text-gray-500 hover:text-brand-500 inline-flex items-center gap-1 ml-auto"
           >
             <History size={14} /> Session history
           </Link>
@@ -286,7 +286,7 @@ export function SessionResultsLoading() {
   return (
     <main className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-[#4255FF]" />
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-brand-500" />
         <p className="text-sm text-gray-500">Wrapping up your session…</p>
       </div>
     </main>

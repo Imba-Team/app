@@ -160,7 +160,7 @@ function FolderCard({ folder, onClick }: { folder: Folder; onClick: () => void }
   return (
     <Card onClick={onClick} className="cursor-pointer">
       <CardContent className="flex items-start gap-3 p-4">
-        <div className="rounded-md bg-[#4255FF]/10 p-2 text-[#4255FF]">
+        <div className="rounded-md bg-brand-500/10 p-2 text-brand-500">
           <FolderIcon className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">

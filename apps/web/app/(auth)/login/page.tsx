@@ -86,12 +86,12 @@ export default function AuthPage() {
 
       <div className="flex flex-1 flex-col justify-between bg-white px-8 w-full">
         <div className="flex gap-4 mb-8 items-center justify-center pt-10">
-          <span className="px-4 py-2 font-semibold text-[#4255FF] border-b-2 border-[#4255FF]">
+          <span className="px-4 py-2 font-semibold text-brand-500 border-b-2 border-brand-500">
             Login
           </span>
           <Link
             href="/register"
-            className="px-4 py-2 font-semibold text-gray-500 hover:text-[#4255FF]"
+            className="px-4 py-2 font-semibold text-gray-500 hover:text-brand-500"
           >
             Sign Up
           </Link>
@@ -100,7 +100,7 @@ export default function AuthPage() {
         {/* Middle: form */}
         <div className="flex flex-1 items-center justify-center px-6">
           <div className="w-full max-w-md">
-            <h1 className="text-4xl font-bold text-[#4255FF] mb-8 text-center">
+            <h1 className="text-4xl font-bold text-brand-500 mb-8 text-center">
               Welcome back!
             </h1>
 
@@ -171,7 +171,7 @@ export default function AuthPage() {
                   variant={"default"}
                   type="submit"
                   disabled={login.isPending}
-                  className="bg-[#4255FF] h-12 text-white py-4 rounded-xl font-semibold hover:scale-105 transition-transform duration-200 cl"
+                  className="bg-brand-400 h-12 text-neutral-900 py-4 rounded-xl font-semibold hover:scale-105 transition-transform duration-200 cl"
                 >
                   {login.isPending ? "Logging in..." : "Login"}
                 </Button>

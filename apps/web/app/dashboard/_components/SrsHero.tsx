@@ -70,21 +70,21 @@ export function SrsHero() {
   }
 
   return (
-    <Card className="bg-linear-to-br from-[#4255FF] to-[#7B49E7] text-white">
+    <Card className="bg-linear-to-br from-brand-300 to-brand-600 text-neutral-900">
       <CardContent className="flex flex-col gap-6 p-6 sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-4">
-            <div className="rounded-full bg-white/15 p-3">
+            <div className="rounded-full bg-neutral-900/10 p-3">
               <Zap className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-white/75">
+              <p className="text-xs font-medium uppercase tracking-wide text-neutral-900/70">
                 Today&apos;s review
               </p>
               <h2 className="text-2xl font-bold sm:text-3xl">
                 {total} card{total === 1 ? "" : "s"} due
               </h2>
-              <p className="mt-1 text-sm text-white/85">
+              <p className="mt-1 text-sm text-neutral-900/80">
                 Spaced repetition keeps what you&apos;ve learned from slipping.
               </p>
             </div>
@@ -92,7 +92,7 @@ export function SrsHero() {
           <Button
             asChild
             size="lg"
-            className="w-full shrink-0 bg-white text-[#4255FF] hover:bg-white/90 sm:w-auto"
+            className="w-full shrink-0 bg-neutral-900 text-white hover:bg-neutral-800 sm:w-auto"
           >
             <Link href="/srs">Start review →</Link>
           </Button>
@@ -138,8 +138,8 @@ function Chip({
     <div
       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${
         tone === "urgent" && count > 0
-          ? "bg-red-500/25 text-white"
-          : "bg-white/15 text-white/90"
+          ? "bg-rose-600/90 text-white"
+          : "bg-neutral-900/10 text-neutral-900/80"
       }`}
     >
       {icon}

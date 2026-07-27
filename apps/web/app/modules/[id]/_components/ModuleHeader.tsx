@@ -22,7 +22,7 @@ ModuleHeaderProps) {
       <div className="rounded-2xl flex justify-between items-start">
         <div className="flex-1">
           <div className="flex items-center justify-between mb-2">
-            <h1 className="text-4xl font-bold text-[#4255FF]">{module.title}</h1>
+            <h1 className="text-4xl font-bold text-brand-500">{module.title}</h1>
             {/* {isCollected &&
               module.progress &&
               module.termsCount > 0 &&

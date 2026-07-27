@@ -16,7 +16,7 @@ export function ForecastSection() {
   return (
     <section>
       <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-xl font-bold text-[#4255FF]">Next 30 days</h2>
+        <h2 className="text-xl font-bold text-brand-500">Next 30 days</h2>
         <p className="text-xs text-gray-500">Reviews you complete push cards further out.</p>
       </div>
       {forecast.isLoading ? (

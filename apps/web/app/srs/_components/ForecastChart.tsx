@@ -37,15 +37,15 @@ export function ForecastChart({ buckets }: Props) {
               <div
                 className={`w-full rounded-sm ${
                   isToday
-                    ? "bg-[#4255FF]"
+                    ? "bg-brand-400"
                     : b.dueCount > 0
-                      ? "bg-[#4255FF]/50"
+                      ? "bg-brand-500/50"
                       : "bg-gray-100"
                 }`}
                 style={{ height: `${heightPct}%` }}
               />
               {isToday && (
-                <span className="pointer-events-none absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] font-medium text-[#4255FF]">
+                <span className="pointer-events-none absolute -top-4 left-1/2 -translate-x-1/2 text-[10px] font-medium text-brand-500">
                   today
                 </span>
               )}

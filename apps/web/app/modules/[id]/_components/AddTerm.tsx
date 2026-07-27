@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 // identical size/typography — asymmetry between them makes the form
 // feel visually off-balance for a symmetric concept.
 const FIELD_CLASS =
-  "w-full min-h-24 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] disabled:bg-gray-50 text-base leading-relaxed";
+  "w-full min-h-24 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-gray-50 text-base leading-relaxed";
 
 interface AddTermProps {
   onSubmit: (term: string, definition: string) => void;
@@ -110,7 +110,7 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
             setIsAdding(true);
           }
         }}
-        className="w-full mt-4 py-4 flex items-center justify-center gap-2 font-medium cursor-pointer hover:text-[#4255FF] transition-colors"
+        className="w-full mt-4 py-4 flex items-center justify-center gap-2 font-medium cursor-pointer hover:text-brand-500 transition-colors"
         aria-label="Add new term (Ctrl+N)"
       >
         <Plus size={18} />

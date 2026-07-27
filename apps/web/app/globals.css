@@ -40,8 +40,15 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  /* Brand palette — semantic yellow scale.
+     - 300/400: fills, backgrounds, large accents.
+     - 500: readable text on white, icons, borders.
+     - 600: deep gradient endpoints.
+     Swap these four values to re-theme the entire app. */
   --color-brand-300: #fcd34d;
   --color-brand-400: #f5c518;
+  --color-brand-500: #ca8a04;
+  --color-brand-600: #854d0e;
 }
 
 :root {

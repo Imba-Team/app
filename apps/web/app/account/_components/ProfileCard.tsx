@@ -183,7 +183,7 @@ export default function ProfileCard({ user }: ProfileCardProps) {
               className={cn(
                 "absolute -bottom-1 -right-1 size-8 rounded-full bg-white border border-gray-200 shadow-sm",
                 "flex items-center justify-center text-gray-600",
-                "hover:text-[#4255FF] hover:border-[#4255FF] transition-colors",
+                "hover:text-brand-500 hover:border-brand-500 transition-colors",
                 uploading && "cursor-wait",
               )}
             >
@@ -213,7 +213,7 @@ export default function ProfileCard({ user }: ProfileCardProps) {
                     maxLength={50}
                     placeholder="Your name"
                     disabled={saving}
-                    className="w-full h-10 px-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] disabled:bg-gray-50 text-base"
+                    className="w-full h-10 px-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-gray-50 text-base"
                   />
                 </div>
                 <div>
@@ -234,7 +234,7 @@ export default function ProfileCard({ user }: ProfileCardProps) {
                     rows={3}
                     placeholder="Vocabulary nerd. Always learning."
                     disabled={saving}
-                    className="w-full min-h-20 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] disabled:bg-gray-50 text-sm leading-relaxed"
+                    className="w-full min-h-20 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-gray-50 text-sm leading-relaxed"
                   />
                 </div>
               </div>

@@ -204,7 +204,7 @@ export default function TestPageClient() {
   return (
     <main className="min-h-screen overflow-x-hidden p-8 bg-gray-100">
       {moduleInfo && (
-        <div className="text-[#4255FF] pt-10 mb-8 max-w-4xl mx-auto">
+        <div className="text-brand-500 pt-10 mb-8 max-w-4xl mx-auto">
           <h1 className="text-4xl font-bold">{moduleInfo.title}</h1>
           <p className="text-gray-600 mt-4">{moduleInfo.description}</p>
         </div>
@@ -215,7 +215,7 @@ export default function TestPageClient() {
       <header className="max-w-4xl mx-auto">
         <div className="w-full bg-gray-300 rounded-full h-2 mb-4">
           <div
-            className="h-2 rounded-full bg-[#4255FF] transition-all"
+            className="h-2 rounded-full bg-brand-400 transition-all"
             style={{ width: `${progressPct}%` }}
           />
         </div>
@@ -266,7 +266,7 @@ export default function TestPageClient() {
                         onClick={() => handleMatchSelectLeft(p.term)}
                         className={`w-full text-left p-3 rounded-xl mb-2 border ${
                           matchLeftSelected === p.term
-                            ? "border-[#4255FF] bg-[#eef2ff]"
+                            ? "border-brand-500 bg-brand-300/20"
                             : "border-gray-200 bg-white"
                         }`}
                       >
@@ -289,7 +289,7 @@ export default function TestPageClient() {
                             <motion.button
                               layout
                               onClick={() => handleMatchSelectRight(assigned)}
-                              className="w-full text-left p-3 rounded-xl border bg-[#eef2ff] border-[#4255FF]"
+                              className="w-full text-left p-3 rounded-xl border bg-brand-300/20 border-brand-500"
                             >
                               {assigned}
                             </motion.button>
@@ -328,7 +328,7 @@ export default function TestPageClient() {
 
                   <button
                     onClick={submitMatching}
-                    className=" px-4 py-2 bg-[#4255FF] text-white rounded-xl"
+                    className=" px-4 py-2 bg-brand-400 text-neutral-900 rounded-xl"
                   >
                     Submit Matching
                   </button>
@@ -374,7 +374,7 @@ export default function TestPageClient() {
                 onClick={() => {
                   window.location.reload();
                 }}
-                className="px-4 py-2 bg-[#4255FF] text-white rounded"
+                className="px-4 py-2 bg-brand-400 text-neutral-900 rounded"
               >
                 Retry
               </button>
@@ -416,7 +416,7 @@ function WrittenQuestion({
       <div className="flex justify-end">
         <button
           onClick={() => onSubmit(val)}
-          className="px-4 py-2 bg-[#4255FF] text-white rounded"
+          className="px-4 py-2 bg-brand-400 text-neutral-900 rounded"
         >
           Submit
         </button>
@@ -450,7 +450,7 @@ function WrittenQuestion2({
       <div className="flex justify-end">
         <button
           onClick={() => onSubmit(val)}
-          className="px-4 py-2 bg-[#4255FF] text-white rounded"
+          className="px-4 py-2 bg-brand-400 text-neutral-900 rounded"
         >
           Submit
         </button>

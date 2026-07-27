@@ -217,7 +217,7 @@ function CommunityCard({ hit, onOpen }: { hit: CommunitySearchHit; onOpen: () =>
               {hit.cardCount} {hit.cardCount === 1 ? 'card' : 'cards'}
             </span>
             {hit.language && (
-              <span className="bg-[#4255FF]/10 text-[#4255FF] rounded-full px-3 py-1 text-xs font-medium">
+              <span className="bg-brand-500/10 text-brand-500 rounded-full px-3 py-1 text-xs font-medium">
                 {hit.language}
               </span>
             )}

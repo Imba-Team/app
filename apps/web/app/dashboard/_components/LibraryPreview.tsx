@@ -37,7 +37,7 @@ export function LibraryPreview() {
         <h2 className="text-xl font-bold text-neutral-700">Your library</h2>
         <Link
           href="/library"
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#4255FF]"
+          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500"
         >
           <Button size="sm" variant="outline">
             Open library <ArrowRight className="h-3 w-3" />
@@ -102,7 +102,7 @@ function FolderRow({ folder }: { folder: Folder }) {
         href={`/library/folders/${folder.id}`}
         className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-gray-50"
       >
-        <div className="rounded-md bg-[#4255FF]/10 p-1.5 text-[#4255FF]">
+        <div className="rounded-md bg-brand-500/10 p-1.5 text-brand-500">
           <FolderIcon className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">

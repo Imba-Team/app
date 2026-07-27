@@ -51,7 +51,7 @@ function SectionShell({ children }: { children: React.ReactNode }) {
         <h2 className="text-xl font-bold text-neutral-700">Popular on Mimir</h2>
         <Link
           href="/discover"
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#4255FF]"
+          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500"
         >
           <Button size="sm" variant="outline">
             Discover more <ArrowRight className="h-3 w-3" />
@@ -94,12 +94,12 @@ function DiscoverCard({ set }: { set: Module }) {
 function DiscoverCTA() {
   return (
     <Link href="/discover" className="group block">
-      <Card className="h-full bg-[#4255FF]/5 transition group-hover:bg-[#4255FF]/10">
+      <Card className="h-full bg-brand-500/5 transition group-hover:bg-brand-500/10">
         <CardContent className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center">
-          <div className="rounded-full bg-[#4255FF]/10 p-2 text-[#4255FF]">
+          <div className="rounded-full bg-brand-500/10 p-2 text-brand-500">
             <Compass className="h-5 w-5" />
           </div>
-          <p className="text-sm font-semibold text-[#4255FF]">Discover more</p>
+          <p className="text-sm font-semibold text-brand-500">Discover more</p>
           <p className="text-[11px] text-gray-500">Browse the full community catalog</p>
         </CardContent>
       </Card>

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 // Kept in sync with AddTerm — matching class means the inline editor
 // looks and behaves identically to the "Add term" form.
 const EDIT_FIELD_CLASS =
-  "w-full min-h-24 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] disabled:bg-gray-50 text-base leading-relaxed";
+  "w-full min-h-24 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-gray-50 text-base leading-relaxed";
 import {
   DropdownMenu,
   DropdownMenuContent,

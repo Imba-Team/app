@@ -139,7 +139,7 @@ export default function LearnPageClient({ id }: { id: string }) {
       <div className="w-full max-w-4xl mb-6 flex items-center justify-between gap-3 flex-wrap">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-x-2 text-sm text-gray-500 hover:text-[#4255FF] hover:underline underline-offset-4 transition"
+          className="inline-flex items-center gap-x-2 text-sm text-gray-500 hover:text-brand-500 hover:underline underline-offset-4 transition"
         >
           <ArrowLeft size={16} /> Back to dashboard
         </Link>
@@ -147,14 +147,14 @@ export default function LearnPageClient({ id }: { id: string }) {
           {isOwner && (
             <Link
               href={`/sets/${id}/edit`}
-              className="inline-flex items-center gap-x-1.5 text-sm text-gray-500 hover:text-[#4255FF] hover:underline underline-offset-4 transition"
+              className="inline-flex items-center gap-x-1.5 text-sm text-gray-500 hover:text-brand-500 hover:underline underline-offset-4 transition"
             >
               <Edit size={16} /> Edit
             </Link>
           )}
           <Link
             href={`/modules/${id}/sessions`}
-            className="inline-flex items-center gap-x-1.5 text-sm text-gray-500 hover:text-[#4255FF] hover:underline underline-offset-4 transition"
+            className="inline-flex items-center gap-x-1.5 text-sm text-gray-500 hover:text-brand-500 hover:underline underline-offset-4 transition"
           >
             <History size={16} /> Session history
           </Link>
@@ -266,7 +266,7 @@ export default function LearnPageClient({ id }: { id: string }) {
         ) : (
           <>
             <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
-              <h3 className="text-2xl font-semibold text-[#4255FF]">Terms</h3>
+              <h3 className="text-2xl font-semibold text-brand-500">Terms</h3>
 
               {/* Settings dropdown — collects destructive / advanced actions
                   so they don't clutter the main surface. Reset lives here

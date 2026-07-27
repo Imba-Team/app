@@ -41,7 +41,7 @@ export default function ModuleListItem({
             <Link
               href={`/sets/${module.id}/edit`}
               onClick={(e) => e.stopPropagation()}
-              className="text-gray-500 hover:text-[#4255FF] hover:scale-110 transition"
+              className="text-gray-500 hover:text-brand-500 hover:scale-110 transition"
               aria-label="Edit module"
               title="Edit module"
             >

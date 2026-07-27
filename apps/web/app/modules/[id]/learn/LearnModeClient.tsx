@@ -241,12 +241,12 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
           <div className="min-w-0">
             <button
               onClick={() => router.push(`/modules/${moduleId}`)}
-              className="text-sm text-gray-500 hover:text-[#4255FF] flex items-center gap-1"
+              className="text-sm text-gray-500 hover:text-brand-500 flex items-center gap-1"
             >
               <ArrowLeft size={16} /> Back to module
             </button>
             {moduleData?.data && (
-              <h1 className="text-2xl md:text-3xl font-bold text-[#4255FF] mt-2 truncate">
+              <h1 className="text-2xl md:text-3xl font-bold text-brand-500 mt-2 truncate">
                 {moduleData.data.title}
               </h1>
             )}
@@ -404,9 +404,9 @@ function McChoices({
             disabled={disabled}
             className={cn(
               "text-left rounded-xl border-2 p-4 transition-all",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4255FF]/40",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40",
               state === "idle" &&
-                "border-gray-200 hover:border-[#4255FF] hover:bg-[#4255FF]/5",
+                "border-gray-200 hover:border-brand-500 hover:bg-brand-400/5",
               state === "correct" && "border-emerald-500 bg-emerald-50",
               state === "wrong" && "border-rose-500 bg-rose-50",
               state === "muted" && "border-gray-200 opacity-50",
@@ -492,7 +492,7 @@ function WrittenPrompt({
         placeholder="Type your answer…"
         rows={3}
         disabled={disabled}
-        className="w-full min-h-24 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-[#4255FF]/40 focus:border-[#4255FF] disabled:bg-gray-50 text-base leading-relaxed"
+        className="w-full min-h-24 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-gray-50 text-base leading-relaxed"
       />
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <span className="text-xs text-gray-500">
