@@ -124,6 +124,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    scroll-behavior: smooth;
+    /* Keep anchor targets clear of the sticky navbar (h-11 + py-4 ~ 76px). */
+    scroll-padding-top: 5.5rem;
+  }
   body {
     @apply text-foreground;
     background: linear-gradient(135deg, #eef0f2 0%, #f7f4e4 55%, #fdf1b8 100%);
