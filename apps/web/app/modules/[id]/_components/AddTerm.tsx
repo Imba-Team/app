@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button";
 // identical size/typography — asymmetry between them makes the form
 // feel visually off-balance for a symmetric concept.
 const FIELD_CLASS =
-  "w-full min-h-24 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-gray-50 text-base leading-relaxed";
+  "w-full min-h-28 resize-y rounded-2xl border border-black/10 bg-white px-4 py-3 text-base leading-relaxed text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/20 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40 disabled:bg-neutral-50";
+
+const KBD_CLASS =
+  "font-mono rounded border border-black/10 bg-white px-1 text-neutral-700";
 
 interface AddTermProps {
   onSubmit: (term: string, definition: string) => void;
@@ -110,12 +113,12 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
             setIsAdding(true);
           }
         }}
-        className="w-full mt-4 py-4 flex items-center justify-center gap-2 font-medium cursor-pointer hover:text-brand-500 transition-colors"
+        className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 py-4 font-medium text-neutral-700 transition-colors hover:text-brand-500"
         aria-label="Add new term (Ctrl+N)"
       >
         <Plus size={18} />
         Add new term
-        <kbd className="ml-2 hidden sm:inline text-[10px] font-mono border border-gray-300 rounded px-1.5 py-0.5 text-gray-500">
+        <kbd className="ml-2 hidden rounded border border-black/10 bg-white px-1.5 py-0.5 font-mono text-[10px] text-neutral-500 sm:inline">
           Ctrl+N
         </kbd>
       </Card>
@@ -123,10 +126,10 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
   }
 
   return (
-    <Card className="w-full mt-4 p-4 space-y-3">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1">
-          <label htmlFor="new-term" className="text-xs font-medium text-gray-500">
+    <Card className="mt-4 w-full gap-4 px-5 py-5">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <label htmlFor="new-term" className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
             Term
           </label>
           <textarea
@@ -155,7 +158,7 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
         </div>
 
         <div className="space-y-1">
-          <label htmlFor="new-def" className="text-xs font-medium text-gray-500">
+          <label htmlFor="new-def" className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
             Definition
           </label>
           <textarea
@@ -180,19 +183,16 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="text-xs text-gray-500 flex flex-wrap gap-x-3 gap-y-1">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-black/5 pt-4">
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500">
           <span>
-            <kbd className="font-mono border border-gray-300 rounded px-1">Enter</kbd>{" "}
-            to add
+            <kbd className={KBD_CLASS}>Enter</kbd> to add
           </span>
           <span>
-            <kbd className="font-mono border border-gray-300 rounded px-1">Shift+Enter</kbd>{" "}
-            new line
+            <kbd className={KBD_CLASS}>Shift+Enter</kbd> new line
           </span>
           <span>
-            <kbd className="font-mono border border-gray-300 rounded px-1">Esc</kbd>{" "}
-            cancel
+            <kbd className={KBD_CLASS}>Esc</kbd> cancel
           </span>
         </div>
         <div className="flex gap-2">

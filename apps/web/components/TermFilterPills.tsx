@@ -90,7 +90,7 @@ export default function TermFilterPills({
       role="radiogroup"
       aria-label="Filter cards"
       className={cn(
-        "inline-flex flex-wrap gap-1.5 p-1 bg-gray-100 rounded-full",
+        "inline-flex flex-wrap items-center gap-1 rounded-full border border-black/5 bg-white p-1",
         className,
       )}
     >
@@ -103,17 +103,17 @@ export default function TermFilterPills({
             aria-checked={selected}
             onClick={() => onChange(o.key)}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors",
+              "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
               selected
-                ? "bg-white text-gray-900 shadow-sm"
-                : "text-gray-500 hover:text-gray-700",
+                ? "bg-neutral-900 text-white"
+                : "text-neutral-700 hover:bg-black/5",
             )}
           >
             {o.dot && <span className={cn("size-2 rounded-full", o.dot)} />}
             {o.icon && (
               <span
                 className={
-                  selected ? "text-yellow-500" : "text-gray-400"
+                  selected ? "text-brand-300" : "text-neutral-400"
                 }
               >
                 {o.icon}

@@ -11,7 +11,7 @@ import {
   Search,
   Settings2,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import TermItem from './_components/TermItem';
@@ -53,6 +53,18 @@ import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 import { Input } from '@/components/ui/input';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+
+type ModeCard = {
+  href: (id: string) => string;
+  label: string;
+  img: string;
+};
+
+const MODE_CARDS: ModeCard[] = [
+  { href: (id) => `/modules/${id}/flashcards`, label: 'Flashcards', img: '/images/img3.png' },
+  { href: (id) => `/modules/${id}/learn`, label: 'Learn', img: '/images/img1.png' },
+  { href: (id) => `/modules/${id}/test`, label: 'Test', img: '/images/img4.png' },
+];
 
 export default function LearnPageClient({ id }: { id: string }) {
   const queryClient = useQueryClient();
@@ -131,142 +143,102 @@ export default function LearnPageClient({ id }: { id: string }) {
   }
 
   return (
-    <main className="flex flex-col items-center min-h-screen bg-gray-50 relative p-8 pb-20">
+    <main className="mx-auto w-full max-w-4xl space-y-8 px-6 py-8 sm:px-8">
       {/* Top navigation — "Back to dashboard" belongs here, not at the
           bottom, so it's discoverable without scrolling to the end of the
           term list. History lives here too so learners can jump to
           their study record without hunting through the Settings menu. */}
-      <div className="w-full max-w-4xl mb-6 flex items-center justify-between gap-3 flex-wrap">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-x-2 text-sm text-gray-500 hover:text-brand-500 hover:underline underline-offset-4 transition"
-        >
-          <ArrowLeft size={16} /> Back to dashboard
-        </Link>
-        <div className="inline-flex items-center gap-4">
-          {isOwner && (
-            <Link
-              href={`/sets/${id}/edit`}
-              className="inline-flex items-center gap-x-1.5 text-sm text-gray-500 hover:text-brand-500 hover:underline underline-offset-4 transition"
-            >
-              <Edit size={16} /> Edit
-            </Link>
-          )}
-          <Link
-            href={`/modules/${id}/sessions`}
-            className="inline-flex items-center gap-x-1.5 text-sm text-gray-500 hover:text-brand-500 hover:underline underline-offset-4 transition"
-          >
-            <History size={16} /> Session history
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/dashboard">
+            <ArrowLeft className="h-4 w-4" />
+            Back to dashboard
           </Link>
+        </Button>
+        <div className="flex items-center gap-1">
+          {isOwner && (
+            <Button asChild variant="ghost" size="sm">
+              <Link href={`/sets/${id}/edit`}>
+                <Edit className="h-4 w-4" />
+                Edit
+              </Link>
+            </Button>
+          )}
+          <Button asChild variant="ghost" size="sm">
+            <Link href={`/modules/${id}/sessions`}>
+              <History className="h-4 w-4" />
+              Session history
+            </Link>
+          </Button>
         </div>
       </div>
-
-      <div className="w-full max-w-4xl mb-8">
-        {loading ? (
-          <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <div>
-                <Skeleton className="h-10 w-52 bg-gray-200 mb-3" />
-                <Skeleton className="h-5 w-72 bg-gray-200" />
-              </div>
-              <div className="flex gap-x-4 items-center">
-                <Skeleton className="size-10 rounded-full bg-gray-200 mt-4" />
-                <Skeleton className="h-5 w-24 bg-gray-200 mt-4" />
-              </div>
-            </div>
-            <div className="space-y-4 my-10">
-              <div className="flex gap-x-4">
-                <Skeleton className="h-5 w-30 bg-gray-200" />
-                <Skeleton className="h-5 w-30 bg-gray-200" />
-                <Skeleton className="h-5 w-30 bg-gray-200" />
-              </div>
-              <Skeleton className="h-5 w-full bg-gray-200" />
-            </div>
-          </div>
-        ) : moduleInfo ? (
-          <ModuleHeader
-            module={{
-              title: moduleInfo.title,
-              description: moduleInfo.description ?? '',
-              termsCount: allTerms.length,
-              isPrivate: moduleInfo.isPrivate,
-              ownerName: moduleInfo.ownerName ?? '',
-              ownerImg: moduleInfo.ownerImg ?? '',
-              isOwner: moduleInfo.isOwner,
-              isCollected: moduleInfo.isCollected,
-            }}
-          />
-        ) : (
-          <div className="p-6 bg-yellow-50 text-yellow-800 rounded-2xl">
-            Module not found
-          </div>
-        )}
-      </div>
-
-      <hr className="w-full max-w-4xl mb-8 border-gray-300" />
 
       {loading ? (
-        <div className="w-full max-w-4xl space-y-4 flex flex-col items-center">
-          <Skeleton className="w-1/4 h-10 bg-gray-200 mb-3" />
-          <Skeleton className="w-full h-40 bg-gray-200 mb-3" />
-        </div>
-      ) : isCollected ? (
-        <>
-          <h2 className="text-2xl font-semibold mb-6">Choose your mode</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
-            <Link href={`/modules/${id}/flashcards`}>
-              <Card className="p-5 text-xl font-semibold flex flex-col items-center cursor-pointer">
-                <Image src="/images/img3.png" width={150} height={150} alt="Flashcards" />
-                Flashcards
-              </Card>
-            </Link>
-
-            <Link href={`/modules/${id}/learn`}>
-              <Card className="p-5 text-xl font-semibold flex flex-col items-center cursor-pointer">
-                <Image src="/images/img1.png" width={150} height={150} alt="Learn" />
-                Learn
-              </Card>
-            </Link>
-
-            <Link href={`/modules/${id}/test`}>
-              <Card className="p-5 text-xl font-semibold flex flex-col items-center cursor-pointer">
-                <Image src="/images/img4.png" width={150} height={150} alt="Test" />
-                Test
-              </Card>
-            </Link>
-          </div>
-        </>
+        <ModuleHeaderSkeleton />
+      ) : moduleInfo ? (
+        <ModuleHeader
+          module={{
+            title: moduleInfo.title,
+            description: moduleInfo.description ?? '',
+            termsCount: allTerms.length,
+            isPrivate: moduleInfo.isPrivate,
+            ownerName: moduleInfo.ownerName ?? '',
+            ownerImg: moduleInfo.ownerImg ?? '',
+            isOwner: moduleInfo.isOwner,
+            isCollected: moduleInfo.isCollected,
+          }}
+        />
       ) : (
-        <Card className="bg-yellow-50 text-yellow-800 w-full max-w-4xl">
-          <CardHeader className="text-lg font-semibold">
-            Module not collected
-          </CardHeader>
-          <CardContent>
-            You need to collect this module to start learning. Go back to the
-            dashboard and collect it first.
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => collectModule(id)}
-            >
-              Add to Collected Modules
+        <Card>
+          <CardContent className="text-amber-800">
+            Module not found.
+          </CardContent>
+        </Card>
+      )}
+
+      {loading ? (
+        <ModeChooserSkeleton />
+      ) : isCollected ? (
+        <section>
+          <h2 className="mb-4 text-xl font-bold text-neutral-700">Choose your mode</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {MODE_CARDS.map((m) => (
+              <Link key={m.label} href={m.href(id)} className="group">
+                <Card className="cursor-pointer transition-all hover:-translate-y-0.5 hover:bg-brand-300/20">
+                  <CardContent className="flex flex-col items-center gap-3">
+                    <Image src={m.img} width={120} height={120} alt={m.label} />
+                    <span className="text-lg font-semibold text-neutral-800">
+                      {m.label}
+                    </span>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <Card>
+          <CardContent className="flex flex-col items-start gap-3">
+            <p className="font-semibold text-neutral-900">
+              Module not in your collection
+            </p>
+            <p className="text-sm text-neutral-600">
+              Collect this module to start studying it.
+            </p>
+            <Button onClick={() => collectModule(id)}>
+              Add to your library
             </Button>
           </CardContent>
         </Card>
       )}
 
-      <div className="w-full max-w-4xl mt-10">
+      <section>
         {loading ? (
-          <div>
-            <Skeleton className="h-10 w-48 bg-gray-200 mb-4 rounded-xl" />
-            <Skeleton className="h-16 w-full bg-gray-200 mb-4 rounded-xl" />
-            <Skeleton className="h-16 w-full bg-gray-200 mb-4 rounded-xl" />
-            <Skeleton className="h-16 w-full bg-gray-200 mb-4 rounded-xl" />
-          </div>
+          <TermsSkeleton />
         ) : (
           <>
-            <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
-              <h3 className="text-2xl font-semibold text-brand-500">Terms</h3>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-xl font-bold text-neutral-700">Terms</h3>
 
               {/* Settings dropdown — collects destructive / advanced actions
                   so they don't clutter the main surface. Reset lives here
@@ -277,10 +249,9 @@ export default function LearnPageClient({ id }: { id: string }) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex items-center gap-2"
                       aria-label="Term list settings"
                     >
-                      <Settings2 size={16} />
+                      <Settings2 className="h-4 w-4" />
                       Settings
                     </Button>
                   </DropdownMenuTrigger>
@@ -289,16 +260,16 @@ export default function LearnPageClient({ id }: { id: string }) {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link href={`/modules/${id}/sessions`}>
-                        <History size={16} className="mr-2" />
+                        <History className="mr-2 h-4 w-4" />
                         Session history
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => setResetOpen(true)}
-                      className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                      className="text-rose-600 focus:bg-rose-50 focus:text-rose-600"
                     >
-                      <RotateCcw size={16} className="mr-2" />
+                      <RotateCcw className="mr-2 h-4 w-4" />
                       Reset progress
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -311,26 +282,26 @@ export default function LearnPageClient({ id }: { id: string }) {
                 stays available for guest-viewed modules too, because
                 the DTO-level `?q=` doesn't require a progress row. */}
             {allTerms.length > 1 && (
-              <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
                 {isCollected && (
                   <TermFilterPills value={filter} onChange={setFilter} />
                 )}
                 <div className="relative flex-1 sm:min-w-64">
                   <Search
                     size={16}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
                   />
                   <Input
                     type="text"
                     placeholder="Search terms and definitions…"
-                    className="h-10 pl-9 pr-9"
+                    className="pl-10 pr-10"
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                   />
                   {termsFetching && debouncedSearch && (
                     <Loader2
                       size={16}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 animate-spin"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-neutral-400"
                     />
                   )}
                 </div>
@@ -339,18 +310,18 @@ export default function LearnPageClient({ id }: { id: string }) {
 
             {terms.length === 0 && hasActiveFilter ? (
               <Card>
-                <CardContent className="p-8 flex flex-col items-center gap-2 text-center">
-                  <p className="text-gray-800 font-semibold">
+                <CardContent className="flex flex-col items-center gap-2 py-6 text-center">
+                  <p className="font-semibold text-neutral-900">
                     {debouncedSearch
                       ? `No terms match “${debouncedSearch}”`
                       : 'No terms in this bucket'}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-neutral-500">
                     {debouncedSearch
                       ? 'Try a different search, or clear the filter.'
                       : 'Study more, or switch back to All.'}
                   </p>
-                  <div className="flex gap-2 mt-2">
+                  <div className="mt-2 flex gap-2">
                     {debouncedSearch && (
                       <Button
                         variant="ghost"
@@ -395,7 +366,7 @@ export default function LearnPageClient({ id }: { id: string }) {
         {isOwner && (
           <AddTerm onSubmit={submitNewTerm} isSubmitting={createTerm.isPending} />
         )}
-      </div>
+      </section>
 
       <Dialog open={resetOpen} onOpenChange={(open) => !resetting && setResetOpen(open)}>
         <DialogContent>
@@ -416,9 +387,9 @@ export default function LearnPageClient({ id }: { id: string }) {
               Cancel
             </Button>
             <Button
+              variant="destructive"
               onClick={confirmReset}
               disabled={resetting}
-              className="bg-red-600 hover:bg-red-700"
             >
               {resetting ? 'Resetting…' : 'Reset progress'}
             </Button>
@@ -426,5 +397,42 @@ export default function LearnPageClient({ id }: { id: string }) {
         </DialogContent>
       </Dialog>
     </main>
+  );
+}
+
+function ModuleHeaderSkeleton() {
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-4">
+        <Skeleton className="h-9 w-64 rounded-full" />
+        <Skeleton className="h-4 w-full rounded-full" />
+        <div className="flex gap-2">
+          <Skeleton className="h-6 w-20 rounded-full" />
+          <Skeleton className="h-6 w-20 rounded-full" />
+        </div>
+        <Skeleton className="h-2 w-full rounded-full" />
+      </CardContent>
+    </Card>
+  );
+}
+
+function ModeChooserSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <Skeleton key={i} className="h-40 rounded-3xl" />
+      ))}
+    </div>
+  );
+}
+
+function TermsSkeleton() {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="mb-2 h-6 w-24 rounded-full" />
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Skeleton key={i} className="h-16 w-full rounded-3xl" />
+      ))}
+    </div>
   );
 }

@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button";
 // Kept in sync with AddTerm — matching class means the inline editor
 // looks and behaves identically to the "Add term" form.
 const EDIT_FIELD_CLASS =
-  "w-full min-h-24 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-gray-50 text-base leading-relaxed";
+  "w-full min-h-28 resize-y rounded-2xl border border-black/10 bg-white px-4 py-3 text-base leading-relaxed text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/20 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40 disabled:bg-neutral-50";
+
+const KBD_CLASS =
+  "font-mono rounded border border-black/10 bg-white px-1 text-neutral-700";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,17 +50,17 @@ const STATUS_STYLES: Record<
   completed: {
     dot: "bg-emerald-500",
     label: "Mastered",
-    badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    badge: "bg-emerald-50 text-emerald-700",
   },
   in_progress: {
     dot: "bg-amber-500",
     label: "Learning",
-    badge: "bg-amber-50 text-amber-700 border-amber-200",
+    badge: "bg-amber-50 text-amber-700",
   },
   not_started: {
-    dot: "bg-gray-300",
+    dot: "bg-neutral-300",
     label: "New",
-    badge: "bg-gray-100 text-gray-600 border-gray-200",
+    badge: "bg-neutral-100 text-neutral-600",
   },
 };
 
@@ -118,151 +121,154 @@ export default function TermItem({
 
   const status = STATUS_STYLES[term.status ?? "not_started"] ?? STATUS_STYLES.not_started;
 
+  const StatusPill = (
+    <div
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium",
+        status.badge,
+      )}
+      title={`Mastery: ${status.label}`}
+      aria-label={`Mastery: ${status.label}`}
+    >
+      <span className={cn("size-2 rounded-full", status.dot)} />
+      {status.label}
+    </div>
+  );
+
+  if (isEditing) {
+    return (
+      <Card className="w-full gap-4 px-5 py-5">
+        <div className="flex items-center justify-between gap-3">
+          {StatusPill}
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-brand-500">
+            <span className="size-1.5 rounded-full bg-brand-400" />
+            Editing
+          </span>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <label
+              htmlFor={`edit-term-${term.id}`}
+              className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500"
+            >
+              Term
+            </label>
+            <textarea
+              ref={editTermRef}
+              id={`edit-term-${term.id}`}
+              value={editTermValue}
+              onChange={(e) => setEditTermValue(e.target.value)}
+              onKeyDown={handleTermKey}
+              rows={3}
+              className={EDIT_FIELD_CLASS}
+              placeholder="e.g. photosynthesis"
+            />
+          </div>
+          <div className="space-y-2">
+            <label
+              htmlFor={`edit-def-${term.id}`}
+              className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500"
+            >
+              Definition
+            </label>
+            <textarea
+              ref={editDefRef}
+              id={`edit-def-${term.id}`}
+              value={editDefValue}
+              onChange={(e) => setEditDefValue(e.target.value)}
+              onKeyDown={handleDefKey}
+              rows={3}
+              className={EDIT_FIELD_CLASS}
+              placeholder="Explanation (Shift+Enter for a new line)"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-black/5 pt-4">
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500">
+            <span>
+              <kbd className={KBD_CLASS}>Enter</kbd> save
+            </span>
+            <span>
+              <kbd className={KBD_CLASS}>Shift+Enter</kbd> new line
+            </span>
+            <span>
+              <kbd className={KBD_CLASS}>Esc</kbd> cancel
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setIsEditing(false)}
+            >
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleSaveEdit} disabled={!canSave}>
+              Save
+            </Button>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
   return (
-    <Card className="w-full flex p-4 items-center flex-row gap-3">
-      {/* Status pill */}
-      <div
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium shrink-0",
-          status.badge,
-        )}
-        title={`Mastery: ${status.label}`}
-        aria-label={`Mastery: ${status.label}`}
-      >
-        <span className={cn("size-2 rounded-full", status.dot)} />
-        {status.label}
-      </div>
+    <Card className="w-full flex-row items-center gap-3 px-4 py-4">
+      {StatusPill}
 
-      <div className="flex-1 min-w-0">
-        {isEditing ? (
-          <div className="space-y-3">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <label
-                  htmlFor={`edit-term-${term.id}`}
-                  className="text-xs font-medium text-gray-500"
-                >
-                  Term
-                </label>
-                <textarea
-                  ref={editTermRef}
-                  id={`edit-term-${term.id}`}
-                  value={editTermValue}
-                  onChange={(e) => setEditTermValue(e.target.value)}
-                  onKeyDown={handleTermKey}
-                  rows={3}
-                  className={EDIT_FIELD_CLASS}
-                  placeholder="Term"
-                />
-              </div>
-              <div className="space-y-1">
-                <label
-                  htmlFor={`edit-def-${term.id}`}
-                  className="text-xs font-medium text-gray-500"
-                >
-                  Definition
-                </label>
-                <textarea
-                  ref={editDefRef}
-                  id={`edit-def-${term.id}`}
-                  value={editDefValue}
-                  onChange={(e) => setEditDefValue(e.target.value)}
-                  onKeyDown={handleDefKey}
-                  rows={3}
-                  className={EDIT_FIELD_CLASS}
-                  placeholder="Explanation (Shift+Enter for a new line)"
-                />
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-xs text-gray-500 flex flex-wrap gap-x-3 gap-y-1">
-                <span>
-                  <kbd className="font-mono border border-gray-300 rounded px-1">
-                    Enter
-                  </kbd>{" "}
-                  save
-                </span>
-                <span>
-                  <kbd className="font-mono border border-gray-300 rounded px-1">
-                    Shift+Enter
-                  </kbd>{" "}
-                  new line
-                </span>
-                <span>
-                  <kbd className="font-mono border border-gray-300 rounded px-1">
-                    Esc
-                  </kbd>{" "}
-                  cancel
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setIsEditing(false)}
-                >
-                  Cancel
-                </Button>
-                <Button size="sm" onClick={handleSaveEdit} disabled={!canSave}>
-                  Save
-                </Button>
-              </div>
-            </div>
+      <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+        <div className="flex min-w-0 gap-3">
+          <div className="truncate text-base font-semibold text-neutral-900 sm:text-lg">
+            {term.term}
           </div>
-        ) : (
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex gap-3 min-w-0">
-              <div className="font-semibold text-base sm:text-lg truncate">
-                {term.term}
-              </div>
-              <div className="w-px bg-gray-200 shrink-0" />
-              <div className="text-gray-700 text-base sm:text-lg truncate">
-                {term.definition}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1 shrink-0">
-              {isCollected && (
-                <Button
-                  onClick={onToggleStar}
-                  variant="ghost"
-                  size="icon"
-                  aria-label={term.isStarred ? "Remove star" : "Add star"}
-                  aria-pressed={term.isStarred}
-                >
-                  <Star
-                    className={cn(
-                      "size-5 transition-colors",
-                      term.isStarred
-                        ? "text-yellow-400 fill-yellow-400"
-                        : "text-gray-300 hover:text-gray-500",
-                    )}
-                  />
-                </Button>
-              )}
-
-              {isOwned && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label="Term actions">
-                      <MoreHorizontal className="text-gray-500 size-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Term</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleStartEditing}>
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600" onClick={onDelete}>
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
+          <div className="w-px shrink-0 bg-black/10" />
+          <div className="truncate text-base text-neutral-700 sm:text-lg">
+            {term.definition}
           </div>
-        )}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1">
+          {isCollected && (
+            <Button
+              onClick={onToggleStar}
+              variant="ghost"
+              size="icon"
+              aria-label={term.isStarred ? "Remove star" : "Add star"}
+              aria-pressed={term.isStarred}
+            >
+              <Star
+                className={cn(
+                  "size-5 transition-colors",
+                  term.isStarred
+                    ? "fill-brand-400 text-brand-400"
+                    : "text-neutral-300 hover:text-neutral-500",
+                )}
+              />
+            </Button>
+          )}
+
+          {isOwned && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Term actions">
+                  <MoreHorizontal className="size-5 text-neutral-500" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Term</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleStartEditing}>
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem variant="destructive" onClick={onDelete}>
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
     </Card>
   );
