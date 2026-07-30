@@ -100,7 +100,7 @@ function FolderRow({ folder }: { folder: Folder }) {
     <li>
       <Link
         href={`/library/folders/${folder.id}`}
-        className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-gray-50"
+        className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-neutral-100 hover:opacity-100 transition-colors ease-in-out"
       >
         <div className="rounded-md bg-brand-500/10 p-1.5 text-brand-500">
           <FolderIcon className="h-4 w-4" />
@@ -124,7 +124,7 @@ function SetRow({ set }: { set: LibraryItem }) {
     <li>
       <Link
         href={`/modules/${set.id}`}
-        className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-gray-50"
+        className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-neutral-100 hover:opacity-100 transition-colors ease-in-out"
       >
         <div className="rounded-md bg-emerald-100 p-1.5 text-emerald-700">
           <Layers className="h-4 w-4" />

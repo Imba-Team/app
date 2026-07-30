@@ -4,10 +4,17 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, LogIn, Settings, User2 } from 'lucide-react';
+import { Bell, LogIn, LogOut, Moon, Search, Settings, Sun, User2 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMe } from '@/lib/hooks/useUser';
 import { buildAssetUrl } from '@/lib/env';
@@ -38,13 +45,18 @@ export type NavbarVariant = 'landing' | 'app';
 
 export default function Navbar({ variant }: { variant: NavbarVariant }) {
   const pathname = usePathname();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, logout } = useAuth();
   const { data: me } = useMe();
   const scrolled = useHasScrolled();
 
   const links = variant === 'app' ? APP_LINKS : LANDING_LINKS;
   const profilePictureUrl = buildAssetUrl(me?.profilePicture) || '';
   const hasProfilePicture = Boolean(me?.profilePicture);
+
+  // Logo target — dashboard for signed-in users inside the app, the
+  // landing itself when we're on `/`. Non-authed users on internal
+  // routes still go to `/` (login gate handles the rest).
+  const logoHref = variant === 'app' && isAuthenticated ? '/dashboard' : '/';
 
   return (
     <header
@@ -53,37 +65,61 @@ export default function Navbar({ variant }: { variant: NavbarVariant }) {
         scrolled ? 'shadow-[0_1px_16px_-8px_rgba(0,0,0,0.15)] backdrop-blur' : 'bg-transparent',
       )}
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 md:px-8">
+      <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-4 md:px-8">
         <Link
-          href="/"
+          href={logoHref}
           className="rounded-full px-5 py-2 text-xl font-bold text-neutral-700 transition-colors hover:bg-neutral-50"
         >
           Mimir
         </Link>
 
-        <div className="flex items-center gap-3">
+        {variant === 'app' && <SearchBar />}
+        <div className="ml-auto flex items-center gap-3">
           <SlideNav links={links} pathname={pathname} />
 
           {variant === 'app' ? (
             <AppActions
               isLoading={isLoading}
+              displayName={me?.name}
+              username={me?.username}
+              email={me?.email}
               avatarSrc={profilePictureUrl}
               avatarAlt={me?.name}
               hasProfilePicture={hasProfilePicture}
+              onLogout={logout}
             />
           ) : (
             <LandingActions
               isLoading={isLoading}
               isAuthenticated={isAuthenticated}
               displayName={me?.name}
+              username={me?.username}
+              email={me?.email}
               avatarSrc={profilePictureUrl}
               avatarAlt={me?.name}
               hasProfilePicture={hasProfilePicture}
+              onLogout={logout}
             />
           )}
         </div>
       </div>
     </header>
+  );
+}
+
+// ---------- Search bar ----------
+
+function SearchBar() {
+  return (
+    <div className="relative hidden max-w-md flex-1 md:block">
+      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+      <input
+        type="search"
+        placeholder="Search modules, terms, users…"
+        aria-label="Search"
+        className="h-11 w-full rounded-full border border-black/5 bg-white pl-11 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/10 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40"
+      />
+    </div>
   );
 }
 
@@ -137,7 +173,7 @@ function NavTab({
       <Link
         href={link.href}
         className={cn(
-          'block rounded-full px-10 py-2 text-sm font-medium transition-colors',
+          'block rounded-full px-8 py-2 text-sm font-medium transition-colors',
           active ? 'bg-neutral-900 text-white' : 'text-neutral-800',
         )}
       >
@@ -171,13 +207,80 @@ function useHasScrolled(threshold = 8) {
   return scrolled;
 }
 
-// ---------- Profile + action pills ----------
+// ---------- Profile menu ----------
 
-const pillBase =
-  'inline-flex h-11 items-center justify-center rounded-full border border-black/5 bg-white text-neutral-800 transition-colors hover:bg-black/5';
-const iconPill = `${pillBase} w-9 h-9! border-0`;
-const textPill = `${pillBase} gap-2 px-4 text-sm font-medium h-9! border-0`;
-const avatarPill = `${pillBase} w-9! h-9! border-0`;
+type ProfileMenuProps = {
+  displayName?: string;
+  username?: string;
+  email?: string;
+  avatarSrc: string;
+  avatarAlt?: string;
+  hasProfilePicture: boolean;
+  onLogout: () => void | Promise<void>;
+  trigger: React.ReactNode;
+};
+
+// Local UI-only dark-mode toggle. Wiring it to a real theme provider is
+// out of scope for this pass — the state persists per-mount and gets
+// used purely for the icon flip. Swap for next-themes when the provider
+// lands.
+function useDarkModeStub() {
+  const [dark, setDark] = useState(false);
+  return { dark, toggle: () => setDark((v) => !v) };
+}
+
+function ProfileMenu({
+  displayName,
+  username,
+  email,
+  avatarSrc,
+  avatarAlt,
+  hasProfilePicture,
+  onLogout,
+  trigger,
+}: ProfileMenuProps) {
+  const { dark, toggle } = useDarkModeStub();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-64 p-2">
+        <div className="flex items-center gap-3 px-2 py-2">
+          <ProfileAvatar
+            hasProfilePicture={hasProfilePicture}
+            avatarSrc={avatarSrc}
+            avatarAlt={avatarAlt}
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-neutral-900">
+              {displayName || username || 'Signed in'}
+            </p>
+            {email && <p className="truncate text-xs text-neutral-500">{email}</p>}
+          </div>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/account">
+            <Settings className="h-4 w-4" />
+            Settings
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={toggle}>
+          {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {dark ? 'Light mode' : 'Dark mode'}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" onClick={() => onLogout()}>
+          <LogOut className="h-4 w-4" />
+          Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+const iconPillClass =
+  'inline-flex h-11 w-11 items-center justify-center rounded-full border border-black/5 bg-white text-neutral-800 transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20';
 
 type AvatarProps = {
   isLoading?: boolean;
@@ -201,7 +304,7 @@ function ProfileAvatar({ isLoading, hasProfilePicture, avatarSrc, avatarAlt }: A
     );
   }
   return (
-    <span className="flex size-9 items-center justify-center rounded-full">
+    <span className="flex size-9 items-center justify-center rounded-full bg-brand-500/10 text-brand-500">
       <User2 className="size-4" />
     </span>
   );
@@ -209,38 +312,52 @@ function ProfileAvatar({ isLoading, hasProfilePicture, avatarSrc, avatarAlt }: A
 
 function AppActions({
   isLoading,
+  displayName,
+  username,
+  email,
   avatarSrc,
   avatarAlt,
   hasProfilePicture,
+  onLogout,
 }: {
   isLoading: boolean;
+  displayName?: string;
+  username?: string;
+  email?: string;
   avatarSrc: string;
   avatarAlt?: string;
   hasProfilePicture: boolean;
+  onLogout: () => void | Promise<void>;
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="rounded-full bg-white p-1">
-        <Link href="/account" aria-label="Settings" className={textPill}>
-          <Settings className="size-4" />
-          <span>Settings</span>
-        </Link>
-      </span>
-      <span className="rounded-full bg-white p-1">
-        <button type="button" aria-label="Notifications" className={iconPill}>
-          <Bell className="h-4 w-4" />
-        </button>
-      </span>
-      <span className="rounded-full bg-white p-1">
-        <Link href="/account" aria-label="Profile" className={avatarPill}>
-          <ProfileAvatar
-            isLoading={isLoading}
-            hasProfilePicture={hasProfilePicture}
-            avatarSrc={avatarSrc}
-            avatarAlt={avatarAlt}
-          />
-        </Link>
-      </span>
+      <button type="button" aria-label="Notifications" className={iconPillClass}>
+        <Bell className="h-4 w-4" />
+      </button>
+
+      <ProfileMenu
+        displayName={displayName}
+        username={username}
+        email={email}
+        avatarSrc={avatarSrc}
+        avatarAlt={avatarAlt}
+        hasProfilePicture={hasProfilePicture}
+        onLogout={onLogout}
+        trigger={
+          <button
+            type="button"
+            aria-label="Open profile menu"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-black/5 bg-white transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+          >
+            <ProfileAvatar
+              isLoading={isLoading}
+              hasProfilePicture={hasProfilePicture}
+              avatarSrc={avatarSrc}
+              avatarAlt={avatarAlt}
+            />
+          </button>
+        }
+      />
     </div>
   );
 }
@@ -249,16 +366,22 @@ function LandingActions({
   isLoading,
   isAuthenticated,
   displayName,
+  username,
+  email,
   avatarSrc,
   avatarAlt,
   hasProfilePicture,
+  onLogout,
 }: {
   isLoading: boolean;
   isAuthenticated: boolean;
   displayName?: string;
+  username?: string;
+  email?: string;
   avatarSrc: string;
   avatarAlt?: string;
   hasProfilePicture: boolean;
+  onLogout: () => void | Promise<void>;
 }) {
   if (isLoading) {
     return <Skeleton className="h-11 w-48 rounded-full" />;
@@ -266,21 +389,32 @@ function LandingActions({
 
   if (isAuthenticated) {
     return (
-      <Link
-        href="/dashboard"
-        aria-label={`Continue as ${displayName ?? 'signed-in user'}`}
-        className="inline-flex h-11 items-center gap-2 rounded-full border border-black/5 bg-white pl-1 pr-4 text-neutral-800 transition-colors hover:bg-black/5"
-      >
-        <ProfileAvatar
-          hasProfilePicture={hasProfilePicture}
-          avatarSrc={avatarSrc}
-          avatarAlt={avatarAlt}
-        />
-        <span className="text-sm font-medium">
-          <span className="text-neutral-500">Continue as</span>{' '}
-          <span className="text-neutral-900">{displayName || 'you'}</span>
-        </span>
-      </Link>
+      <ProfileMenu
+        displayName={displayName}
+        username={username}
+        email={email}
+        avatarSrc={avatarSrc}
+        avatarAlt={avatarAlt}
+        hasProfilePicture={hasProfilePicture}
+        onLogout={onLogout}
+        trigger={
+          <button
+            type="button"
+            aria-label={`Continue as ${displayName ?? 'signed-in user'}`}
+            className="inline-flex h-11 items-center gap-2 rounded-full border border-black/5 bg-white pl-1 pr-4 text-neutral-800 transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+          >
+            <ProfileAvatar
+              hasProfilePicture={hasProfilePicture}
+              avatarSrc={avatarSrc}
+              avatarAlt={avatarAlt}
+            />
+            <span className="text-sm font-medium">
+              <span className="text-neutral-500">Continue as</span>{' '}
+              <span className="text-neutral-900">{displayName || 'you'}</span>
+            </span>
+          </button>
+        }
+      />
     );
   }
 

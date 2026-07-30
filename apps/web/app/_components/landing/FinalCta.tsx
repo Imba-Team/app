@@ -27,7 +27,7 @@ export default function FinalCta() {
             Join Mimir and let spaced repetition do the heavy lifting. It only takes a minute to
             create your first set.
           </p>
-          <Button asChild size="lg" variant="secondary" className="bg-white/80">
+          <Button asChild size="lg" variant="secondary" className="bg-white/80 hover:bg-white/70">
             <Link href={href}>
               {label}
               <ArrowRight className="h-4 w-4" />

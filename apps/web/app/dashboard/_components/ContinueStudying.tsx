@@ -81,7 +81,7 @@ function RecentSetCard({ set }: { set: RecentStudySet }) {
             </div>
           </div>
 
-          <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-brand-500 opacity-0 transition group-hover:opacity-100">
+          <span className="inline-flex shrink-0 items-center gap-1 ml-5 text-xs font-medium text-brand-500 opacity-0 transition group-hover:opacity-100 hover:bg-neutral-100 rounded-full p-2 px-5">
             Resume <ArrowRight className="h-3 w-3" />
           </span>
         </CardContent>

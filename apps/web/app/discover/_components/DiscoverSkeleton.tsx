@@ -1,24 +1,25 @@
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from '@/components/ui/skeleton';
 
+// Mirrors DiscoverContent's layout: same max-w, same header rhythm, same
+// grid so the transition from skeleton → real content doesn't jerk.
 export const DiscoverLoading = () => {
   return (
-    <div className="w-full">
-      <div className="mb-8">
-        <Skeleton className="h-8 w-56 mb-4 mx-auto" />
-        <Skeleton className="h-5 w-96 mb-4 mx-auto" />
-        <div className="flex w-full max-w-2xl mx-auto items-center gap-2 mb-10">
-          <Skeleton className="h-10 w-full rounded-lg" />
-          <Skeleton className="h-10 w-24 rounded-lg" />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="space-y-4">
-              <Skeleton className="h-52 w-full rounded-lg" />
-            </div>
-          ))}
-        </div>
+    <main className="mx-auto w-full max-w-4xl space-y-8 px-4 py-6 sm:px-6 md:py-8">
+      <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 text-center">
+        <Skeleton className="h-9 w-56 rounded-full" />
+        <Skeleton className="h-5 w-full max-w-md rounded-full" />
       </div>
-    </div>
+
+      <div className="mx-auto flex w-full max-w-2xl gap-2">
+        <Skeleton className="h-11 flex-1 rounded-full" />
+        <Skeleton className="h-11 w-36 rounded-full" />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-44 w-full rounded-3xl" />
+        ))}
+      </div>
+    </main>
   );
 };

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * Learn Mode — TDD Sprint 6.
@@ -19,44 +19,51 @@
  * screen and let the learner call POST /sessions/:id/complete.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   CheckCircle2,
   Lightbulb,
   Loader2,
   XCircle,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import SessionResults, {
   SessionResultsError,
   SessionResultsLoading,
-} from "../_components/SessionResults";
-import { useModule } from "@/lib/hooks/useModules";
-import { useTerms } from "@/lib/hooks/useTerms";
+} from '../_components/SessionResults';
+import { useModule } from '@/lib/hooks/useModules';
+import { useTerms } from '@/lib/hooks/useTerms';
 import {
   useLearnSession,
   type LearnCardResult,
-} from "@/lib/hooks/useLearnSession";
-import type { LearnBatchCard } from "@/lib/api";
+} from '@/lib/hooks/useLearnSession';
+import type { LearnBatchCard } from '@/lib/api';
 
 // Hold the correctness feedback on-screen this long before auto-
 // advancing. Long enough for the learner to internalise the correct
 // answer, short enough that the pace stays brisk.
 const FEEDBACK_HOLD_MS = 1400;
 
+const KBD_CLASS =
+  'font-mono rounded border border-black/10 bg-white px-1 text-neutral-700';
+
+const WRITTEN_FIELD_CLASS =
+  'w-full min-h-28 resize-y rounded-2xl border border-black/10 bg-white px-4 py-3 text-base leading-relaxed text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/20 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40 disabled:bg-neutral-50';
+
 // After a session with no non-mastered cards the server returns an
 // empty batch on the first call; render an appropriate empty state
 // instead of a completion screen.
-type EmptyReason = "no-terms" | "all-mastered" | null;
+type EmptyReason = 'no-terms' | 'all-mastered' | null;
 
 export default function LearnModeClient({ moduleId }: { moduleId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const resumeSessionId = searchParams.get("sessionId") ?? undefined;
+  const resumeSessionId = searchParams.get('sessionId') ?? undefined;
   const { data: moduleData, isLoading: moduleLoading } = useModule(moduleId);
   const { data: allTerms = [], isLoading: termsLoading } = useTerms(moduleId);
   const enabled = !moduleLoading && !termsLoading && allTerms.length > 0;
@@ -78,11 +85,9 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
     retry,
   } = useLearnSession({ moduleId, enabled, resumeSessionId });
 
-  // Auto-advance timer. Held in a ref so we can cancel on unmount /
-  // manual advance.
   const holdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (status !== "showing-feedback") return;
+    if (status !== 'showing-feedback') return;
     holdRef.current = setTimeout(() => {
       void advance();
     }, FEEDBACK_HOLD_MS);
@@ -91,16 +96,13 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
     };
   }, [status, advance]);
 
-  // Auto-finish when the session runs out of non-mastered cards. Guard
-  // with a ref so React StrictMode's dev double-invoke and the render
-  // between `active` and `complete` don't refire finish().
   const autoFinishedRef = useRef(false);
   useEffect(() => {
     const sessionDone =
       sessionId !== null &&
       !hasMoreCards &&
       currentCard === null &&
-      status === "active" &&
+      status === 'active' &&
       answers.length > 0;
     if (sessionDone && !autoFinishedRef.current) {
       autoFinishedRef.current = true;
@@ -108,7 +110,6 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
     }
   }, [sessionId, hasMoreCards, currentCard, status, answers.length, finish]);
 
-  // Per-card hint tracker (survives feedback → next card boundary).
   const [hintUsedByCard, setHintUsedByCard] = useState<Record<string, boolean>>(
     {},
   );
@@ -125,37 +126,32 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
   // states: loading / empty / error / complete / summary / active
   // ============================================
 
-  if (moduleLoading || termsLoading || status === "starting") {
+  if (moduleLoading || termsLoading || status === 'starting') {
     return (
-      <main className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <p className="text-gray-500">Loading…</p>
+      <main className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center gap-3 px-6">
+        <Loader2 className="h-6 w-6 animate-spin text-brand-500" />
+        <p className="text-sm text-neutral-500">Loading…</p>
       </main>
     );
   }
 
   if (allTerms.length === 0) {
-    return (
-      <EmptyPanel
-        moduleId={moduleId}
-        reason="no-terms"
-      />
-    );
+    return <EmptyPanel moduleId={moduleId} reason="no-terms" />;
   }
 
-  // Session start / batch fetch error — before any answers, so it's a
-  // "try starting again" story, not a save-summary retry.
-  if (status === "error" && error && !summary && answers.length === 0) {
+  if (status === 'error' && error && !summary && answers.length === 0) {
     return (
-      <main className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
-        <Card className="max-w-lg w-full">
-          <CardHeader>
-            <CardTitle className="text-rose-700">
-              Couldn&apos;t start Learn Mode
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-gray-600">{error}</p>
-            <div className="flex gap-2">
+      <main className="mx-auto flex min-h-[60vh] max-w-lg flex-col justify-center px-6 py-12">
+        <Card>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-rose-600" />
+              <p className="text-lg font-semibold text-neutral-900">
+                Couldn&apos;t start Learn Mode
+              </p>
+            </div>
+            <p className="text-sm text-neutral-600">{error}</p>
+            <div className="flex flex-wrap gap-2">
               <Button onClick={retry}>Try again</Button>
               <Button
                 variant="outline"
@@ -182,27 +178,23 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
     );
   }
 
-  // Server had no non-mastered cards on the first batch — nothing was
-  // ever answered, so there's no session to summarise.
   const noCardsToStudy =
     sessionId !== null &&
     !hasMoreCards &&
     currentCard === null &&
     answers.length === 0 &&
-    status !== "loading-batch";
+    status !== 'loading-batch';
   if (noCardsToStudy) {
     return <EmptyPanel moduleId={moduleId} reason="all-mastered" />;
   }
 
-  // Deck exhausted mid-session. Auto-finish takes over via the effect
-  // above and lands on SessionResults once the summary resolves.
   const isSessionEnd =
     sessionId !== null &&
     !hasMoreCards &&
     currentCard === null &&
     answers.length > 0;
   if (isSessionEnd) {
-    if (status === "error" && error) {
+    if (status === 'error' && error) {
       return (
         <SessionResultsError
           error={error}
@@ -214,13 +206,11 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
     return <SessionResultsLoading />;
   }
 
-  if (!currentCard || status === "loading-batch") {
+  if (!currentCard || status === 'loading-batch') {
     return (
-      <main className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="flex items-center gap-2 text-gray-500">
-          <Loader2 size={16} className="animate-spin" />
-          Loading next batch…
-        </div>
+      <main className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center gap-3 px-6">
+        <Loader2 className="h-5 w-5 animate-spin text-brand-500" />
+        <p className="text-sm text-neutral-500">Loading next batch…</p>
       </main>
     );
   }
@@ -234,52 +224,58 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
   // ============================================
 
   return (
-    <main className="min-h-screen bg-gray-100 overflow-x-hidden">
+    <main className="mx-auto w-full max-w-3xl space-y-6 px-6 py-8 sm:px-8">
       {/* Header */}
-      <div className="max-w-3xl mx-auto pt-8 px-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="min-w-0">
-            <button
-              onClick={() => router.push(`/modules/${moduleId}`)}
-              className="text-sm text-gray-500 hover:text-brand-500 flex items-center gap-1"
-            >
-              <ArrowLeft size={16} /> Back to module
-            </button>
-            {moduleData?.data && (
-              <h1 className="text-2xl md:text-3xl font-bold text-brand-500 mt-2 truncate">
-                {moduleData.data.title}
-              </h1>
-            )}
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-sm text-gray-500">
-              Answered {answers.length}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <Button asChild variant="ghost" size="sm">
+            <Link href={`/modules/${moduleId}`}>
+              <ArrowLeft className="h-4 w-4" />
+              Back to module
+            </Link>
+          </Button>
+          {moduleData?.data && (
+            <h1 className="mt-2 truncate text-2xl font-bold text-neutral-900 md:text-3xl">
+              {moduleData.data.title}
+            </h1>
+          )}
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-medium text-neutral-700">
+            Answered {answers.length}
+          </p>
+          {mastered !== undefined && total !== undefined && (
+            <p className="text-xs text-neutral-500">
+              {mastered}/{total} mastered
             </p>
-            {mastered !== undefined && total !== undefined && (
-              <p className="text-xs text-gray-400">
-                {mastered}/{total} mastered
-              </p>
-            )}
-          </div>
+          )}
         </div>
       </div>
 
+      {/* Mastery progress */}
+      {mastered !== undefined && total !== undefined && total > 0 && (
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/5">
+          <div
+            className="h-full rounded-full bg-emerald-500 transition-all"
+            style={{ width: `${(mastered / total) * 100}%` }}
+          />
+        </div>
+      )}
+
       {/* Prompt */}
-      <div className="max-w-3xl mx-auto p-6 mt-6">
-        <PromptCard
-          card={currentCard}
-          hintUsed={hintUsed}
-          onHint={() => markHintUsed(currentCard.cardId)}
-          lastResult={lastResult}
-          isSubmitting={status === "showing-feedback"}
-          onSubmitMc={(selectedChoiceIndex) =>
-            submitMc({ selectedChoiceIndex, hintUsed })
-          }
-          onSubmitWritten={(userAnswer) =>
-            submitWritten({ userAnswer, hintUsed })
-          }
-        />
-      </div>
+      <PromptCard
+        card={currentCard}
+        hintUsed={hintUsed}
+        onHint={() => markHintUsed(currentCard.cardId)}
+        lastResult={lastResult}
+        isSubmitting={status === 'showing-feedback'}
+        onSubmitMc={(selectedChoiceIndex) =>
+          submitMc({ selectedChoiceIndex, hintUsed })
+        }
+        onSubmitWritten={(userAnswer) =>
+          submitWritten({ userAnswer, hintUsed })
+        }
+      />
     </main>
   );
 }
@@ -307,20 +303,20 @@ function PromptCard({
 }) {
   return (
     <Card>
-      <CardContent className="p-6 space-y-6">
+      <CardContent className="space-y-6">
         {/* Prompt term + hint control */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
-            <p className="text-xs uppercase tracking-wide text-gray-400 mb-2">
-              {card.promptType === "LEARN_MC"
-                ? "Choose the definition"
-                : "Type the definition"}
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+              {card.promptType === 'LEARN_MC'
+                ? 'Choose the definition'
+                : 'Type the definition'}
             </p>
-            <p className="text-2xl sm:text-3xl font-semibold text-gray-900 break-words">
+            <p className="wrap-break-word text-2xl font-semibold text-neutral-900 sm:text-3xl">
               {card.term}
             </p>
             {card.hint && hintUsed && (
-              <p className="mt-3 text-sm bg-amber-50 border border-amber-200 rounded px-3 py-2 text-amber-800">
+              <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
                 {card.hint}
               </p>
             )}
@@ -331,32 +327,32 @@ function PromptCard({
               onClick={onHint}
               disabled={isSubmitting || hintUsed}
               aria-label="Reveal hint"
-              title={hintUsed ? "Hint used (halves credit)" : "Reveal hint"}
+              title={hintUsed ? 'Hint used (halves credit)' : 'Reveal hint'}
               className={cn(
-                "shrink-0 inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm transition-colors",
+                'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors',
                 hintUsed
-                  ? "text-amber-600 border-amber-300 bg-amber-50"
-                  : "text-gray-500 border-gray-200 hover:bg-gray-50",
-                (isSubmitting || hintUsed) && "cursor-default",
+                  ? 'border-amber-200 bg-amber-50 text-amber-700'
+                  : 'border-black/10 bg-white text-neutral-700 hover:bg-black/5',
+                (isSubmitting || hintUsed) && 'cursor-default',
               )}
             >
-              <Lightbulb size={14} />
-              {hintUsed ? "Hint used" : "Hint"}
+              <Lightbulb className="h-3.5 w-3.5" />
+              {hintUsed ? 'Hint used' : 'Hint'}
             </button>
           )}
         </div>
 
-        {card.promptType === "LEARN_MC" ? (
+        {card.promptType === 'LEARN_MC' ? (
           <McChoices
             card={card}
-            lastResult={lastResult?.kind === "mc" ? lastResult : null}
+            lastResult={lastResult?.kind === 'mc' ? lastResult : null}
             disabled={isSubmitting}
             onSubmit={onSubmitMc}
           />
         ) : (
           <WrittenPrompt
             key={card.cardId}
-            lastResult={lastResult?.kind === "written" ? lastResult : null}
+            lastResult={lastResult?.kind === 'written' ? lastResult : null}
             disabled={isSubmitting}
             onSubmit={onSubmitWritten}
           />
@@ -377,19 +373,19 @@ function McChoices({
   onSubmit,
 }: {
   card: LearnBatchCard;
-  lastResult: (LearnCardResult & { kind: "mc" }) | null;
+  lastResult: (LearnCardResult & { kind: 'mc' }) | null;
   disabled: boolean;
   onSubmit: (selectedChoiceIndex: number) => void;
 }) {
   const choices = card.choices ?? [];
   const showingFeedback = lastResult !== null;
 
-  const choiceState = (idx: number): "idle" | "correct" | "wrong" | "muted" => {
-    if (!showingFeedback) return "idle";
-    if (idx === lastResult.correctChoiceIndex) return "correct";
+  const choiceState = (idx: number): 'idle' | 'correct' | 'wrong' | 'muted' => {
+    if (!showingFeedback) return 'idle';
+    if (idx === lastResult.correctChoiceIndex) return 'correct';
     if (idx === lastResult.selectedChoiceIndex && !lastResult.correct)
-      return "wrong";
-    return "muted";
+      return 'wrong';
+    return 'muted';
   };
 
   return (
@@ -403,39 +399,36 @@ function McChoices({
             onClick={() => onSubmit(idx)}
             disabled={disabled}
             className={cn(
-              "text-left rounded-xl border-2 p-4 transition-all",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40",
-              state === "idle" &&
-                "border-gray-200 hover:border-brand-500 hover:bg-brand-400/5",
-              state === "correct" && "border-emerald-500 bg-emerald-50",
-              state === "wrong" && "border-rose-500 bg-rose-50",
-              state === "muted" && "border-gray-200 opacity-50",
-              disabled && "cursor-default",
+              'rounded-2xl border p-4 text-left transition-all',
+              'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-300/40',
+              state === 'idle' &&
+                'border-black/10 bg-white hover:border-brand-400 hover:bg-brand-300/10',
+              state === 'correct' && 'border-emerald-400 bg-emerald-50',
+              state === 'wrong' && 'border-rose-400 bg-rose-50',
+              state === 'muted' && 'border-black/10 bg-white opacity-50',
+              disabled && 'cursor-default',
             )}
           >
             <div className="flex items-start gap-3">
               <span
                 className={cn(
-                  "font-mono text-xs border rounded px-1.5 py-0.5 shrink-0 mt-0.5",
-                  state === "correct" &&
-                    "border-emerald-300 text-emerald-700 bg-white",
-                  state === "wrong" &&
-                    "border-rose-300 text-rose-700 bg-white",
-                  state === "idle" && "border-gray-300 text-gray-500",
-                  state === "muted" && "border-gray-300 text-gray-400",
+                  'mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full font-mono text-xs',
+                  state === 'correct' && 'bg-emerald-100 text-emerald-700',
+                  state === 'wrong' && 'bg-rose-100 text-rose-700',
+                  state === 'idle' && 'bg-neutral-100 text-neutral-600',
+                  state === 'muted' && 'bg-neutral-100 text-neutral-400',
                 )}
               >
                 {idx + 1}
               </span>
-              <span className="text-base leading-relaxed">{choice}</span>
-              {state === "correct" && (
-                <CheckCircle2
-                  size={18}
-                  className="ml-auto text-emerald-600 shrink-0"
-                />
+              <span className="flex-1 text-base leading-relaxed text-neutral-800">
+                {choice}
+              </span>
+              {state === 'correct' && (
+                <CheckCircle2 className="ml-auto h-5 w-5 shrink-0 text-emerald-600" />
               )}
-              {state === "wrong" && (
-                <XCircle size={18} className="ml-auto text-rose-600 shrink-0" />
+              {state === 'wrong' && (
+                <XCircle className="ml-auto h-5 w-5 shrink-0 text-rose-600" />
               )}
             </div>
           </button>
@@ -454,11 +447,11 @@ function WrittenPrompt({
   disabled,
   onSubmit,
 }: {
-  lastResult: (LearnCardResult & { kind: "written" }) | null;
+  lastResult: (LearnCardResult & { kind: 'written' }) | null;
   disabled: boolean;
   onSubmit: (userAnswer: string) => void;
 }) {
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -484,7 +477,7 @@ function WrittenPrompt({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+          if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSubmit();
           }
@@ -492,18 +485,12 @@ function WrittenPrompt({
         placeholder="Type your answer…"
         rows={3}
         disabled={disabled}
-        className="w-full min-h-24 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-gray-50 text-base leading-relaxed"
+        className={WRITTEN_FIELD_CLASS}
       />
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <span className="text-xs text-gray-500">
-          <kbd className="font-mono border border-gray-300 rounded px-1">
-            Enter
-          </kbd>{" "}
-          submit ·{" "}
-          <kbd className="font-mono border border-gray-300 rounded px-1">
-            Shift+Enter
-          </kbd>{" "}
-          newline
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="text-xs text-neutral-500">
+          <kbd className={KBD_CLASS}>Enter</kbd> submit ·{' '}
+          <kbd className={KBD_CLASS}>Shift+Enter</kbd> newline
         </span>
         <Button onClick={handleSubmit} disabled={disabled || !value.trim()}>
           Submit
@@ -516,71 +503,80 @@ function WrittenPrompt({
 function WrittenFeedback({
   result,
 }: {
-  result: LearnCardResult & { kind: "written" };
+  result: LearnCardResult & { kind: 'written' };
 }) {
-  const isTypo = result.matchType === "TYPO_ACCEPTED";
-  const isExact = result.matchType === "EXACT";
-  const isWrong = result.matchType === "WRONG";
+  const isTypo = result.matchType === 'TYPO_ACCEPTED';
+  const isExact = result.matchType === 'EXACT';
+  const isWrong = result.matchType === 'WRONG';
   const pct = Math.round(result.similarity * 100);
 
   return (
-    <div className="space-y-3">
-      <div
-        className={cn(
-          "rounded-xl border-2 p-4",
-          result.correct
-            ? "border-emerald-500 bg-emerald-50"
-            : "border-rose-500 bg-rose-50",
+    <div
+      className={cn(
+        'space-y-2 rounded-2xl border p-4',
+        result.correct
+          ? 'border-emerald-200 bg-emerald-50'
+          : 'border-rose-200 bg-rose-50',
+      )}
+    >
+      <div className="flex items-center gap-2">
+        {result.correct ? (
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+        ) : (
+          <XCircle className="h-5 w-5 shrink-0 text-rose-600" />
         )}
-      >
-        <div className="flex items-center gap-2">
-          {result.correct ? (
-            <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
-          ) : (
-            <XCircle size={20} className="text-rose-600 shrink-0" />
-          )}
-          <p className="font-semibold">
-            {isExact && "Perfect."}
-            {isTypo && "Close enough — counted as correct."}
-            {isWrong && "Not quite."}
-          </p>
-        </div>
-
-        {isTypo && (
-          <p className="text-sm text-gray-700 mt-2">
-            You typed{" "}
-            <span className="bg-white px-1.5 py-0.5 rounded border border-amber-200 font-mono">
-              {result.normalizedInput}
-            </span>{" "}
-            — expected{" "}
-            <span className="bg-white px-1.5 py-0.5 rounded border border-emerald-200 font-mono">
-              {result.correctAnswer}
-            </span>
-            {" "}({result.editDistance} character{result.editDistance === 1 ? "" : "s"} off).
-          </p>
-        )}
-
-        {isWrong && (
-          <div className="text-sm text-gray-700 mt-2 space-y-1">
-            <p>
-              You typed{" "}
-              <span className="bg-white px-1.5 py-0.5 rounded border border-rose-200 font-mono">
-                {result.normalizedInput}
-              </span>
-            </p>
-            <p>
-              Correct answer:{" "}
-              <span className="bg-white px-1.5 py-0.5 rounded border border-emerald-200 font-mono">
-                {result.correctAnswer}
-              </span>
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Similarity {pct}%.
-            </p>
-          </div>
-        )}
+        <p className="font-semibold text-neutral-900">
+          {isExact && 'Perfect.'}
+          {isTypo && 'Close enough — counted as correct.'}
+          {isWrong && 'Not quite.'}
+        </p>
       </div>
+
+      {isTypo && (
+        <p className="text-sm text-neutral-700">
+          You typed <InlineChip tone="amber">{result.normalizedInput}</InlineChip> — expected{' '}
+          <InlineChip tone="emerald">{result.correctAnswer}</InlineChip> (
+          {result.editDistance} character{result.editDistance === 1 ? '' : 's'} off).
+        </p>
+      )}
+
+      {isWrong && (
+        <div className="space-y-1 text-sm text-neutral-700">
+          <p>
+            You typed <InlineChip tone="rose">{result.normalizedInput}</InlineChip>
+          </p>
+          <p>
+            Correct answer:{' '}
+            <InlineChip tone="emerald">{result.correctAnswer}</InlineChip>
+          </p>
+          <p className="mt-1 text-xs text-neutral-500">Similarity {pct}%.</p>
+        </div>
+      )}
     </div>
+  );
+}
+
+function InlineChip({
+  tone,
+  children,
+}: {
+  tone: 'amber' | 'emerald' | 'rose';
+  children: React.ReactNode;
+}) {
+  const cls = {
+    amber: 'bg-amber-100/70 text-amber-800',
+    emerald: 'bg-emerald-100/70 text-emerald-800',
+    rose: 'bg-rose-100/70 text-rose-800',
+  }[tone];
+  return (
+    <span
+      className={cn(
+        'rounded-md px-1.5 py-0.5 font-mono text-[13px]',
+        cls,
+      )}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -596,22 +592,20 @@ function EmptyPanel({
   reason: NonNullable<EmptyReason>;
 }) {
   const router = useRouter();
-  const noTerms = reason === "no-terms";
+  const noTerms = reason === 'no-terms';
   return (
-    <main className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
-      <Card className="max-w-lg w-full">
-        <CardHeader>
-          <CardTitle>
-            {noTerms ? "No terms to study" : "You've mastered every card"}
-          </CardTitle>
-        </CardHeader>
+    <main className="mx-auto flex min-h-[60vh] max-w-lg flex-col justify-center px-6 py-12">
+      <Card>
         <CardContent className="space-y-3">
-          <p className="text-gray-600">
+          <p className="text-lg font-semibold text-neutral-900">
+            {noTerms ? 'No terms to study' : "You've mastered every card"}
+          </p>
+          <p className="text-sm text-neutral-600">
             {noTerms
               ? "This module doesn't have any flashcards yet. Add some terms first."
               : "There's nothing left to learn in this module. Reset your progress to run through it again, or try another mode."}
           </p>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-wrap gap-2 pt-1">
             <Button onClick={() => router.push(`/modules/${moduleId}`)}>
               Back to module
             </Button>
@@ -629,4 +623,3 @@ function EmptyPanel({
     </main>
   );
 }
-

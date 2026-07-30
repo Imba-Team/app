@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * "New module" page.
@@ -16,10 +16,10 @@
  * rather than losing the whole draft.
  */
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
   Globe,
@@ -27,19 +27,25 @@ import {
   Lock,
   Plus,
   Trash2,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { moduleKeys, useCreateModule } from "@/lib/hooks/useModules";
-import { libraryKeys } from "@/lib/hooks/useLibrary";
-import { useCreateTerm } from "@/lib/hooks/useTerms";
-import { cn } from "@/lib/utils";
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { moduleKeys, useCreateModule } from '@/lib/hooks/useModules';
+import { libraryKeys } from '@/lib/hooks/useLibrary';
+import { useCreateTerm } from '@/lib/hooks/useTerms';
+import { cn } from '@/lib/utils';
 
 // Shared field style — mirrors the AddTerm/TermItem edit form so the
 // flashcard rows feel like the same component across the app.
 const FIELD_CLASS =
-  "w-full min-h-24 px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-gray-50 text-base leading-relaxed";
+  'w-full min-h-24 resize-y rounded-2xl border border-black/10 bg-white px-4 py-3 text-base leading-relaxed text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/20 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40 disabled:bg-neutral-50';
+
+const INPUT_CLASS =
+  'w-full h-11 rounded-full border border-black/10 bg-white px-4 text-base text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/20 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40 disabled:bg-neutral-50';
+
+const LABEL_CLASS =
+  'text-[11px] font-semibold uppercase tracking-wide text-neutral-500';
 
 interface DraftCard {
   /** Client-only id for React keys; never sent to the server. */
@@ -49,21 +55,21 @@ interface DraftCard {
 }
 
 function makeKey() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID();
   }
   return `k${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function makeEmpty(): DraftCard {
-  return { key: makeKey(), term: "", definition: "" };
+  return { key: makeKey(), term: '', definition: '' };
 }
 
 export default function NewModuleClient() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [cards, setCards] = useState<DraftCard[]>(() => [
     makeEmpty(),
@@ -93,8 +99,6 @@ export default function NewModuleClient() {
 
   const removeCard = (key: string) => {
     setCards((prev) => {
-      // Never let the list drop below 1 row — the empty state is
-      // "one blank row you can start typing in", not "no rows at all".
       const next = prev.filter((c) => c.key !== key);
       return next.length === 0 ? [makeEmpty()] : next;
     });
@@ -115,10 +119,6 @@ export default function NewModuleClient() {
       });
       const moduleId = created.id;
 
-      // Create cards sequentially so orderIndex on the server stays
-      // in insertion order. Track failures without blocking — a
-      // partial create is better than a full rollback for a user
-      // who's just spent 10 minutes drafting.
       let failed = 0;
       for (const c of filledCards) {
         try {
@@ -135,18 +135,10 @@ export default function NewModuleClient() {
 
       if (failed > 0) {
         toast.error(
-          `${failed} card${failed === 1 ? "" : "s"} couldn't be saved — open the module to retry.`,
+          `${failed} card${failed === 1 ? '' : 's'} couldn't be saved — open the module to retry.`,
         );
       }
 
-      // `useCreateModule.onSuccess` already invalidates these caches,
-      // but `invalidateQueries` only auto-refetches queries with an
-      // active subscriber — since neither /library nor /dashboard is
-      // mounted from /modules/new, those caches would just be marked
-      // stale and the next visit would repaint from stale data until
-      // its own refetch settled. `refetchQueries` forces the fetch
-      // now, so when we redirect the destination page already has
-      // fresh data (including the module we just created).
       await Promise.all([
         queryClient.refetchQueries({ queryKey: moduleKeys.lists() }),
         queryClient.refetchQueries({ queryKey: libraryKeys.sets() }),
@@ -154,123 +146,115 @@ export default function NewModuleClient() {
 
       router.push(`/modules/${moduleId}`);
     } catch (err) {
-      toast.error((err as Error).message || "Failed to create module");
+      toast.error((err as Error).message || 'Failed to create module');
       setSaving(false);
     }
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8 pb-24">
-      <div className="w-full max-w-3xl mx-auto">
-        {/* Top nav */}
-        <div className="mb-6">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-x-2 text-sm text-gray-500 hover:text-brand-500 hover:underline underline-offset-4 transition"
-          >
-            <ArrowLeft size={16} /> Back to dashboard
-          </Link>
-        </div>
+    <main className="mx-auto w-full max-w-3xl space-y-6 px-6 py-8 sm:px-8">
+      <Button asChild variant="ghost" size="sm">
+        <Link href="/dashboard">
+          <ArrowLeft className="h-4 w-4" />
+          Back to dashboard
+        </Link>
+      </Button>
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-brand-500">
-            Create a new module
-          </h1>
-          <p className="text-gray-500 mt-1">
-            Add a title, then draft the first few flashcards. You can add
-            more later.
+      <div>
+        <h1 className="text-3xl font-bold text-neutral-900">
+          Create a new module
+        </h1>
+        <p className="mt-2 text-neutral-600">
+          Add a title, then draft the first few flashcards. You can add more
+          later.
+        </p>
+      </div>
+
+      {/* Module basics */}
+      <Card>
+        <CardContent className="space-y-5">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+            Module details
           </p>
-        </div>
 
-        {/* Module basics */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Module details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1">
-              <label
-                htmlFor="module-title"
-                className="text-xs font-medium text-gray-500"
-              >
-                Title
-                <span className="text-red-500 ml-0.5">*</span>
-              </label>
-              <input
-                ref={titleRef}
-                id="module-title"
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Advanced Biology"
-                disabled={saving}
-                className="w-full h-11 px-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-gray-50 text-base"
-              />
-            </div>
+          <div className="space-y-2">
+            <label htmlFor="module-title" className={LABEL_CLASS}>
+              Title <span className="ml-0.5 text-rose-500">*</span>
+            </label>
+            <input
+              ref={titleRef}
+              id="module-title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Advanced Biology"
+              disabled={saving}
+              className={INPUT_CLASS}
+            />
+          </div>
 
-            <div className="space-y-1">
-              <label
-                htmlFor="module-description"
-                className="text-xs font-medium text-gray-500"
-              >
-                Description
-                <span className="text-gray-400 ml-1 font-normal">
-                  (optional)
-                </span>
-              </label>
-              <textarea
-                id="module-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="What is this module for?"
-                rows={2}
-                disabled={saving}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg resize-y min-h-20 focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 disabled:bg-gray-50 text-base leading-relaxed"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-xs font-medium text-gray-500 block">
-                Visibility
+          <div className="space-y-2">
+            <label htmlFor="module-description" className={LABEL_CLASS}>
+              Description
+              <span className="ml-1 font-normal normal-case text-neutral-400">
+                (optional)
               </span>
-              <div
-                role="radiogroup"
-                aria-label="Visibility"
-                className="grid grid-cols-2 gap-2"
-              >
-                <VisibilityOption
-                  selected={!isPrivate}
-                  onClick={() => setIsPrivate(false)}
-                  icon={<Globe size={16} />}
-                  label="Public"
-                  hint="Anyone can find & save it."
-                  disabled={saving}
-                />
-                <VisibilityOption
-                  selected={isPrivate}
-                  onClick={() => setIsPrivate(true)}
-                  icon={<Lock size={16} />}
-                  label="Private"
-                  hint="Only you can see it."
-                  disabled={saving}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </label>
+            <textarea
+              id="module-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What is this module for?"
+              rows={2}
+              disabled={saving}
+              className={cn(FIELD_CLASS, 'min-h-20')}
+            />
+          </div>
 
-        {/* Flashcards */}
-        <Card className="mb-6">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div className="space-y-2">
+            <span className={LABEL_CLASS}>Visibility</span>
+            <div
+              role="radiogroup"
+              aria-label="Visibility"
+              className="grid grid-cols-2 gap-2"
+            >
+              <VisibilityOption
+                selected={!isPrivate}
+                onClick={() => setIsPrivate(false)}
+                icon={<Globe className="h-4 w-4" />}
+                label="Public"
+                hint="Anyone can find & save it."
+                disabled={saving}
+              />
+              <VisibilityOption
+                selected={isPrivate}
+                onClick={() => setIsPrivate(true)}
+                icon={<Lock className="h-4 w-4" />}
+                label="Private"
+                hint="Only you can see it."
+                disabled={saving}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Flashcards */}
+      <Card>
+        <CardContent className="space-y-4">
+          <div className="flex items-end justify-between gap-3">
             <div>
-              <CardTitle className="text-lg">Flashcards</CardTitle>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                Flashcards
+              </p>
+              <p className="mt-1 text-xs text-neutral-500">
                 {filledCards.length} of {cards.length} filled — empty rows
                 are skipped.
               </p>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
+          </div>
+
+          <div className="space-y-3">
             {cards.map((c, i) => (
               <FlashcardRow
                 key={c.key}
@@ -285,57 +269,57 @@ export default function NewModuleClient() {
                 }}
               />
             ))}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={addCard}
-              disabled={saving}
-              className="w-full h-11 border-dashed"
-            >
-              <Plus size={16} className="mr-1" />
-              Add another card
-            </Button>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-xs text-gray-500">
-            {title.trim() ? (
+          <button
+            type="button"
+            onClick={addCard}
+            disabled={saving}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-black/10 bg-white/40 text-sm font-medium text-neutral-700 transition-colors hover:border-brand-400 hover:bg-brand-300/10 hover:text-brand-500 disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" />
+            Add another card
+          </button>
+        </CardContent>
+      </Card>
+
+      {/* Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-neutral-500">
+          {title.trim() ? (
+            <>
+              Creating <span className="font-medium">{title.trim()}</span>{' '}
+              with {filledCards.length}{' '}
+              {filledCards.length === 1 ? 'flashcard' : 'flashcards'}.
+            </>
+          ) : (
+            'Title is required.'
+          )}
+        </p>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => router.back()}
+            disabled={saving}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+            className="min-w-32"
+          >
+            {saving ? (
               <>
-                Creating <span className="font-medium">{title.trim()}</span>{" "}
-                with {filledCards.length}{" "}
-                {filledCards.length === 1 ? "flashcard" : "flashcards"}.
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Creating…
               </>
             ) : (
-              "Title is required."
+              'Create module'
             )}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => router.back()}
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              className="min-w-32"
-            >
-              {saving ? (
-                <>
-                  <Loader2 size={16} className="mr-1 animate-spin" />
-                  Creating…
-                </>
-              ) : (
-                "Create module"
-              )}
-            </Button>
-          </div>
+          </Button>
         </div>
       </div>
     </main>
@@ -369,18 +353,24 @@ function VisibilityOption({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "text-left rounded-lg border p-3 transition-colors",
+        'rounded-2xl border p-4 text-left transition-colors',
+        'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-300/40',
         selected
-          ? "border-brand-500 bg-brand-500/5 text-brand-500"
-          : "border-gray-200 hover:border-gray-300 text-gray-700",
-        disabled && "opacity-60 cursor-not-allowed",
+          ? 'border-brand-400 bg-brand-300/15'
+          : 'border-black/10 bg-white hover:border-black/20',
+        disabled && 'cursor-not-allowed opacity-60',
       )}
     >
-      <div className="flex items-center gap-2 font-medium">
+      <div
+        className={cn(
+          'flex items-center gap-2 font-semibold',
+          selected ? 'text-brand-500' : 'text-neutral-800',
+        )}
+      >
         {icon}
         {label}
       </div>
-      <div className="text-xs text-gray-500 mt-1">{hint}</div>
+      <div className="mt-1 text-xs text-neutral-500">{hint}</div>
     </button>
   );
 }
@@ -406,21 +396,16 @@ function FlashcardRow({
   const defRef = useRef<HTMLTextAreaElement>(null);
 
   const handleTermKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Enter jumps to the definition of the same row (Quizlet convention).
-    // Shift+Enter is a soft newline in case the term itself spans lines.
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       defRef.current?.focus();
     }
   };
 
   const handleDefKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Enter on the definition of the last row appends a new empty row
-    // (rapid-entry). On non-last rows, just move to the next term.
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onAppendIfLast();
-      // Focus is transferred in the next render; use a microtask.
       queueMicrotask(() => {
         const next = document.querySelector<HTMLTextAreaElement>(
           `[data-card-term="${index + 1}"]`,
@@ -431,10 +416,10 @@ function FlashcardRow({
   };
 
   return (
-    <div className="rounded-2xl border border-gray-200 p-4 space-y-3 bg-white">
+    <div className="space-y-3 rounded-2xl border border-black/5 bg-white/60 p-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-mono text-gray-400">
-          #{(index + 1).toString().padStart(2, "0")}
+        <span className="font-mono text-xs text-neutral-400">
+          #{(index + 1).toString().padStart(2, '0')}
         </span>
         <button
           type="button"
@@ -442,17 +427,17 @@ function FlashcardRow({
           disabled={disabled || !canRemove}
           aria-label="Remove card"
           className={cn(
-            "p-1 rounded-md text-gray-400",
-            canRemove && !disabled && "hover:bg-red-50 hover:text-red-600",
-            !canRemove && "opacity-30 cursor-not-allowed",
+            'inline-flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-colors',
+            canRemove && !disabled && 'hover:bg-rose-50 hover:text-rose-600',
+            !canRemove && 'cursor-not-allowed opacity-30',
           )}
         >
-          <Trash2 size={16} />
+          <Trash2 className="h-4 w-4" />
         </button>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-500">Term</label>
+        <div className="space-y-2">
+          <label className={LABEL_CLASS}>Term</label>
           <textarea
             ref={termRef}
             data-card-term={index}
@@ -465,10 +450,8 @@ function FlashcardRow({
             className={FIELD_CLASS}
           />
         </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-500">
-            Definition
-          </label>
+        <div className="space-y-2">
+          <label className={LABEL_CLASS}>Definition</label>
           <textarea
             ref={defRef}
             value={card.definition}

@@ -1,17 +1,16 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { Star, MoreHorizontal } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useEffect, useRef, useState } from 'react';
+import { Star, MoreHorizontal, Edit, Edit2, Trash } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 // Kept in sync with AddTerm — matching class means the inline editor
 // looks and behaves identically to the "Add term" form.
 const EDIT_FIELD_CLASS =
-  "w-full min-h-28 resize-y rounded-2xl border border-black/10 bg-white px-4 py-3 text-base leading-relaxed text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/20 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40 disabled:bg-neutral-50";
+  'w-full min-h-28 resize-y rounded-2xl border border-black/10 bg-white px-4 py-3 text-base leading-relaxed text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/20 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40 disabled:bg-neutral-50';
 
-const KBD_CLASS =
-  "font-mono rounded border border-black/10 bg-white px-1 text-neutral-700";
+const KBD_CLASS = 'font-mono rounded border border-black/10 bg-white px-1 text-neutral-700';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,8 +18,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 
 interface TermItemProps {
   term: {
@@ -43,24 +42,21 @@ interface TermItemProps {
  * completed` on the wire). A small colored dot is not enough to be
  * accessible; pair it with a text label.
  */
-const STATUS_STYLES: Record<
-  string,
-  { dot: string; label: string; badge: string }
-> = {
+const STATUS_STYLES: Record<string, { dot: string; label: string; badge: string }> = {
   completed: {
-    dot: "bg-emerald-500",
-    label: "Mastered",
-    badge: "bg-emerald-50 text-emerald-700",
+    dot: 'bg-emerald-500',
+    label: 'Mastered',
+    badge: 'bg-emerald-50 text-emerald-700',
   },
   in_progress: {
-    dot: "bg-amber-500",
-    label: "Learning",
-    badge: "bg-amber-50 text-amber-700",
+    dot: 'bg-amber-500',
+    label: 'Learning',
+    badge: 'bg-amber-50 text-amber-700',
   },
   not_started: {
-    dot: "bg-neutral-300",
-    label: "New",
-    badge: "bg-neutral-100 text-neutral-600",
+    dot: 'bg-neutral-300',
+    label: 'New',
+    badge: 'bg-neutral-100 text-neutral-600',
   },
 };
 
@@ -88,8 +84,7 @@ export default function TermItem({
     setIsEditing(true);
   };
 
-  const canSave =
-    editTermValue.trim().length > 0 && editDefValue.trim().length > 0;
+  const canSave = editTermValue.trim().length > 0 && editDefValue.trim().length > 0;
 
   const handleSaveEdit = () => {
     if (!canSave) return;
@@ -101,36 +96,36 @@ export default function TermItem({
   // Definition submits; Shift+Enter is a newline; Ctrl/⌘+Enter always
   // submits; Escape cancels.
   const handleTermKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) handleSaveEdit();
       else editDefRef.current?.focus();
-    } else if (e.key === "Escape") {
+    } else if (e.key === 'Escape') {
       setIsEditing(false);
     }
   };
 
   const handleDefKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSaveEdit();
-    } else if (e.key === "Escape") {
+    } else if (e.key === 'Escape') {
       setIsEditing(false);
     }
   };
 
-  const status = STATUS_STYLES[term.status ?? "not_started"] ?? STATUS_STYLES.not_started;
+  const status = STATUS_STYLES[term.status ?? 'not_started'] ?? STATUS_STYLES.not_started;
 
   const StatusPill = (
     <div
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium",
+        'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
         status.badge,
       )}
       title={`Mastery: ${status.label}`}
       aria-label={`Mastery: ${status.label}`}
     >
-      <span className={cn("size-2 rounded-full", status.dot)} />
+      <span className={cn('size-2 rounded-full', status.dot)} />
       {status.label}
     </div>
   );
@@ -198,11 +193,7 @@ export default function TermItem({
             </span>
           </div>
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setIsEditing(false)}
-            >
+            <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>
               Cancel
             </Button>
             <Button size="sm" onClick={handleSaveEdit} disabled={!canSave}>
@@ -224,9 +215,7 @@ export default function TermItem({
             {term.term}
           </div>
           <div className="w-px shrink-0 bg-black/10" />
-          <div className="truncate text-base text-neutral-700 sm:text-lg">
-            {term.definition}
-          </div>
+          <div className="truncate text-base text-neutral-700 sm:text-lg">{term.definition}</div>
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
@@ -235,15 +224,15 @@ export default function TermItem({
               onClick={onToggleStar}
               variant="ghost"
               size="icon"
-              aria-label={term.isStarred ? "Remove star" : "Add star"}
+              aria-label={term.isStarred ? 'Remove star' : 'Add star'}
               aria-pressed={term.isStarred}
             >
               <Star
                 className={cn(
-                  "size-5 transition-colors",
+                  'size-5 transition-colors',
                   term.isStarred
-                    ? "fill-brand-400 text-brand-400"
-                    : "text-neutral-300 hover:text-neutral-500",
+                    ? 'fill-brand-400 text-brand-400'
+                    : 'text-neutral-300 hover:text-neutral-500',
                 )}
               />
             </Button>
@@ -260,9 +249,11 @@ export default function TermItem({
                 <DropdownMenuLabel>Term</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleStartEditing}>
+                  <Edit className="size-4 mr-2" />
                   Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem variant="destructive" onClick={onDelete}>
+                  <Trash className="size-4 mr-2 text-neutral-400" />
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * Shared results screen for study modes.
@@ -17,23 +17,24 @@
  * DTO itself.
  */
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   CheckCircle2,
   Clock,
   History,
   Lightbulb,
+  Loader2,
   RotateCcw,
   Sparkles,
   Target,
   Trophy,
   XCircle,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { SessionSummary } from "@/lib/api";
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import type { SessionSummary } from '@/lib/api';
 
 interface SessionAnswerLike {
   graduated: boolean;
@@ -48,7 +49,7 @@ interface SessionResultsProps {
    * The route segment for "Study again" — 'flashcards' or 'learn'.
    * Used to build the restart link.
    */
-  modeRoute: "flashcards" | "learn";
+  modeRoute: 'flashcards' | 'learn';
   /** Optional mastery rollup from the last per-card response. */
   latestProgress?: {
     totalCards: number;
@@ -59,7 +60,7 @@ interface SessionResultsProps {
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
-  return `${m}m ${s.toString().padStart(2, "0")}s`;
+  return `${m}m ${s.toString().padStart(2, '0')}s`;
 }
 
 export default function SessionResults({
@@ -75,155 +76,142 @@ export default function SessionResults({
   const hintUsedCount = answers.filter((a) => a.hintUsed).length;
 
   return (
-    <main className="min-h-screen bg-gray-100 flex items-start justify-center px-4 py-10 sm:py-16">
-      <div className="w-full max-w-2xl space-y-6">
-        {/* Header */}
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center rounded-full bg-amber-100 p-3 mb-3">
-            <Trophy size={28} className="text-amber-600" />
-          </div>
-          <h1 className="text-3xl font-bold text-brand-500">
-            Session complete
-          </h1>
-          <p className="text-gray-500 mt-1">
-            {summary.mode === "FLASHCARD" ? "Flashcards" : "Learn"} · {" "}
-            {formatDuration(summary.durationSeconds)}
-          </p>
+    <main className="mx-auto w-full max-w-2xl space-y-6 px-6 py-10 sm:py-16">
+      {/* Header */}
+      <div className="text-center">
+        <div className="mb-3 inline-flex items-center justify-center rounded-full bg-brand-500/10 p-3">
+          <Trophy className="h-7 w-7 text-brand-500" />
         </div>
+        <h1 className="text-3xl font-bold text-neutral-900">
+          Session complete
+        </h1>
+        <p className="mt-1 text-neutral-500">
+          {summary.mode === 'FLASHCARD' ? 'Flashcards' : 'Learn'} ·{' '}
+          {formatDuration(summary.durationSeconds)}
+        </p>
+      </div>
 
-        {/* Headline accuracy card */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-3 gap-3 items-center">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-emerald-600">
-                  {summary.correctAnswers}
-                </div>
-                <div className="text-xs text-gray-500 mt-1 uppercase tracking-wide">
-                  Correct
-                </div>
-              </div>
-              <div className="text-center border-x border-gray-100">
-                <div className="text-4xl font-extrabold text-gray-900">
-                  {accuracyPct}
-                  <span className="text-xl text-gray-400">%</span>
-                </div>
-                <div className="text-xs text-gray-500 mt-1 uppercase tracking-wide">
-                  Accuracy
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-rose-600">
-                  {summary.incorrectAnswers}
-                </div>
-                <div className="text-xs text-gray-500 mt-1 uppercase tracking-wide">
-                  Incorrect
-                </div>
-              </div>
+      {/* Headline accuracy card */}
+      <Card>
+        <CardContent className="grid grid-cols-3 items-center gap-3">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-emerald-600">
+              {summary.correctAnswers}
             </div>
-          </CardContent>
-        </Card>
+            <div className="mt-1 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
+              Correct
+            </div>
+          </div>
+          <div className="border-x border-black/5 text-center">
+            <div className="text-4xl font-extrabold text-neutral-900">
+              {accuracyPct}
+              <span className="text-xl text-neutral-400">%</span>
+            </div>
+            <div className="mt-1 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
+              Accuracy
+            </div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-rose-600">
+              {summary.incorrectAnswers}
+            </div>
+            <div className="mt-1 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
+              Incorrect
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Detail grid */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold text-gray-700">
-              This session
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+      {/* Detail grid */}
+      <Card>
+        <CardContent className="space-y-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+            This session
+          </p>
+          <div className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
             <Stat
-              icon={<Target size={14} className="text-gray-500" />}
+              icon={<Target className="h-3.5 w-3.5 text-neutral-500" />}
               label="Cards studied"
               value={summary.cardsStudied.toString()}
             />
             <Stat
-              icon={<Clock size={14} className="text-gray-500" />}
+              icon={<Clock className="h-3.5 w-3.5 text-neutral-500" />}
               label="Duration"
               value={formatDuration(summary.durationSeconds)}
             />
             <Stat
-              icon={
-                <Sparkles size={14} className="text-amber-500" />
-              }
+              icon={<Sparkles className="h-3.5 w-3.5 text-brand-500" />}
               label="Newly mastered"
               value={newlyMastered.toString()}
-              accent={newlyMastered > 0 ? "positive" : undefined}
+              accent={newlyMastered > 0 ? 'positive' : undefined}
             />
             <Stat
-              icon={
-                <Lightbulb size={14} className="text-gray-500" />
-              }
+              icon={<Lightbulb className="h-3.5 w-3.5 text-neutral-500" />}
               label="Hint used"
-              value={`${hintUsedCount} ${hintUsedCount === 1 ? "card" : "cards"}`}
+              value={`${hintUsedCount} ${hintUsedCount === 1 ? 'card' : 'cards'}`}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SRS graduation callout — only render when the session actually
+          graduated cards. Each graduation writes an SrsCard row that
+          surfaces on `/srs` the next day. */}
+      {newlyMastered > 0 && (
+        <Card className="bg-emerald-50/60">
+          <CardContent className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 text-sm">
+              <Sparkles className="h-4 w-4 text-emerald-600" />
+              <span className="text-neutral-800">
+                <span className="font-semibold">{newlyMastered}</span> card
+                {newlyMastered === 1 ? '' : 's'} graduated to Spaced Review.
+              </span>
+            </div>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/srs">See queue →</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Overall mastery — only render if we have the rollup */}
+      {latestProgress && (
+        <Card>
+          <CardContent className="space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+              Overall mastery
+            </p>
+            <MasteryBar
+              mastered={latestProgress.masteredCount}
+              total={latestProgress.totalCards}
             />
           </CardContent>
         </Card>
+      )}
 
-        {/* SRS graduation callout — only render when the session actually
-            graduated cards. Each graduation writes an SrsCard row that
-            surfaces on `/srs` the next day. */}
-        {newlyMastered > 0 && (
-          <Card className="bg-emerald-50/60">
-            <CardContent className="flex items-center justify-between gap-3 p-4">
-              <div className="flex items-center gap-3 text-sm">
-                <Sparkles size={18} className="text-emerald-600" />
-                <span className="text-gray-800">
-                  <span className="font-semibold">{newlyMastered}</span> card
-                  {newlyMastered === 1 ? "" : "s"} graduated to Spaced Review.
-                </span>
-              </div>
-              <Link
-                href="/srs"
-                className="text-sm font-medium text-emerald-700 hover:text-emerald-800"
-              >
-                See queue →
-              </Link>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Overall mastery — only render if we have the rollup */}
-        {latestProgress && (
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold text-gray-700">
-                Overall mastery
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <MasteryBar
-                mastered={latestProgress.masteredCount}
-                total={latestProgress.totalCards}
-              />
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Actions */}
-        <div className="flex flex-wrap items-center gap-3 pt-2">
-          <Button
-            onClick={() => router.push(`/modules/${moduleId}/${modeRoute}`)}
-            className="flex-1 sm:flex-none"
-          >
-            <RotateCcw size={16} className="mr-1" />
-            Study again
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => router.push(`/modules/${moduleId}`)}
-            className="flex-1 sm:flex-none"
-          >
-            <ArrowLeft size={16} className="mr-1" />
-            Back to module
-          </Button>
-          <Link
-            href={`/modules/${moduleId}/sessions`}
-            className="text-sm text-gray-500 hover:text-brand-500 inline-flex items-center gap-1 ml-auto"
-          >
-            <History size={14} /> Session history
+      {/* Actions */}
+      <div className="flex flex-wrap items-center gap-3 pt-2">
+        <Button
+          onClick={() => router.push(`/modules/${moduleId}/${modeRoute}`)}
+          className="flex-1 sm:flex-none"
+        >
+          <RotateCcw className="h-4 w-4" />
+          Study again
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => router.push(`/modules/${moduleId}`)}
+          className="flex-1 sm:flex-none"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to module
+        </Button>
+        <Button asChild variant="ghost" size="sm" className="ml-auto">
+          <Link href={`/modules/${moduleId}/sessions`}>
+            <History className="h-3.5 w-3.5" />
+            Session history
           </Link>
-        </div>
+        </Button>
       </div>
     </main>
   );
@@ -238,22 +226,22 @@ function Stat({
   icon: React.ReactNode;
   label: string;
   value: string;
-  accent?: "positive";
+  accent?: 'positive';
 }) {
   return (
     <div className="flex items-center justify-between gap-3 py-1">
-      <div className="flex items-center gap-2 text-gray-500">
+      <div className="flex items-center gap-2 text-neutral-500">
         {icon}
         <span>{label}</span>
       </div>
       <div
         className={
-          accent === "positive"
-            ? "font-semibold text-amber-600 inline-flex items-center gap-1"
-            : "font-semibold text-gray-800"
+          accent === 'positive'
+            ? 'inline-flex items-center gap-1 font-semibold text-brand-500'
+            : 'font-semibold text-neutral-900'
         }
       >
-        {accent === "positive" && <CheckCircle2 size={14} />}
+        {accent === 'positive' && <CheckCircle2 className="h-3.5 w-3.5" />}
         {value}
       </div>
     </div>
@@ -265,14 +253,14 @@ function MasteryBar({ mastered, total }: { mastered: number; total: number }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-600">
+        <span className="text-neutral-600">
           {mastered} of {total} mastered
         </span>
-        <span className="font-semibold text-gray-800">{pct}%</span>
+        <span className="font-semibold text-neutral-900">{pct}%</span>
       </div>
-      <div className="h-2.5 w-full bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-2.5 w-full overflow-hidden rounded-full bg-black/5">
         <div
-          className="h-full bg-emerald-500 transition-all"
+          className="h-full rounded-full bg-emerald-500 transition-all"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -284,11 +272,9 @@ function MasteryBar({ mastered, total }: { mastered: number; total: number }) {
 // "wrapping up" loader while `finish()` resolves.
 export function SessionResultsLoading() {
   return (
-    <main className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-brand-500" />
-        <p className="text-sm text-gray-500">Wrapping up your session…</p>
-      </div>
+    <main className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center gap-3 px-6 py-12">
+      <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
+      <p className="text-sm text-neutral-500">Wrapping up your session…</p>
     </main>
   );
 }
@@ -309,20 +295,21 @@ export function SessionResultsError({
 }) {
   const router = useRouter();
   return (
-    <main className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
-      <Card className="max-w-lg w-full">
-        <CardHeader>
-          <CardTitle className="text-rose-700 flex items-center gap-2">
-            <XCircle size={20} /> Couldn&apos;t save your session
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm text-gray-600">{error}</p>
-          <p className="text-xs text-gray-500">
+    <main className="mx-auto flex min-h-[60vh] max-w-lg flex-col justify-center px-6 py-12">
+      <Card>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-2">
+            <XCircle className="h-5 w-5 text-rose-600" />
+            <p className="text-lg font-semibold text-neutral-900">
+              Couldn&apos;t save your session
+            </p>
+          </div>
+          <p className="text-sm text-neutral-600">{error}</p>
+          <p className="text-xs text-neutral-500">
             Your answers were already recorded card-by-card — this was just
             the summary write. It&apos;s safe to retry.
           </p>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-wrap gap-2">
             <Button onClick={onRetry}>Try again</Button>
             <Button
               variant="outline"
