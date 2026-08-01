@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AxiosHeaders } from "axios";
 import { apiClient } from "@/lib/axios";
 import { apiFetch, type Schemas } from "@/lib/api/client";
 import { toast } from "sonner";
@@ -81,8 +82,26 @@ export function useDeleteMe() {
 
 /**
  * File uploads go through the raw axios client — apiFetch is JSON-only
- * by design, and multipart requires a different Content-Type. The
- * refresh-on-401 interceptor still runs since we're on the same
+ * by design, and multipart requires the browser to set the Content-Type
+ * (including the boundary parameter) itself.
+ *
+ * Gotcha: axios 1.x's `transformRequest` inspects the Content-Type
+ * header, and if it finds "application/json" it will `JSON.stringify`
+ * the FormData into a JSON body — see
+ * `node_modules/.../axios/lib/defaults/index.js`:
+ *     if (isFormData) {
+ *       return hasJSONContentType ? JSON.stringify(formDataToJSON(data)) : data;
+ *     }
+ * Our `apiClient` sets `Content-Type: application/json` on the
+ * instance, so the default *would* apply here and multer on the server
+ * would receive JSON where it expects multipart → 500.
+ *
+ * Fix: build an `AxiosHeaders` object and call `setContentType(false)`.
+ * Axios's `toJSON()` drops any header whose value is `null` / `false`,
+ * so the request goes out with NO Content-Type — the browser then
+ * fills in `multipart/form-data; boundary=<...>` automatically.
+ *
+ * The refresh-on-401 interceptor still runs since we're on the same
  * apiClient instance.
  */
 export function useUpdateProfilePicture() {
@@ -91,25 +110,67 @@ export function useUpdateProfilePicture() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
+      const headers = new AxiosHeaders();
+      headers.setContentType(false);
       const { data } = await apiClient.patch<{
         ok: boolean;
         message?: string;
         data?: User;
-      }>("/users/me/profile-picture", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      }>("/users/me/profile-picture", formData, { headers });
       return unwrap(data, "Failed to upload profile picture");
     },
-    onSuccess: () => {
+    onMutate: async (file: File) => {
+      // Optimistic UX: show the picked file immediately as a preview.
+      // The blob URL is scoped to this browser tab, so it's cheap; we
+      // revoke it in onSettled to avoid leaking memory when the real
+      // server URL replaces it.
+      const previewUrl = URL.createObjectURL(file);
+      await qc.cancelQueries({ queryKey: userKeys.me() });
+      const previous = qc.getQueryData<User>(userKeys.me());
+      if (previous) {
+        qc.setQueryData<User>(userKeys.me(), {
+          ...previous,
+          profilePicture: previewUrl,
+        });
+      }
+      return { previous, previewUrl };
+    },
+    onSuccess: (user) => {
+      // Trust the server response — it's the canonical URL. We still
+      // invalidate to keep any other queries that read `/users/me` in sync.
+      qc.setQueryData(userKeys.me(), user);
       qc.invalidateQueries({ queryKey: userKeys.me() });
       toast.success("Profile picture updated");
     },
-    onError: (err: unknown) => {
-      toast.error(
-        (err as Error).message || "Failed to upload profile picture",
-      );
+    onError: (err: unknown, _file, ctx) => {
+      // Roll the cache back to what the server actually said.
+      if (ctx?.previous) qc.setQueryData(userKeys.me(), ctx.previous);
+      const serverError = extractServerError(err);
+      toast.error(serverError ?? "Failed to upload profile picture");
+    },
+    onSettled: (_data, _err, _file, ctx) => {
+      // Release the blob URL now that the real (or rolled-back) value
+      // is in the cache.
+      if (ctx?.previewUrl) URL.revokeObjectURL(ctx.previewUrl);
     },
   });
+}
+
+/**
+ * Best-effort extraction of the server's `message` field from an axios
+ * error payload. Falls back to the generic Error.message when the
+ * response envelope doesn't match the expected shape.
+ */
+function extractServerError(err: unknown): string | undefined {
+  if (typeof err !== "object" || err === null) return undefined;
+  const response = (err as { response?: { data?: unknown } }).response;
+  const data = response?.data;
+  if (data && typeof data === "object") {
+    const message = (data as { message?: unknown }).message;
+    if (typeof message === "string" && message.length > 0) return message;
+  }
+  const msg = (err as { message?: unknown }).message;
+  return typeof msg === "string" ? msg : undefined;
 }
 
 export function useChangePassword() {

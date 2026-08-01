@@ -6,6 +6,7 @@ import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
 import { join } from 'path';
 import { PrismaService } from './common/prisma/prisma.service';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 import 'reflect-metadata';
 import helmet from 'helmet';
@@ -76,6 +77,11 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
   );
+
+  // Global exception filter — surfaces validation / storage / sharp
+  // errors as structured JSON envelopes and mirrors non-HttpException
+  // stacks to logs/exceptions.log so 500s are debuggable post-hoc.
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   // Swagger setup
   const config = new DocumentBuilder()

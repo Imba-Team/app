@@ -34,10 +34,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import ModuleHeader from './_components/ModuleHeader';
-import TermFilterPills, {
-  toServerFilter,
-  type TermFilterKey,
-} from '@/components/TermFilterPills';
+import TermsFilterBar, {
+  sortTerms,
+  type SortDir,
+  type SortField,
+  type StatusFilter,
+} from '@/components/TermsFilterBar';
 import type { Term } from '@/lib/api';
 import { resetSetProgress } from '@/lib/api';
 import { useModule, useCollectModule } from '@/lib/hooks/useModules';
@@ -68,7 +70,10 @@ const MODE_CARDS: ModeCard[] = [
 
 export default function LearnPageClient({ id }: { id: string }) {
   const queryClient = useQueryClient();
-  const [filter, setFilter] = useState<TermFilterKey>('all');
+  const [starredOnly, setStarredOnly] = useState(false);
+  const [status, setStatus] = useState<StatusFilter>('all');
+  const [sortField, setSortField] = useState<SortField>('original');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [searchInput, setSearchInput] = useState('');
   const debouncedSearch = useDebouncedValue(searchInput);
   const { data: moduleData, isLoading: moduleLoading } = useModule(id);
@@ -77,14 +82,18 @@ export default function LearnPageClient({ id }: { id: string }) {
   // the full count, not the filtered subset.
   const { data: allTerms = [] } = useTerms(id);
   const {
-    data: terms = [],
+    data: fetchedTerms = [],
     isLoading: termsLoading,
     isFetching: termsFetching,
   } = useTerms(id, {
-    ...toServerFilter(filter),
+    starred: starredOnly ? true : undefined,
+    status: status === 'all' ? undefined : status,
     q: debouncedSearch,
   });
-  const hasActiveFilter = filter !== 'all' || debouncedSearch.trim().length > 0;
+  // Server does the filtering; we sort client-side.
+  const terms = sortTerms(fetchedTerms, sortField, sortDir);
+  const hasActiveFilter =
+    starredOnly || status !== 'all' || debouncedSearch.trim().length > 0;
   const createTerm = useCreateTerm();
   const updateTerm = useUpdateTerm();
   const deleteTerm = useDeleteTerm();
@@ -284,7 +293,18 @@ export default function LearnPageClient({ id }: { id: string }) {
             {allTerms.length > 1 && (
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
                 {isCollected && (
-                  <TermFilterPills value={filter} onChange={setFilter} />
+                  <TermsFilterBar
+                    starredOnly={starredOnly}
+                    onStarredOnlyChange={setStarredOnly}
+                    sortField={sortField}
+                    sortDir={sortDir}
+                    onSortChange={(field, dir) => {
+                      setSortField(field);
+                      setSortDir(dir);
+                    }}
+                    status={status}
+                    onStatusChange={setStatus}
+                  />
                 )}
                 <div className="relative flex-1 sm:min-w-64">
                   <Search
@@ -331,11 +351,14 @@ export default function LearnPageClient({ id }: { id: string }) {
                         Clear search
                       </Button>
                     )}
-                    {filter !== 'all' && (
+                    {(starredOnly || status !== 'all') && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setFilter('all')}
+                        onClick={() => {
+                          setStarredOnly(false);
+                          setStatus('all');
+                        }}
                       >
                         Show all terms
                       </Button>
