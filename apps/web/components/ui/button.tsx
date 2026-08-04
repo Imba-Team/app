@@ -15,9 +15,16 @@ const buttonVariants = cva(
         outline: 'border border-black/10 bg-transparent text-neutral-800 hover:bg-black/5',
         destructive: 'bg-rose-500 text-white hover:bg-rose-600 focus-visible:ring-rose-500/30',
         link: 'text-neutral-900 underline-offset-4 hover:underline rounded-none px-0',
+        // navbar: 'bg-white text-neutral-800 hover:bg-black/5',
+        navbar: cn(
+          'relative isolate overflow-hidden bg-white text-neutral-800',
+          // the sweeping fill
+          'before:absolute before:inset-0 before:-z-10 before:origin-left before:scale-x-0 before:rounded-full before:bg-black/5 before:transition-transform before:duration-200 before:ease-out',
+          'hover:before:scale-x-100',
+        ),
       },
       size: {
-        default: 'h-11 px-4',
+        default: cn('h-11 px-4'),
         sm: 'h-9 px-4 text-sm',
         lg: 'h-12 px-6',
         icon: 'size-11',
@@ -45,11 +52,13 @@ function Button({
   const Comp = asChild ? Slot : 'button';
 
   return (
-    <Comp
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
+    <div className={cn(variant == 'navbar' && 'bg-white rounded-full p-1 border border-black/5')}>
+      <Comp
+        data-slot="button"
+        className={cn(buttonVariants({ variant, size, className }))}
+        {...props}
+      />
+    </div>
   );
 }
 

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, LogIn, LogOut, Moon, Search, Settings, Sun, User2 } from 'lucide-react';
+import { Bell, LogIn, LogOut, Moon, Plus, Search, Settings, Sun, User2 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
@@ -75,6 +75,17 @@ export default function Navbar({ variant }: { variant: NavbarVariant }) {
 
         {variant === 'app' && <SearchBar />}
         <div className="ml-auto flex items-center gap-3">
+          <Link href="/modules/new">
+            <Button
+              type="button"
+              aria-label="Notifications"
+              className={iconPillClass}
+              variant="navbar"
+            >
+              <Plus className="size-4" />
+            </Button>
+          </Link>
+
           <SlideNav links={links} pathname={pathname} />
 
           {variant === 'app' ? (
@@ -245,7 +256,7 @@ function ProfileMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-64 p-2">
-        <div className="flex items-center gap-3 px-2 py-2">
+        <div className="flex items-center gap-3 px-2 py-2 ">
           <ProfileAvatar
             hasProfilePicture={hasProfilePicture}
             avatarSrc={avatarSrc}
@@ -280,7 +291,7 @@ function ProfileMenu({
 }
 
 const iconPillClass =
-  'inline-flex h-11 w-11 items-center justify-center rounded-full border border-black/5 bg-white text-neutral-800 transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20';
+  'inline-flex size-9 items-center justify-center rounded-full bg-white text-neutral-800 transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20';
 
 type AvatarProps = {
   isLoading?: boolean;
@@ -304,7 +315,7 @@ function ProfileAvatar({ isLoading, hasProfilePicture, avatarSrc, avatarAlt }: A
     );
   }
   return (
-    <span className="flex size-9 items-center justify-center rounded-full bg-brand-500/10 text-brand-500">
+    <span className="flex size-10 items-center justify-center rounded-full bg-brand-500/10 text-brand-500">
       <User2 className="size-4" />
     </span>
   );
@@ -331,9 +342,9 @@ function AppActions({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <button type="button" aria-label="Notifications" className={iconPillClass}>
-        <Bell className="h-4 w-4" />
-      </button>
+      <Button type="button" aria-label="Notifications" className={iconPillClass} variant="navbar">
+        <Bell className="size-4" />
+      </Button>
 
       <ProfileMenu
         displayName={displayName}
@@ -344,10 +355,11 @@ function AppActions({
         hasProfilePicture={hasProfilePicture}
         onLogout={onLogout}
         trigger={
-          <button
+          <Button
             type="button"
+            variant="secondary"
             aria-label="Open profile menu"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-black/5 bg-white transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+            className="inline-flex size-11 items-center justify-center hover:bg-white"
           >
             <ProfileAvatar
               isLoading={isLoading}
@@ -355,7 +367,7 @@ function AppActions({
               avatarSrc={avatarSrc}
               avatarAlt={avatarAlt}
             />
-          </button>
+          </Button>
         }
       />
     </div>
@@ -398,10 +410,11 @@ function LandingActions({
         hasProfilePicture={hasProfilePicture}
         onLogout={onLogout}
         trigger={
-          <button
+          <Button
             type="button"
             aria-label={`Continue as ${displayName ?? 'signed-in user'}`}
-            className="inline-flex h-11 items-center gap-2 rounded-full border border-black/5 bg-white pl-1 pr-4 text-neutral-800 transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+            className="h-9 flex px-1.5"
+            variant="navbar"
           >
             <ProfileAvatar
               hasProfilePicture={hasProfilePicture}
@@ -412,7 +425,7 @@ function LandingActions({
               <span className="text-neutral-500">Continue as</span>{' '}
               <span className="text-neutral-900">{displayName || 'you'}</span>
             </span>
-          </button>
+          </Button>
         }
       />
     );
@@ -421,7 +434,7 @@ function LandingActions({
   return (
     <div className="flex items-center gap-2">
       <Link href="/login">
-        <Button variant="secondary">
+        <Button variant="navbar" className="h-9">
           <LogIn className="mr-1 h-4 w-4" />
           Log in
         </Button>
