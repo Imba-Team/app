@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BookOpen, Compass, Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useCreateModuleDialog } from "@/contexts/CreateModuleDialogContext";
 
 /**
  * First-run screen for a learner with zero modules.
@@ -13,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
  * (primary CTA) or discover something in the Community tab.
  */
 export default function EmptyDashboard() {
+  const createModule = useCreateModuleDialog();
   return (
     <section className="py-6">
       {/* Hero */}
@@ -34,14 +36,12 @@ export default function EmptyDashboard() {
           </p>
           <div className="flex flex-wrap gap-3">
             <Button
-              asChild
               size="lg"
+              onClick={() => createModule.open()}
               className="bg-neutral-900 text-white hover:bg-neutral-800"
             >
-              <Link href="/modules/new">
-                <Plus size={18} className="mr-1" />
-                Create your first module
-              </Link>
+              <Plus size={18} className="mr-1" />
+              Create your first module
             </Button>
             <Button
               asChild
@@ -69,7 +69,11 @@ export default function EmptyDashboard() {
           Recent Modules
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <Link href="/modules/new" className="block">
+          <button
+            type="button"
+            onClick={() => createModule.open()}
+            className="block w-full text-left"
+          >
             <Card className="p-6 cursor-pointer h-32 flex items-center justify-center">
               <CardContent className="p-0 text-center">
                 <div className="mx-auto mb-2 rounded-full bg-brand-500/10 p-2 w-fit">
@@ -83,7 +87,7 @@ export default function EmptyDashboard() {
                 </p>
               </CardContent>
             </Card>
-          </Link>
+          </button>
           <Card className="bg-gray-50 p-6 h-32 flex items-center justify-center">
             <CardContent className="p-0 text-center text-gray-400">
               <BookOpen size={20} className="mx-auto mb-1" />

@@ -6,6 +6,7 @@ import { ArrowRight, Folder as FolderIcon, Layers, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCreateModuleDialog } from '@/contexts/CreateModuleDialogContext';
 import type { Folder, LibraryItem } from '@/lib/api';
 import { useFolders, useLibrarySets } from '@/lib/hooks/useLibrary';
 
@@ -16,6 +17,7 @@ type Row = { kind: 'folder'; folder: Folder } | { kind: 'set'; set: LibraryItem 
 export function LibraryPreview() {
   const sets = useLibrarySets();
   const folders = useFolders();
+  const createModule = useCreateModuleDialog();
 
   const isLoading = sets.isLoading || folders.isLoading;
 
@@ -55,10 +57,8 @@ export function LibraryPreview() {
               Modules you create or collect from Discover show up here.
             </p>
             <div className="flex gap-2">
-              <Button asChild size="sm">
-                <Link href="/modules/new">
-                  <Plus className="mr-1 h-4 w-4" /> New module
-                </Link>
+              <Button size="sm" onClick={() => createModule.open()}>
+                <Plus className="mr-1 h-4 w-4" /> New module
               </Button>
               <Button asChild size="sm" variant="outline">
                 <Link href="/discover">Browse Discover</Link>

@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCreateModuleDialog } from '@/contexts/CreateModuleDialogContext';
 import { useMe } from '@/lib/hooks/useUser';
 import { buildAssetUrl } from '@/lib/env';
 import { cn } from '@/lib/utils';
@@ -48,6 +49,7 @@ export default function Navbar({ variant }: { variant: NavbarVariant }) {
   const { isAuthenticated, isLoading, logout } = useAuth();
   const { data: me } = useMe();
   const scrolled = useHasScrolled();
+  const createModule = useCreateModuleDialog();
 
   const links = variant === 'app' ? APP_LINKS : LANDING_LINKS;
   const profilePictureUrl = buildAssetUrl(me?.profilePicture) || '';
@@ -75,16 +77,15 @@ export default function Navbar({ variant }: { variant: NavbarVariant }) {
 
         {variant === 'app' && <SearchBar />}
         <div className="ml-auto flex items-center gap-3">
-          <Link href="/modules/new">
-            <Button
-              type="button"
-              aria-label="Notifications"
-              className={iconPillClass}
-              variant="navbar"
-            >
-              <Plus className="size-4" />
-            </Button>
-          </Link>
+          <Button
+            type="button"
+            aria-label="Create module"
+            className={iconPillClass}
+            variant="navbar"
+            onClick={() => createModule.open()}
+          >
+            <Plus className="size-4" />
+          </Button>
 
           <SlideNav links={links} pathname={pathname} />
 

@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { CreateModuleDialogProvider } from '@/contexts/CreateModuleDialogContext';
 import { QueryProvider } from '@/lib/providers/QueryProvider';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -13,8 +14,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <QueryProvider>
       <AuthProvider>
-        {!isAuthPage && <Navbar variant={variant} />}
-        {children}
+        <CreateModuleDialogProvider>
+          {!isAuthPage && <Navbar variant={variant} />}
+          {children}
+        </CreateModuleDialogProvider>
       </AuthProvider>
     </QueryProvider>
   );

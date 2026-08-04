@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Folder as FolderIcon, Layers, Plus, Search, SearchX, Star, User } from 'lucide-react';
 
@@ -9,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCreateModuleDialog } from '@/contexts/CreateModuleDialogContext';
 import type { Folder, LibraryItem } from '@/lib/api';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 import { useFolders, useLibrarySets } from '@/lib/hooks/useLibrary';
@@ -26,6 +26,7 @@ const FILTERS: { id: Filter; label: string }[] = [
 
 export default function LibraryPage() {
   const router = useRouter();
+  const createModule = useCreateModuleDialog();
   const [filter, setFilter] = useState<Filter>('all');
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
@@ -75,10 +76,8 @@ export default function LibraryPage() {
           <Button variant="outline" size="sm" onClick={() => setNewFolderOpen(true)}>
             <FolderIcon className="mr-1 h-4 w-4" /> New folder
           </Button>
-          <Button size="sm" asChild>
-            <Link href="/modules/new">
-              <Plus className="mr-1 h-4 w-4" /> New module
-            </Link>
+          <Button size="sm" onClick={() => createModule.open()}>
+            <Plus className="mr-1 h-4 w-4" /> New module
           </Button>
         </div>
       </div>
@@ -115,7 +114,11 @@ export default function LibraryPage() {
           ))}
         </div>
       ) : isEmpty ? (
-        <EmptyState searching={q.length > 0} filter={filter} />
+        <EmptyState
+          searching={q.length > 0}
+          filter={filter}
+          onCreateModule={() => createModule.open()}
+        />
       ) : (
         <div className="space-y-8">
           {showFolders && filteredFolders.length > 0 && (
@@ -212,7 +215,16 @@ function SetCard({ set, onClick }: { set: LibraryItem; onClick: () => void }) {
   );
 }
 
-function EmptyState({ searching, filter }: { searching: boolean; filter: Filter }) {
+function EmptyState({
+  searching,
+  filter,
+  onCreateModule,
+}: {
+  searching: boolean;
+  filter: Filter;
+  onCreateModule: () => void;
+}) {
+  const router = useRouter();
   return (
     <Card>
       <CardContent className="flex flex-col items-center gap-2 p-10 text-center">
@@ -232,11 +244,11 @@ function EmptyState({ searching, filter }: { searching: boolean; filter: Filter 
             : 'Create a module or browse the community to fill your library.'}
         </p>
         <div className="mt-2 flex gap-2">
-          <Button asChild size="sm">
-            <Link href="/modules/new">New module</Link>
+          <Button size="sm" onClick={onCreateModule}>
+            New module
           </Button>
-          <Button asChild size="sm" variant="outline">
-            <Link href="/discover">Browse discover</Link>
+          <Button size="sm" variant="outline" onClick={() => router.push('/discover')}>
+            Browse discover
           </Button>
         </div>
       </CardContent>
