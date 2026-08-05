@@ -3,14 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  Folder as FolderIcon,
-  Globe,
-  Loader2,
-  Lock,
-  Plus,
-  Trash2,
-} from 'lucide-react';
+import { Folder as FolderIcon, Globe, Loader2, Lock, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -22,6 +15,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -29,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { createTerm } from '@/lib/api';
 import { useAddSetsToFolder, useFolders } from '@/lib/hooks/useLibrary';
 import { useCreateModule } from '@/lib/hooks/useModules';
@@ -40,11 +36,7 @@ const NO_FOLDER = '__none__';
 const FIELD_CLASS =
   'w-full min-h-24 resize-y rounded-2xl border border-black/10 bg-white px-4 py-3 text-base leading-relaxed text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/20 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40 disabled:bg-neutral-50';
 
-const INPUT_CLASS =
-  'w-full h-11 rounded-full border border-black/10 bg-white px-4 text-base text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/20 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40 disabled:bg-neutral-50';
-
-const LABEL_CLASS =
-  'text-[11px] font-semibold uppercase tracking-wide text-neutral-500';
+const LABEL_CLASS = 'text-[11px] font-semibold uppercase tracking-wide text-neutral-500';
 
 interface DraftCard {
   key: string;
@@ -71,25 +63,15 @@ interface Props {
   defaultFolderId?: string;
 }
 
-export function CreateModuleDialog({
-  open,
-  onOpenChange,
-  defaultFolderId,
-}: Props) {
+export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
-  const [folderId, setFolderId] = useState<string>(
-    defaultFolderId ?? NO_FOLDER,
-  );
-  const [cards, setCards] = useState<DraftCard[]>(() => [
-    emptyCard(),
-    emptyCard(),
-    emptyCard(),
-  ]);
+  const [folderId, setFolderId] = useState<string>(defaultFolderId ?? NO_FOLDER);
+  const [cards, setCards] = useState<DraftCard[]>(() => [emptyCard(), emptyCard(), emptyCard()]);
   const [saving, setSaving] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
 
@@ -104,15 +86,11 @@ export function CreateModuleDialog({
     titleRef.current?.focus();
   }, []);
 
-  const filledCards = cards.filter(
-    (c) => c.term.trim() && c.definition.trim(),
-  );
+  const filledCards = cards.filter((c) => c.term.trim() && c.definition.trim());
   const canSubmit = title.trim().length > 0 && !saving;
 
   const updateCard = (key: string, patch: Partial<DraftCard>) => {
-    setCards((prev) =>
-      prev.map((c) => (c.key === key ? { ...c, ...patch } : c)),
-    );
+    setCards((prev) => prev.map((c) => (c.key === key ? { ...c, ...patch } : c)));
   };
 
   const removeCard = (key: string) => {
@@ -188,15 +166,14 @@ export function CreateModuleDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={!saving}
-        className="flex flex-col gap-0 p-0 sm:max-w-4xl max-h-[85vh] overflow-hidden"
+        className="flex flex-col gap-0 p-0 sm:max-w-5xl max-h-[85vh] overflow-hidden"
       >
         <DialogHeader className="shrink-0 border-b border-black/5 px-6 pr-14 pt-6 pb-4">
           <DialogTitle className="text-2xl font-bold text-neutral-900">
             Create a new module
           </DialogTitle>
           <DialogDescription>
-            Set the details on the left, then draft your first few flashcards
-            on the right.
+            Set the details on the left, then draft your first few flashcards on the right.
           </DialogDescription>
         </DialogHeader>
 
@@ -204,10 +181,10 @@ export function CreateModuleDialog({
           {/* Left column — module details */}
           <div className="space-y-5 overflow-y-auto border-b border-black/5 p-6 md:border-b-0 md:border-r">
             <div className="space-y-2">
-              <label htmlFor="module-title" className={LABEL_CLASS}>
-                Title <span className="ml-0.5 text-rose-500">*</span>
-              </label>
-              <input
+              <Label htmlFor="module-title" className="text-neutral-500">
+                Title <span className="text-rose-500">*</span>
+              </Label>
+              <Input
                 ref={titleRef}
                 id="module-title"
                 type="text"
@@ -215,18 +192,15 @@ export function CreateModuleDialog({
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Advanced Biology"
                 disabled={saving}
-                className={INPUT_CLASS}
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="module-description" className={LABEL_CLASS}>
+              <Label htmlFor="module-description" className="text-neutral-500">
                 Description{' '}
-                <span className="ml-1 font-normal normal-case text-neutral-400">
-                  (optional)
-                </span>
-              </label>
-              <textarea
+                <span className="ml-1 font-normal normal-case text-neutral-400">(optional)</span>
+              </Label>
+              <Textarea
                 id="module-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -238,18 +212,13 @@ export function CreateModuleDialog({
             </div>
 
             <div className="space-y-2">
-              <span className={LABEL_CLASS}>Visibility</span>
-              <div
-                role="radiogroup"
-                aria-label="Visibility"
-                className="grid grid-cols-1 gap-2"
-              >
+              <Label className="text-neutral-500">Visibility</Label>
+              <div role="radiogroup" aria-label="Visibility" className="grid grid-cols-2 gap-2">
                 <VisibilityOption
                   selected={!isPrivate}
                   onClick={() => setIsPrivate(false)}
                   icon={<Globe className="h-4 w-4" />}
                   label="Public"
-                  hint="Anyone can find & save it."
                   disabled={saving}
                 />
                 <VisibilityOption
@@ -257,22 +226,16 @@ export function CreateModuleDialog({
                   onClick={() => setIsPrivate(true)}
                   icon={<Lock className="h-4 w-4" />}
                   label="Private"
-                  hint="Only you can see it."
                   disabled={saving}
                 />
               </div>
             </div>
-          </div>
 
-          {/* Right column — folder + flashcards */}
-          <div className="flex min-h-0 flex-col overflow-hidden">
-            <div className="shrink-0 space-y-2 border-b border-black/5 p-6 pb-4">
-              <label htmlFor="module-folder" className={LABEL_CLASS}>
-                Folder{' '}
-                <span className="ml-1 font-normal normal-case text-neutral-400">
-                  (optional)
-                </span>
-              </label>
+            {/* Folder selection */}
+            <div className="shrink-0 space-y-2">
+              <Label htmlFor="module-folder" className="text-neutral-500">
+                Folder <span className="text-neutral-500">(optional)</span>
+              </Label>
               <Select
                 value={folderId}
                 onValueChange={setFolderId}
@@ -294,13 +257,15 @@ export function CreateModuleDialog({
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
+          {/* Right column — folder + flashcards */}
+          <div className="flex min-h-0 flex-col overflow-hidden">
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-6 pt-4">
               <div>
-                <p className={LABEL_CLASS}>Flashcards</p>
+                <Label className="text-neutral-500">Flashcards</Label>
                 <p className="mt-1 text-xs text-neutral-500">
-                  {filledCards.length} of {cards.length} filled — empty rows
-                  are skipped.
+                  {filledCards.length} of {cards.length} filled — empty rows are skipped.
                 </p>
               </div>
 
@@ -321,15 +286,16 @@ export function CreateModuleDialog({
                 ))}
               </div>
 
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={addCard}
                 disabled={saving}
                 className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-black/10 bg-white/40 text-sm font-medium text-neutral-700 transition-colors hover:border-brand-400 hover:bg-brand-300/10 hover:text-brand-500 disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
                 Add another card
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -338,9 +304,8 @@ export function CreateModuleDialog({
           <p className="text-xs text-neutral-500">
             {title.trim() ? (
               <>
-                Creating <span className="font-medium">{title.trim()}</span>{' '}
-                with {filledCards.length}{' '}
-                {filledCards.length === 1 ? 'flashcard' : 'flashcards'}.
+                Creating <span className="font-medium">{title.trim()}</span> with{' '}
+                {filledCards.length} {filledCards.length === 1 ? 'flashcard' : 'flashcards'}.
               </>
             ) : (
               'Title is required.'
@@ -355,12 +320,7 @@ export function CreateModuleDialog({
             >
               Cancel
             </Button>
-            <Button
-              type="button"
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              className="min-w-32"
-            >
+            <Button type="button" onClick={handleSubmit} disabled={!canSubmit} className="min-w-32">
               {saving ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -386,29 +346,27 @@ function VisibilityOption({
   onClick,
   icon,
   label,
-  hint,
   disabled,
 }: {
   selected: boolean;
   onClick: () => void;
   icon: React.ReactNode;
   label: string;
-  hint: string;
   disabled?: boolean;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
       role="radio"
       aria-checked={selected}
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'rounded-2xl border p-4 text-left transition-colors',
-        'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-300/40',
+        'h-auto w-full flex-col items-start justify-start p-2 px-3',
         selected
-          ? 'border-brand-400 bg-brand-300/15'
-          : 'border-black/10 bg-white hover:border-black/20',
+          ? 'border-brand-400 bg-brand-300/15 hover:bg-brand-300/15'
+          : ' bg-white hover:border-black/20 hover:bg-white',
         disabled && 'cursor-not-allowed opacity-60',
       )}
     >
@@ -421,8 +379,8 @@ function VisibilityOption({
         {icon}
         {label}
       </div>
-      <div className="mt-1 text-xs text-neutral-500">{hint}</div>
-    </button>
+      {/* <div className="mt-1 text-xs font-normal text-neutral-500">{hint}</div> */}
+    </Button>
   );
 }
 
@@ -458,57 +416,57 @@ function FlashcardRow({
       e.preventDefault();
       onAppendIfLast();
       queueMicrotask(() => {
-        const next = document.querySelector<HTMLTextAreaElement>(
-          `[data-card-term="${index + 1}"]`,
-        );
+        const next = document.querySelector<HTMLTextAreaElement>(`[data-card-term="${index + 1}"]`);
         next?.focus();
       });
     }
   };
 
   return (
-    <div className="space-y-3 rounded-2xl border border-black/5 bg-white/60 p-4">
+    <div className="rounded-2xl border border-black/5 bg-white/60 p-4">
       <div className="flex items-center justify-between">
         <span className="font-mono text-xs text-neutral-400">
           #{(index + 1).toString().padStart(2, '0')}
         </span>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-sm"
           onClick={onRemove}
           disabled={disabled || !canRemove}
           aria-label="Remove card"
           className={cn(
-            'inline-flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 transition-colors',
+            'h-8 w-8 rounded-full text-neutral-400 transition-colors',
             canRemove && !disabled && 'hover:bg-rose-50 hover:text-rose-600',
             !canRemove && 'cursor-not-allowed opacity-30',
           )}
         >
           <Trash2 className="h-4 w-4" />
-        </button>
+        </Button>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
-          <label className={LABEL_CLASS}>Term</label>
-          <textarea
+          {/* <Label className={LABEL_CLASS}>Term</Label> */}
+          <Textarea
             ref={termRef}
             data-card-term={index}
             value={card.term}
             onChange={(e) => onChange({ term: e.target.value })}
             onKeyDown={handleTermKey}
-            placeholder="e.g. photosynthesis"
+            placeholder="Enter the term"
             rows={2}
             disabled={disabled}
             className={FIELD_CLASS}
           />
         </div>
         <div className="space-y-2">
-          <label className={LABEL_CLASS}>Definition</label>
-          <textarea
+          {/* <Label className={LABEL_CLASS}>Definition</Label> */}
+          <Textarea
             ref={defRef}
             value={card.definition}
             onChange={(e) => onChange({ definition: e.target.value })}
             onKeyDown={handleDefKey}
-            placeholder="Explanation (Shift+Enter for a new line)"
+            placeholder="Enter the definition"
             rows={2}
             disabled={disabled}
             className={FIELD_CLASS}

@@ -8,13 +8,10 @@ type InputProps = React.ComponentProps<'input'> & {
 };
 
 const inputBase =
-  'h-11 w-full min-w-0 rounded-full border border-black/5 bg-white text-sm text-neutral-900 placeholder:text-neutral-500 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-black/20 disabled:cursor-not-allowed disabled:opacity-50 file:inline-flex file:h-9 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-neutral-800';
+  'h-11 w-full min-w-0 rounded-full border border-black/5 bg-white text-sm text-neutral-900 placeholder:text-neutral-500 placeholder:text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-black/20 disabled:cursor-not-allowed disabled:opacity-50 file:inline-flex file:h-9 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-neutral-800';
 
 function Input({ className, type, startIcon, endIcon, ...props }: InputProps) {
-  const paddingClass = cn(
-    startIcon ? 'pl-11' : 'pl-4',
-    endIcon ? 'pr-11' : 'pr-4',
-  );
+  const paddingClass = cn(startIcon ? 'pl-11' : 'pl-4', endIcon ? 'pr-11' : 'pr-4');
 
   if (!startIcon && !endIcon) {
     return (

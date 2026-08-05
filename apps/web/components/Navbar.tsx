@@ -77,15 +77,17 @@ export default function Navbar({ variant }: { variant: NavbarVariant }) {
 
         {variant === 'app' && <SearchBar />}
         <div className="ml-auto flex items-center gap-3">
-          <Button
-            type="button"
-            aria-label="Create module"
-            className={iconPillClass}
-            variant="navbar"
-            onClick={() => createModule.open()}
-          >
-            <Plus className="size-4" />
-          </Button>
+          {variant === 'app' && (
+            <Button
+              type="button"
+              aria-label="Create module"
+              className={iconPillClass}
+              variant="navbar"
+              onClick={() => createModule.open()}
+            >
+              <Plus className="size-4" />
+            </Button>
+          )}
 
           <SlideNav links={links} pathname={pathname} />
 
