@@ -34,7 +34,9 @@ export class SetProgressController {
     description:
       'Returns { totalCards, newCount, learningCount, masteredCount }. Cache-aside via Redis (5-min TTL, invalidated on every answer).',
   })
-  @ApiOkEnvelope(SetProgressSummaryDto, { description: 'Set progress retrieved' })
+  @ApiOkEnvelope(SetProgressSummaryDto, {
+    description: 'Set progress retrieved',
+  })
   async getMine(
     @CurrentUser() user: IUser,
     @Param('setId', new ParseUUIDPipe()) setId: string,

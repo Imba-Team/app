@@ -76,7 +76,7 @@ describe('SrsService', () => {
   const studySetId = '44444444-4444-4444-4444-444444444444';
 
   describe('review', () => {
-    it("advances dueDate by SM-2 interval on GOOD rating from a fresh card", async () => {
+    it('advances dueDate by SM-2 interval on GOOD rating from a fresh card', async () => {
       const prisma = makePrisma();
       const redis = makeRedis();
 
@@ -114,11 +114,7 @@ describe('SrsService', () => {
       }));
       prisma.srsCard.count.mockResolvedValue(0);
 
-      const svc = new SrsService(
-        fakeLogger(),
-        prisma as never,
-        redis,
-      );
+      const svc = new SrsService(fakeLogger(), prisma as never, redis);
 
       const result = await svc.review(userId, srsCardId, {
         attemptId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -171,11 +167,7 @@ describe('SrsService', () => {
       }));
       prisma.srsCard.count.mockResolvedValue(0);
 
-      const svc = new SrsService(
-        fakeLogger(),
-        prisma as never,
-        redis,
-      );
+      const svc = new SrsService(fakeLogger(), prisma as never, redis);
 
       const result = await svc.review(userId, srsCardId, {
         attemptId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
@@ -187,7 +179,7 @@ describe('SrsService', () => {
       expect(result.card.lapses).toBe(2);
     });
 
-    it('rejects reviewing another user\'s card', async () => {
+    it("rejects reviewing another user's card", async () => {
       const prisma = makePrisma();
       prisma.srsCard.findUnique.mockResolvedValue({
         id: srsCardId,
@@ -200,14 +192,16 @@ describe('SrsService', () => {
         isLeech: false,
         dueDate: startOfUtcDay(),
         lastReviewed: null,
-        card: { id: cardId, studySetId, term: 't', definition: 'd', hint: null },
+        card: {
+          id: cardId,
+          studySetId,
+          term: 't',
+          definition: 'd',
+          hint: null,
+        },
       });
 
-      const svc = new SrsService(
-        fakeLogger(),
-        prisma as never,
-        makeRedis(),
-      );
+      const svc = new SrsService(fakeLogger(), prisma as never, makeRedis());
 
       await expect(
         svc.review(userId, srsCardId, {
@@ -221,11 +215,7 @@ describe('SrsService', () => {
       const prisma = makePrisma();
       prisma.srsCard.findUnique.mockResolvedValue(null);
 
-      const svc = new SrsService(
-        fakeLogger(),
-        prisma as never,
-        makeRedis(),
-      );
+      const svc = new SrsService(fakeLogger(), prisma as never, makeRedis());
 
       await expect(
         svc.review(userId, srsCardId, {
@@ -287,11 +277,7 @@ describe('SrsService', () => {
         { dueDate: addDays(today, 2), _count: { _all: 5 } },
       ]);
 
-      const svc = new SrsService(
-        fakeLogger(),
-        prisma as never,
-        makeRedis(),
-      );
+      const svc = new SrsService(fakeLogger(), prisma as never, makeRedis());
 
       const forecast = await svc.getForecast(userId, 7);
       expect(forecast.days).toBe(7);
@@ -335,11 +321,7 @@ describe('SrsService', () => {
       ]);
       prisma.srsCard.count.mockResolvedValue(1);
 
-      const svc = new SrsService(
-        fakeLogger(),
-        prisma as never,
-        makeRedis(),
-      );
+      const svc = new SrsService(fakeLogger(), prisma as never, makeRedis());
 
       const { items, total } = await svc.getTodayQueue(userId, 50, 0);
       expect(total).toBe(1);

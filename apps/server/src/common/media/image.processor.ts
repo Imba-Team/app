@@ -63,8 +63,7 @@ export class ImageProcessor {
       );
     }
 
-    const preserveAnimated =
-      meta.format === 'gif' && (meta.pages ?? 1) > 1;
+    const preserveAnimated = meta.format === 'gif' && (meta.pages ?? 1) > 1;
 
     // Auto-rotate first so a portrait-oriented phone photo (EXIF
     // orientation 6) resizes on the correct axis. Calling .rotate()
@@ -88,7 +87,11 @@ export class ImageProcessor {
       pipeline = pipeline.withMetadata();
     }
 
-    const format = resolveOutputFormat(opts.targetFormat, meta.format, preserveAnimated);
+    const format = resolveOutputFormat(
+      opts.targetFormat,
+      meta.format,
+      preserveAnimated,
+    );
     pipeline = applyEncoder(pipeline, format, opts.quality);
 
     let out: { data: Buffer; info: OutputInfo };

@@ -26,7 +26,7 @@ interface EnvelopeOptions {
  */
 function envelope(
   kind: Envelope,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   dto: Type<any> | null,
   options: EnvelopeOptions = {},
 ): MethodDecorator & ClassDecorator {
@@ -45,7 +45,10 @@ function envelope(
 
   const responseDecorator =
     kind === 'ok'
-      ? ApiOkResponse({ description: options.description, schema: responseSchema })
+      ? ApiOkResponse({
+          description: options.description,
+          schema: responseSchema,
+        })
       : ApiCreatedResponse({
           description: options.description,
           schema: responseSchema,
@@ -59,7 +62,6 @@ function envelope(
 
 /** `@ApiOkEnvelope(FooDto)` → 200 with `{ ok, message, data: FooDto }`. */
 export function ApiOkEnvelope(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dto: Type<any> | null = null,
   options: EnvelopeOptions = {},
 ) {
@@ -68,7 +70,6 @@ export function ApiOkEnvelope(
 
 /** `@ApiCreatedEnvelope(FooDto)` → 201 with `{ ok, message, data: FooDto }`. */
 export function ApiCreatedEnvelope(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dto: Type<any> | null = null,
   options: EnvelopeOptions = {},
 ) {

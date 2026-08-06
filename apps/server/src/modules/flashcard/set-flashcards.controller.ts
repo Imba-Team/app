@@ -91,7 +91,9 @@ export class SetFlashcardsController {
   @HttpCode(201)
   @ApiOperation({ summary: 'Create a flashcard in a study set' })
   @ApiBody({ type: CreateFlashcardDto })
-  @ApiCreatedEnvelope(FlashcardResponseDto, { description: 'Flashcard created' })
+  @ApiCreatedEnvelope(FlashcardResponseDto, {
+    description: 'Flashcard created',
+  })
   async create(
     @CurrentUser() user: IUser,
     @Param('setId') setId: string,

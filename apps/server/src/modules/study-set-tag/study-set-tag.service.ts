@@ -26,10 +26,7 @@ export class StudySetTagService {
   }
 
   async addTagToStudySet(user: IUser, dto: CreateStudySetTagDto) {
-    const { studySetId, tagName } = dto as {
-      studySetId: string;
-      tagName: string;
-    };
+    const { studySetId, tagName } = dto;
 
     const [studySet, tag] = await Promise.all([
       this.prisma.studySet.findUnique({ where: { id: studySetId } }),

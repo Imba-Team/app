@@ -45,7 +45,9 @@ export class SessionController {
   @Post()
   @HttpCode(201)
   @ApiOperation({ summary: 'Start a new study session' })
-  @ApiCreatedEnvelope(StartSessionResponseDto, { description: 'Session started' })
+  @ApiCreatedEnvelope(StartSessionResponseDto, {
+    description: 'Session started',
+  })
   async start(
     @CurrentUser() user: IUser,
     @Body() dto: StartSessionDto,
@@ -112,7 +114,9 @@ export class SessionController {
     description:
       "For Write / Learn-written / Test-written / AI-generated modes. The server runs the Levenshtein-tolerant evaluator against the card's canonical definition, translates the result into a mastery-engine outcome, and returns both the applied progress and the evaluation details (matchType, similarity, edit distance, normalized strings) so the frontend can render a diff and helpful feedback.",
   })
-  @ApiOkEnvelope(WrittenAnswerResponseDto, { description: 'Written answer evaluated' })
+  @ApiOkEnvelope(WrittenAnswerResponseDto, {
+    description: 'Written answer evaluated',
+  })
   async answerWritten(
     @CurrentUser() user: IUser,
     @Param('id', new ParseUUIDPipe()) sessionId: string,

@@ -306,7 +306,7 @@ export class AuthController {
     description:
       'Sets a short-lived HttpOnly link-intent cookie and redirects to ' +
       'Google. On return, /auth/google/callback attaches the Google ' +
-      'identity to the caller\'s account rather than treating it as a ' +
+      "identity to the caller's account rather than treating it as a " +
       'new login.',
   })
   @ApiResponse({ status: 302, description: 'Redirects to Google consent' })
@@ -322,7 +322,7 @@ export class AuthController {
   @UseGuards(JwtGuard)
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Disconnect the caller\'s Google account',
+    summary: "Disconnect the caller's Google account",
     description:
       'Removes the Google link. Idempotent — no-op if the account is ' +
       'not linked. The user can still sign in with email/password (or ' +
@@ -348,7 +348,7 @@ export class AuthController {
     description:
       'For login flows: sets session cookies and redirects to ' +
       'FRONTEND_URL/auth/callback/google?ok=1. For link flows (caller ' +
-      'held a link-intent cookie): attaches Google to the caller\'s ' +
+      "held a link-intent cookie): attaches Google to the caller's " +
       'account and redirects to FRONTEND_URL/account?linked=1 (or ?linked=0 ' +
       'with a reason code on conflict).',
   })

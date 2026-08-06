@@ -123,17 +123,16 @@ export class FlashcardService {
     if (query.setId) {
       const allowed = await this.studySetService.canAccess(userId, query.setId);
       if (!allowed) {
-        throw new ForbiddenException('You do not have access to this study set');
+        throw new ForbiddenException(
+          'You do not have access to this study set',
+        );
       }
     }
 
     const accessFilter: Prisma.StudySetWhereInput = query.setId
       ? { id: query.setId }
       : {
-          OR: [
-            { ownerId: userId },
-            { collaborators: { some: { userId } } },
-          ],
+          OR: [{ ownerId: userId }, { collaborators: { some: { userId } } }],
         };
 
     const where: Prisma.FlashcardWhereInput = {

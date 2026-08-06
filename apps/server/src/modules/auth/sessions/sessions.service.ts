@@ -32,7 +32,10 @@ export class SessionsService {
    * own session so the UI can render a "This device" badge and
    * confirm the destructive intent when revoking.
    */
-  async list(userId: string, currentFamilyId?: string): Promise<SessionSummary[]> {
+  async list(
+    userId: string,
+    currentFamilyId?: string,
+  ): Promise<SessionSummary[]> {
     const now = new Date();
 
     const rows = await this.prisma.refreshToken.findMany({
@@ -69,7 +72,8 @@ export class SessionsService {
         createdAt: first.createdAt,
         lastUsedAt: latest.createdAt,
         expiresAt: latest.expiresAt,
-        isCurrent: currentFamilyId !== undefined && first.familyId === currentFamilyId,
+        isCurrent:
+          currentFamilyId !== undefined && first.familyId === currentFamilyId,
       }))
       .sort((a, b) => {
         // Current session first, then most-recently used.

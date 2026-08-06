@@ -37,10 +37,10 @@ export class FlashcardController {
 
   @Get('search')
   @ApiOperation({
-    summary: 'Search cards across the caller\'s owned + collaborated sets',
+    summary: "Search cards across the caller's owned + collaborated sets",
     description:
       'Case-insensitive substring match on term or definition. Scoped ' +
-      'to the caller\'s accessible sets — pass `setId` to narrow to ' +
+      "to the caller's accessible sets — pass `setId` to narrow to " +
       'a single set. Backed by Postgres (not Elasticsearch): the ' +
       'per-user corpus is small enough that ILIKE outperforms an ES ' +
       'round-trip and it avoids running a private index.',

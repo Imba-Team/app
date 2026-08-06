@@ -32,7 +32,8 @@ import { loadJwtKeyPair } from 'src/common/jwt/key-loader';
           publicKey: keys.publicKey,
           signOptions: {
             algorithm: 'RS256',
-            expiresIn: (cfg.get<string>('JWT_ACCESS_TTL') ?? '15m') as StringValue,
+            expiresIn: (cfg.get<string>('JWT_ACCESS_TTL') ??
+              '15m') as StringValue,
             issuer,
           },
           verifyOptions: {

@@ -69,7 +69,10 @@ export function startOfLocalDayInUtc(
  *
  * Falls back to UTC hour on unrecognised zones.
  */
-export function localHour(timeZone: string, reference: Date = new Date()): number {
+export function localHour(
+  timeZone: string,
+  reference: Date = new Date(),
+): number {
   try {
     const hourStr = new Intl.DateTimeFormat('en-US', {
       timeZone,

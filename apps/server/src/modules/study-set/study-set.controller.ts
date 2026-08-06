@@ -127,7 +127,7 @@ export class StudySetController {
   @ApiOperation({
     summary: 'List study sets in my collection',
     description:
-      "Owned + favourited sets, ordered by updatedAt desc. Pass ?q= to filter on title/description (case-insensitive substring).",
+      'Owned + favourited sets, ordered by updatedAt desc. Pass ?q= to filter on title/description (case-insensitive substring).',
   })
   @ApiOkEnvelope(StudySetResponseDto, {
     isArray: true,

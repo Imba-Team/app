@@ -32,7 +32,9 @@ export class FlashcardProgressController {
   @Get(':id/progress')
   @HttpCode(200)
   @ApiOperation({ summary: 'Read my mastery progress for a flashcard' })
-  @ApiOkEnvelope(FlashcardWithProgressDto, { description: 'Progress retrieved' })
+  @ApiOkEnvelope(FlashcardWithProgressDto, {
+    description: 'Progress retrieved',
+  })
   async getProgress(
     @CurrentUser() user: IUser,
     @Param('id') id: string,

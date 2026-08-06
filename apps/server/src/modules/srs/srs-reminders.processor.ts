@@ -8,10 +8,7 @@ import {
   SrsRemindersJobName,
   SrsRemindUserPayload,
 } from 'src/common/queue/queue.constants';
-import {
-  localHour,
-  startOfLocalDayInUtc,
-} from 'src/common/time/timezone.util';
+import { localHour, startOfLocalDayInUtc } from 'src/common/time/timezone.util';
 
 const DEFAULT_REMINDER_LOCAL_HOUR = 8;
 

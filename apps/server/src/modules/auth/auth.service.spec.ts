@@ -74,32 +74,24 @@ const buildService = (
   } = {},
 ) => {
   const prisma = overrides.prisma ?? makePrisma();
-  const usersService =
-    overrides.usersService ??
-    ({
-      findByEmail: jest.fn(),
-      findById: jest.fn(),
-      create: jest.fn(),
-    } as unknown as UsersService);
-  const jwt =
-    overrides.jwt ??
-    ({
-      sign: jest.fn().mockReturnValue('access-jwt-stub'),
-      verify: jest.fn(),
-    } as unknown as JwtService);
-  const loginAttempts =
-    overrides.loginAttempts ??
-    ({
-      assertNotLocked: jest.fn().mockResolvedValue(undefined),
-      recordFailure: jest.fn().mockResolvedValue(1),
-      recordSuccess: jest.fn().mockResolvedValue(undefined),
-    } as unknown as LoginAttemptsService);
-  const magicLink =
-    overrides.magicLink ??
-    ({
-      sendVerificationLink: jest.fn(),
-      verifyToken: jest.fn(),
-    } as unknown as MagicLinkService);
+  const usersService = overrides.usersService ?? {
+    findByEmail: jest.fn(),
+    findById: jest.fn(),
+    create: jest.fn(),
+  };
+  const jwt = overrides.jwt ?? {
+    sign: jest.fn().mockReturnValue('access-jwt-stub'),
+    verify: jest.fn(),
+  };
+  const loginAttempts = overrides.loginAttempts ?? {
+    assertNotLocked: jest.fn().mockResolvedValue(undefined),
+    recordFailure: jest.fn().mockResolvedValue(1),
+    recordSuccess: jest.fn().mockResolvedValue(undefined),
+  };
+  const magicLink = overrides.magicLink ?? {
+    sendVerificationLink: jest.fn(),
+    verifyToken: jest.fn(),
+  };
   const config = overrides.config ?? noopConfig();
 
   const svc = new AuthService(

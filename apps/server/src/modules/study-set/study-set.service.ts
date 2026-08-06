@@ -328,7 +328,9 @@ export class StudySetService {
     // Preserve the lastStudiedAt ordering — findMany({ in }) doesn't
     // honour input order. Hydrate to StudySetResponseDto first, then
     // attach the progress payload we already have on hand.
-    const setById = new Map(sets.map((s) => [s.id, this.withSortedFlashcards(s)]));
+    const setById = new Map(
+      sets.map((s) => [s.id, this.withSortedFlashcards(s)]),
+    );
     const base = await this.buildStudySetsForUserBatch(
       progressRows
         .map((r) => setById.get(r.setId))

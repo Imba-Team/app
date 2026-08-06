@@ -52,7 +52,9 @@ export class FolderController {
   @HttpCode(201)
   @ApiOperation({ summary: 'Create a new folder' })
   @ApiBody({ type: CreateFolderDto })
-  @ApiOkEnvelope(FolderResponseDto, { description: 'Folder created successfully' })
+  @ApiOkEnvelope(FolderResponseDto, {
+    description: 'Folder created successfully',
+  })
   async create(
     @CurrentUser() user: IUser,
     @Body() dto: CreateFolderDto,
@@ -68,7 +70,9 @@ export class FolderController {
   @Get(':id')
   @HttpCode(200)
   @ApiOperation({ summary: 'Get folder by id with its study sets' })
-  @ApiOkEnvelope(FolderResponseDto, { description: 'Folder fetched successfully' })
+  @ApiOkEnvelope(FolderResponseDto, {
+    description: 'Folder fetched successfully',
+  })
   async findOne(
     @CurrentUser() user: IUser,
     @Param('id') id: string,
@@ -85,7 +89,9 @@ export class FolderController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Update folder name or description' })
   @ApiBody({ type: UpdateFolderDto })
-  @ApiOkEnvelope(FolderResponseDto, { description: 'Folder updated successfully' })
+  @ApiOkEnvelope(FolderResponseDto, {
+    description: 'Folder updated successfully',
+  })
   async update(
     @CurrentUser() user: IUser,
     @Param('id') id: string,

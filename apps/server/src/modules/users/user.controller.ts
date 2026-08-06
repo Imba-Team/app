@@ -104,9 +104,7 @@ export class UsersController {
 
   @Patch('me/profile-picture')
   @HttpCode(200)
-  @UseInterceptors(
-    FileInterceptor('file', buildMulterOptions(AvatarPolicy)),
-  )
+  @UseInterceptors(FileInterceptor('file', buildMulterOptions(AvatarPolicy)))
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -173,7 +171,10 @@ export class UsersController {
     @CurrentUser() user: IUser,
   ): Promise<ResponseDto<UserResponseDto | null>> {
     const before = await this.usersService.findById(user.id);
-    const updatedUser = await this.usersService.setProfilePicture(user.id, null);
+    const updatedUser = await this.usersService.setProfilePicture(
+      user.id,
+      null,
+    );
     if (before.profilePicture) {
       await this.media.delete(before.profilePicture);
     }
@@ -222,4 +223,3 @@ export class UsersController {
     };
   }
 }
-

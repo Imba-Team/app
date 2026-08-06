@@ -33,10 +33,10 @@ export class SessionsController {
 
   @Get()
   @ApiOperation({
-    summary: 'List the authenticated user\'s active sessions',
+    summary: "List the authenticated user's active sessions",
     description:
       'One entry per refresh-token family. The entry marked isCurrent=true ' +
-      'is the caller\'s own device.',
+      "is the caller's own device.",
   })
   @ApiResponse({ status: 200, type: SessionDto, isArray: true })
   async list(@Req() req: AuthedRequest): Promise<ResponseDto<SessionDto[]>> {

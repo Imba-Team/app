@@ -86,7 +86,10 @@ export class FlashcardProgressService {
     if (filter.starred !== undefined) {
       progressRowConstraint.isStarred = filter.starred;
     }
-    if (filter.status !== undefined && filter.status !== CardMasteryStatus.NEW) {
+    if (
+      filter.status !== undefined &&
+      filter.status !== CardMasteryStatus.NEW
+    ) {
       progressRowConstraint.status = filter.status;
     }
 
@@ -152,7 +155,7 @@ export class FlashcardProgressService {
       // Cast our locally-typed shape to the generated Prisma input —
       // structurally identical, but the generated type wraps things in
       // additional utility unions we don't need to spell out.
-      where: flashcardWhere as Prisma.FlashcardWhereInput,
+      where: flashcardWhere,
       orderBy: { orderIndex: 'asc' },
     });
 

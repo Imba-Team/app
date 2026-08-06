@@ -24,8 +24,9 @@ export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 @ValidatorConstraint({ name: 'IsIanaTimeZone', async: false })
 class IsIanaTimeZoneConstraint implements ValidatorConstraintInterface {
   private static readonly zones = new Set(
-    (Intl as unknown as { supportedValuesOf?: (k: string) => string[] })
-      .supportedValuesOf?.('timeZone') ?? [],
+    (
+      Intl as unknown as { supportedValuesOf?: (k: string) => string[] }
+    ).supportedValuesOf?.('timeZone') ?? [],
   );
 
   validate(value: unknown): boolean {
@@ -79,7 +80,7 @@ export class UpdateMyProfileDto {
     type: String,
     example: 'Europe/Berlin',
     description:
-      'IANA timezone identifier. Used by SRS to compute the user\'s ' +
+      "IANA timezone identifier. Used by SRS to compute the user's " +
       'local "today" and to fire reminders at their local morning.',
   })
   @IsOptional()
@@ -97,6 +98,6 @@ export class UpdateMyProfileDto {
       'from this too.',
   })
   @IsOptional()
-  @IsIn(SUPPORTED_LANGUAGES as unknown as string[])
+  @IsIn(SUPPORTED_LANGUAGES)
   preferredLanguage?: SupportedLanguage;
 }

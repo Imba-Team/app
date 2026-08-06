@@ -69,9 +69,7 @@ export class SearchController {
       'Admin only. Used to backfill after a mapping change or when ' +
       'sync-on-write was introduced.',
   })
-  async reindexAll(): Promise<
-    ResponseDto<{ enqueued: number }>
-  > {
+  async reindexAll(): Promise<ResponseDto<{ enqueued: number }>> {
     const enqueued = await this.searchSync.enqueueReindexAllSets();
     return {
       ok: true,

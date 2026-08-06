@@ -11,10 +11,7 @@ import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { REDIS_CLIENT } from 'src/common/redis/redis.constants';
 
-import {
-  ForecastBucketDto,
-  ForecastResponseDto,
-} from './dtos/forecast.dto';
+import { ForecastBucketDto, ForecastResponseDto } from './dtos/forecast.dto';
 import { ReviewSrsCardDto } from './dtos/review-srs-card.dto';
 import { SrsCardDto } from './dtos/srs-card.dto';
 import { SrsReviewResponseDto } from './dtos/srs-review-response.dto';
@@ -232,10 +229,7 @@ export class SrsService {
     });
   }
 
-  async getForecast(
-    userId: string,
-    days = 30,
-  ): Promise<ForecastResponseDto> {
+  async getForecast(userId: string, days = 30): Promise<ForecastResponseDto> {
     const today = await this.getUserDayStart(userId);
     // Cards due before today collapse into today's bucket, so we scan
     // from the epoch of the user's earliest due date up to today+days.
