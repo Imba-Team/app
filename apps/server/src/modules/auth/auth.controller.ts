@@ -7,6 +7,7 @@ import {
   Get,
   UseGuards,
   Req,
+  Delete,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -22,6 +23,8 @@ import { ResetPasswordRequestDto } from './dtos/reset-password.dto';
 import { VerifyEmailRequestDto } from './dtos/verify-email.dto';
 import { ResendVerificationRequestDto } from './dtos/resend-verification.dto';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
+import { JwtGuard } from 'src/guards/jwt.guard';
+import type { GoogleAuthResult } from './google-oauth20/google.strategy';
 
 // Sensitive auth endpoints are rate-limited per IP. The values here are
 // conservative starting points — they sit on top of the per-account
@@ -296,24 +299,89 @@ export class AuthController {
     // Handled by GoogleOauthGuard middleware
   }
 
+  @Get('google/link')
+  @UseGuards(JwtGuard)
+  @ApiOperation({
+    summary: 'Start the Connect Google flow for the current user',
+    description:
+      'Sets a short-lived HttpOnly link-intent cookie and redirects to ' +
+      'Google. On return, /auth/google/callback attaches the Google ' +
+      'identity to the caller\'s account rather than treating it as a ' +
+      'new login.',
+  })
+  @ApiResponse({ status: 302, description: 'Redirects to Google consent' })
+  async linkGoogleStart(
+    @Req() req: Request & { user: { id: string } },
+    @Res() res: Response,
+  ): Promise<void> {
+    this.authService.issueGoogleLinkIntentCookie(res, req.user.id);
+    res.redirect('/auth/google');
+  }
+
+  @Delete('google/link')
+  @UseGuards(JwtGuard)
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Disconnect the caller\'s Google account',
+    description:
+      'Removes the Google link. Idempotent — no-op if the account is ' +
+      'not linked. The user can still sign in with email/password (or ' +
+      'via password reset if they never set one).',
+  })
+  @ApiResponse({ status: 200, description: 'Google link removed' })
+  async unlinkGoogle(
+    @Req() req: Request & { user: { id: string } },
+  ): Promise<ResponseDto<null>> {
+    await this.authService.unlinkGoogleFromUser(req.user.id);
+    return {
+      ok: true,
+      message: 'Google account disconnected',
+      data: null,
+    };
+  }
+
   @Get('google/callback')
   @UseGuards(GoogleOauthGuard)
   @ApiOperation({ summary: 'Google OAuth2 callback handler' })
   @ApiResponse({
     status: 302,
     description:
-      'Sets the session cookies and redirects to the SPA callback route ' +
-      '(FRONTEND_URL/auth/callback/google?ok=1). The frontend then loads /users/me.',
+      'For login flows: sets session cookies and redirects to ' +
+      'FRONTEND_URL/auth/callback/google?ok=1. For link flows (caller ' +
+      'held a link-intent cookie): attaches Google to the caller\'s ' +
+      'account and redirects to FRONTEND_URL/account?linked=1 (or ?linked=0 ' +
+      'with a reason code on conflict).',
   })
   async googleAuthCallback(
-    @Req() req: Request & { user: { id: string; email: string } },
+    @Req() req: Request & { user: GoogleAuthResult },
     @Res() res: Response,
   ): Promise<void> {
-    const session = await this.authService.loginViaGoogle(req.user, req);
-    this.authService.finalizeLogin(res, session);
-
     const frontend =
-      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:9000';
+      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:3000';
+
+    if (req.user.mode === 'link') {
+      this.authService.clearGoogleLinkIntentCookie(res);
+      try {
+        await this.authService.linkGoogleToUser(
+          req.user.linkUserId,
+          req.user.profile,
+        );
+        res.redirect(`${frontend}/account?linked=1`);
+      } catch (err: unknown) {
+        const code =
+          err && typeof err === 'object' && 'response' in err
+            ? ((err as { response?: { code?: string } }).response?.code ??
+              'LINK_FAILED')
+            : 'LINK_FAILED';
+        res.redirect(
+          `${frontend}/account?linked=0&reason=${encodeURIComponent(code)}`,
+        );
+      }
+      return;
+    }
+
+    const session = await this.authService.loginViaGoogle(req.user.user, req);
+    this.authService.finalizeLogin(res, session);
     res.redirect(`${frontend}/auth/callback/google?ok=1`);
   }
 }

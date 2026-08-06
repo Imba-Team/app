@@ -91,6 +91,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/google/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Start the Connect Google flow for the current user
+         * @description Sets a short-lived HttpOnly link-intent cookie and redirects to Google. On return, /auth/google/callback attaches the Google identity to the caller's account rather than treating it as a new login.
+         */
+        get: operations["AuthController_linkGoogleStart"];
+        put?: never;
+        post?: never;
+        /**
+         * Disconnect the caller's Google account
+         * @description Removes the Google link. Idempotent — no-op if the account is not linked. The user can still sign in with email/password (or via password reset if they never set one).
+         */
+        delete: operations["AuthController_unlinkGoogle"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -195,6 +219,46 @@ export interface paths {
         /** Reset user password */
         post: operations["AuthController_resetPassword"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the authenticated user's active sessions
+         * @description One entry per refresh-token family. The entry marked isCurrent=true is the caller's own device.
+         */
+        get: operations["SessionsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke a session by id
+         * @description Invalidates the refresh-token family so the device can no longer renew its access token. The current access token (if any) will expire naturally within JWT_ACCESS_TTL (default 15 minutes). If the caller revokes their own session, the response cookies are cleared and wasCurrent is true.
+         */
+        delete: operations["SessionsController_revoke"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1175,7 +1239,8 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        /** Remove the current user's profile picture */
+        delete: operations["UsersController_removeProfilePicture"];
         options?: never;
         head?: never;
         /** Upload / update user's profile picture */
@@ -1471,6 +1536,13 @@ export interface components {
             /** @enum {string} */
             rating: "AGAIN" | "HARD" | "GOOD" | "EASY";
         };
+        RevokeSessionResponseDto: {
+            /**
+             * @description True if the revoked session is the caller's own — the frontend should treat this as a logout signal and clear its cached user.
+             * @example false
+             */
+            wasCurrent: boolean;
+        };
         SearchSetHitDto: {
             cardCount: number;
             description: string | null;
@@ -1512,6 +1584,43 @@ export interface components {
             timestamp: string;
             /** @example 12345 */
             uptimeSeconds: number;
+        };
+        SessionDto: {
+            /**
+             * @description When the session was first created (initial login).
+             * @example 2026-08-01T10:15:00.000Z
+             */
+            createdAt: string;
+            /**
+             * @description When the session will expire if not refreshed.
+             * @example 2026-08-31T10:15:00.000Z
+             */
+            expiresAt: string;
+            /**
+             * @description Opaque session identifier. Pass to DELETE /auth/sessions/:id.
+             * @example a1b2c3d4-e5f6-7890-abcd-ef1234567890
+             */
+            id: string;
+            /**
+             * @description Client IP recorded on last token issuance.
+             * @example 203.0.113.42
+             */
+            ipAddress: string | null;
+            /**
+             * @description True if this session matches the caller — deleting it logs the current device out.
+             * @example true
+             */
+            isCurrent: boolean;
+            /**
+             * @description When the session was last used (latest refresh).
+             * @example 2026-08-05T18:42:11.000Z
+             */
+            lastUsedAt: string;
+            /**
+             * @description Raw User-Agent header captured on last token issuance.
+             * @example Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15
+             */
+            userAgent: string | null;
         };
         SessionHistoryItemDto: {
             /**
@@ -1748,6 +1857,8 @@ export interface components {
             createdAt: string;
             email: string;
             emailVerified: boolean;
+            /** @description True if the account is linked to a Google identity and can be signed in via "Continue with Google". */
+            googleLinked: boolean;
             id: string;
             /** @description Display name (maps from username) */
             name: string;
@@ -1829,9 +1940,11 @@ export type SchemaResendVerificationRequestDto = components['schemas']['ResendVe
 export type SchemaResetPasswordRequestDto = components['schemas']['ResetPasswordRequestDto'];
 export type SchemaResponseDto = components['schemas']['ResponseDto'];
 export type SchemaReviewSrsCardDto = components['schemas']['ReviewSrsCardDto'];
+export type SchemaRevokeSessionResponseDto = components['schemas']['RevokeSessionResponseDto'];
 export type SchemaSearchSetHitDto = components['schemas']['SearchSetHitDto'];
 export type SchemaSearchSetsResponseDto = components['schemas']['SearchSetsResponseDto'];
 export type SchemaServiceHealthResponseDto = components['schemas']['ServiceHealthResponseDto'];
+export type SchemaSessionDto = components['schemas']['SessionDto'];
 export type SchemaSessionHistoryItemDto = components['schemas']['SessionHistoryItemDto'];
 export type SchemaSessionSummaryDto = components['schemas']['SessionSummaryDto'];
 export type SchemaSetProgressSummaryDto = components['schemas']['SetProgressSummaryDto'];
@@ -2000,8 +2113,44 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Sets the session cookies and redirects to the SPA callback route (FRONTEND_URL/auth/callback/google?ok=1). The frontend then loads /users/me. */
+            /** @description For login flows: sets session cookies and redirects to FRONTEND_URL/auth/callback/google?ok=1. For link flows (caller held a link-intent cookie): attaches Google to the caller's account and redirects to FRONTEND_URL/account?linked=1 (or ?linked=0 with a reason code on conflict). */
             302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_linkGoogleStart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirects to Google consent */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AuthController_unlinkGoogle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Google link removed */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2175,6 +2324,53 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
+            };
+        };
+    };
+    SessionsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDto"][];
+                };
+            };
+        };
+    };
+    SessionsController_revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokeSessionResponseDto"];
+                };
+            };
+            /** @description Session not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -3895,6 +4091,28 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ResponseDto"] & {
                         data?: null | null;
+                    };
+                };
+            };
+        };
+    };
+    UsersController_removeProfilePicture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Profile picture removed successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["UserResponseDto"];
                     };
                 };
             };

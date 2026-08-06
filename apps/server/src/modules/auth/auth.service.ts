@@ -29,6 +29,16 @@ export const REFRESH_COOKIE = 'refresh_token';
 export const HINT_COOKIE = 'isLoggedIn';
 export const REFRESH_COOKIE_PATH = '/auth/refresh';
 
+/**
+ * Set on the browser when a signed-in user clicks "Connect Google" so
+ * the Google callback can attach the identity to that user instead of
+ * treating the OAuth flow as a fresh login. Scoped to /auth so it rides
+ * along on the callback but nowhere else. Short-lived (5 min).
+ */
+export const GOOGLE_LINK_INTENT_COOKIE = 'google_link_intent';
+const GOOGLE_LINK_INTENT_TTL_MS = 5 * 60 * 1000;
+const GOOGLE_LINK_INTENT_ISSUER_CLAIM = 'google-link-intent';
+
 interface IssuedSession {
   accessToken: string;
   refreshToken: string;
@@ -131,9 +141,15 @@ export class AuthService {
     return days * 24 * 60 * 60 * 1000;
   }
 
-  /** Sign an RS256 access token. Key + algorithm come from JwtModule. */
-  issueAccessToken(userId: string): string {
-    return this.jwt.sign({ sub: userId });
+  /**
+   * Sign an RS256 access token. Key + algorithm come from JwtModule.
+   * `familyId` is embedded as `sid` so the sessions API can identify
+   * which refresh-token family issued the current request.
+   */
+  issueAccessToken(userId: string, familyId?: string): string {
+    const payload: Record<string, string> = { sub: userId };
+    if (familyId) payload.sid = familyId;
+    return this.jwt.sign(payload);
   }
 
   /**
@@ -181,7 +197,7 @@ export class AuthService {
     );
     return {
       userId,
-      accessToken: this.issueAccessToken(userId),
+      accessToken: this.issueAccessToken(userId, familyId),
       refreshToken: raw,
       refreshExpiresAt: expiresAt,
     };
@@ -289,7 +305,7 @@ export class AuthService {
 
     return {
       userId: existing.userId,
-      accessToken: this.issueAccessToken(existing.userId),
+      accessToken: this.issueAccessToken(existing.userId, existing.familyId),
       refreshToken: newRaw,
       refreshExpiresAt: newExpiresAt,
     };
@@ -300,6 +316,145 @@ export class AuthService {
       where: { familyId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+  }
+
+  // ============================================================
+  //                Google account link / unlink
+  // ============================================================
+
+  /**
+   * Mint the short-lived cookie a signed-in user carries through the
+   * OAuth roundtrip so the callback can attach Google to their existing
+   * account. The value is a signed JWT of just the user id — the
+   * dedicated `purpose` claim prevents this token from being reused as
+   * an access token.
+   */
+  issueGoogleLinkIntentCookie(res: Response, userId: string): void {
+    const token = this.jwt.sign(
+      { sub: userId, purpose: GOOGLE_LINK_INTENT_ISSUER_CLAIM },
+      { expiresIn: '5m' },
+    );
+    res.cookie(GOOGLE_LINK_INTENT_COOKIE, token, {
+      httpOnly: true,
+      path: '/auth',
+      maxAge: GOOGLE_LINK_INTENT_TTL_MS,
+      sameSite: this.isProduction() ? 'none' : 'lax',
+      secure: this.isProduction(),
+    });
+  }
+
+  clearGoogleLinkIntentCookie(res: Response): void {
+    res.clearCookie(GOOGLE_LINK_INTENT_COOKIE, {
+      httpOnly: true,
+      path: '/auth',
+      sameSite: this.isProduction() ? 'none' : 'lax',
+      secure: this.isProduction(),
+    });
+  }
+
+  /**
+   * Verify a link-intent cookie and return the userId it was issued for.
+   * Returns null when absent, malformed, expired, or carrying the wrong
+   * purpose claim — the caller should fall back to the standard OAuth
+   * login flow in that case.
+   */
+  readGoogleLinkIntent(req: Request): string | null {
+    const cookies = req.cookies as Record<string, string> | undefined;
+    const raw = cookies?.[GOOGLE_LINK_INTENT_COOKIE];
+    if (!raw) return null;
+
+    try {
+      const decoded = this.jwt.verify<{ sub?: string; purpose?: string }>(raw);
+      if (decoded.purpose !== GOOGLE_LINK_INTENT_ISSUER_CLAIM) return null;
+      return decoded.sub ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Attach a Google identity to an existing user's account.
+   *
+   *  - If the Google subject is already linked to this user, no-op.
+   *  - If it's linked to a *different* user, refuse (409). We don't
+   *    silently move linkages between accounts.
+   *  - If this user already has a *different* Google linked, refuse
+   *    (409). The user must unlink first.
+   */
+  async linkGoogleToUser(
+    userId: string,
+    profile: { providerId: string; email: string; picture?: string },
+  ): Promise<void> {
+    const [current, byProvider] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: userId } }),
+      this.prisma.user.findUnique({
+        where: { googleProviderId: profile.providerId },
+      }),
+    ]);
+
+    if (!current) {
+      throw new UnauthorizedException({
+        ok: false,
+        message: 'User not found',
+        code: 'USER_NOT_FOUND',
+      });
+    }
+
+    if (byProvider && byProvider.id !== userId) {
+      throw new ConflictException({
+        ok: false,
+        message: 'This Google account is already linked to another user.',
+        code: 'GOOGLE_LINK_TAKEN',
+      });
+    }
+
+    if (
+      current.googleProviderId &&
+      current.googleProviderId !== profile.providerId
+    ) {
+      throw new ConflictException({
+        ok: false,
+        message:
+          'Your account is already linked to a different Google account. ' +
+          'Unlink it first, then try again.',
+        code: 'GOOGLE_ALREADY_LINKED',
+      });
+    }
+
+    if (current.googleProviderId === profile.providerId) {
+      this.logger.debug(
+        `Google link no-op — providerId already attached to user ${userId}`,
+      );
+      return;
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        googleProviderId: profile.providerId,
+        // A verified Google email is at least as strong as our own
+        // magic-link verification — mark the user verified if they
+        // weren't already, so this flow doubles as an email check.
+        emailVerified: true,
+        verifiedAt: current.verifiedAt ?? new Date(),
+        profilePicture: current.profilePicture ?? profile.picture,
+      },
+    });
+    this.logger.log(`Linked Google providerId to user ${userId}`);
+  }
+
+  /**
+   * Detach the Google identity from the caller's account. Idempotent —
+   * unlinking an already-unlinked account returns cleanly. No lockout
+   * check: the user can always recover via password reset since email
+   * is verified, so we don't need to gate on password presence.
+   */
+  async unlinkGoogleFromUser(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { googleProviderId: null },
+    });
+    this.logger.log(`Unlinked Google identity from user ${userId}`);
   }
 
   // ============================================================

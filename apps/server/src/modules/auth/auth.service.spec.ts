@@ -222,7 +222,9 @@ describe('AuthService.login', () => {
     expect(result.accessToken).toBe('access-jwt-stub');
     expect(result.refreshToken).toMatch(/^[A-Za-z0-9_-]+$/);
     expect(result.email).toBe('a@b.c');
-    expect(jwt.sign).toHaveBeenCalledWith({ sub: 'u-1' });
+    expect(jwt.sign).toHaveBeenCalledWith(
+      expect.objectContaining({ sub: 'u-1', sid: expect.any(String) }),
+    );
     expect(loginAttempts.recordSuccess).toHaveBeenCalledWith('a@b.c');
     expect(prisma.refreshToken.create).toHaveBeenCalledTimes(1);
   });

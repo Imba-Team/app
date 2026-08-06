@@ -55,8 +55,12 @@ export class JwtGuard implements CanActivate {
         );
       }
 
-      // Attach user to request object
+      // Attach user + originating session (refresh-token family) to the
+      // request. sessionId is optional — tokens issued before the sid
+      // claim was added won't have it, and will simply appear as
+      // "unknown current" in the sessions list until they rotate.
       request.user = user;
+      request.sessionId = decoded.sid;
 
       return true;
     } catch (error) {

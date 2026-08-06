@@ -2,6 +2,7 @@ import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Profile, Strategy, VerifyCallback } from 'passport-google-oauth20';
+import { Request } from 'express';
 import { AuthService } from '../auth.service';
 
 export interface GoogleProfilePayload {
@@ -10,6 +11,20 @@ export interface GoogleProfilePayload {
   displayName?: string;
   picture?: string;
 }
+
+/**
+ * What the guard hands off to the controller via `req.user`.
+ *
+ * - `mode: 'login'`  → the strategy resolved / created / linked the user
+ *                      by email match (standard sign-in flow).
+ * - `mode: 'link'`   → the caller was already signed in and clicked
+ *                      "Connect Google"; the strategy skipped the DB
+ *                      resolve step so the controller can attach Google
+ *                      to the intended account instead.
+ */
+export type GoogleAuthResult =
+  | { mode: 'login'; user: { id: string; email: string } }
+  | { mode: 'link'; linkUserId: string; profile: GoogleProfilePayload };
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -31,21 +46,26 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         cfg.get<string>('GOOGLE_CALLBACK_URL') ||
         'http://localhost/auth/google/callback',
       scope: ['profile', 'email'],
+      // Needed so we can inspect the link-intent cookie on the callback
+      // and branch between login vs. account-link handling.
+      passReqToCallback: true,
     });
   }
 
   /**
-   * Passport calls this with the Google profile. We resolve / link / create
-   * the local user here so the rest of the auth flow can treat Google
-   * sessions identically to password sessions.
+   * Passport calls this with the Google profile. Behaviour:
    *
-   * Edge cases handled:
-   *  - First-ever Google sign-in: creates a user, marks email verified.
-   *  - Existing email/password account, no linked Google id: silently
-   *    links Google to that account (the email is verified by Google).
-   *  - Existing Google id: re-uses the same user.
+   *  - Link mode (caller has a valid `google_link_intent` cookie):
+   *    return the raw profile + intent userId. The controller performs
+   *    the actual DB attach so email-based resolution doesn't get in
+   *    the way (e.g. connecting a Google account whose email differs
+   *    from the signed-in user's).
+   *
+   *  - Login mode (no intent cookie or expired): resolve / link / create
+   *    the local user by email match, same as before.
    */
   async validate(
+    req: Request,
     _accessToken: string,
     _refreshToken: string,
     profile: Profile,
@@ -67,8 +87,23 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         picture: profile.photos?.[0]?.value,
       };
 
+      const linkUserId = this.authService.readGoogleLinkIntent(req);
+      if (linkUserId) {
+        const result: GoogleAuthResult = {
+          mode: 'link',
+          linkUserId,
+          profile: payload,
+        };
+        done(null, result);
+        return;
+      }
+
       const user = await this.authService.resolveGoogleUser(payload);
-      done(null, user);
+      const result: GoogleAuthResult = {
+        mode: 'login',
+        user: { id: user.id, email: user.email },
+      };
+      done(null, result);
     } catch (err) {
       done(err as Error, false);
     }

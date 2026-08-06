@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import loginImage from "../../../components/images/log.jpeg";
 import { useAuth } from "@/contexts/AuthContext";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLogin } from "@/lib/hooks/useAuth";
+import { AuthApiError } from "@/lib/api/auth";
+import { GoogleButton } from "@/components/auth/google-button";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -27,12 +29,22 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+function formatDuration(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(s / 60);
+  const seconds = s % 60;
+  if (minutes === 0) return `${seconds}s`;
+  return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+}
+
 export default function AuthPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading, checkAuthentication } = useAuth();
 
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [lockUntil, setLockUntil] = useState<number | null>(null);
+  const [now, setNow] = useState<number>(() => Date.now());
 
   const login = useLogin();
 
@@ -51,7 +63,27 @@ export default function AuthPage() {
     }
   }, [isAuthenticated, isLoading, router]);
 
+  // Tick every second while locked so the countdown updates.
+  useEffect(() => {
+    if (lockUntil === null) return;
+    const interval = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, [lockUntil]);
+
+  // Clear the lock automatically once the countdown reaches zero.
+  useEffect(() => {
+    if (lockUntil !== null && now >= lockUntil) {
+      setLockUntil(null);
+      setError("");
+    }
+  }, [lockUntil, now]);
+
+  const secondsRemaining =
+    lockUntil !== null ? Math.max(0, Math.ceil((lockUntil - now) / 1000)) : 0;
+  const isLocked = lockUntil !== null && secondsRemaining > 0;
+
   const handleSubmit = async (values: LoginFormValues) => {
+    if (isLocked) return;
     setError("");
 
     login.mutate(
@@ -62,6 +94,13 @@ export default function AuthPage() {
           router.push("/dashboard");
         },
         onError: (err: Error) => {
+          if (err instanceof AuthApiError && err.code === "ACCOUNT_LOCKED") {
+            const seconds = err.retryAfterSeconds ?? 0;
+            setLockUntil(Date.now() + seconds * 1000);
+            setNow(Date.now());
+            setError("");
+            return;
+          }
           setError(err.message);
         },
       }
@@ -104,6 +143,18 @@ export default function AuthPage() {
               Welcome back!
             </h1>
 
+            <div className="mb-6">
+              <GoogleButton disabled={isLocked} />
+            </div>
+
+            <div className="flex items-center gap-3 mb-6" aria-hidden="true">
+              <div className="h-px flex-1 bg-gray-200" />
+              <span className="text-xs uppercase tracking-wide text-gray-400">
+                or
+              </span>
+              <div className="h-px flex-1 bg-gray-200" />
+            </div>
+
             <Form {...form}>
               <form
                 className="flex flex-col gap-6"
@@ -118,12 +169,13 @@ export default function AuthPage() {
                         <Input
                           type="email"
                           placeholder="Email"
+                          disabled={isLocked}
                           {...field}
                           onChange={(e) => {
                             field.onChange(e);
                             setError("");
                           }}
-                          className="pl-4 py-7 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7D5A50]"
+                          className="pl-4 py-7 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7D5A50] disabled:opacity-60"
                         />
                       </FormControl>
                       <FormMessage />
@@ -141,12 +193,13 @@ export default function AuthPage() {
                           <Input
                             type={showPassword ? "text" : "password"}
                             placeholder="Password"
+                            disabled={isLocked}
                             {...field}
                             onChange={(e) => {
                               field.onChange(e);
                               setError("");
                             }}
-                            className="pl-4 py-7 pr-12 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7D5A50] w-full"
+                            className="pl-4 py-7 pr-12 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7D5A50] w-full disabled:opacity-60"
                           />
                           <Button
                             variant={"ghost"}
@@ -170,15 +223,41 @@ export default function AuthPage() {
                 <Button
                   variant={"default"}
                   type="submit"
-                  disabled={login.isPending}
-                  className="bg-brand-400 h-12 text-neutral-900 py-4 rounded-xl font-semibold hover:scale-105 transition-transform duration-200 cl"
+                  disabled={login.isPending || isLocked}
+                  className="bg-brand-400 h-12 text-neutral-900 py-4 rounded-xl font-semibold hover:scale-105 transition-transform duration-200 disabled:opacity-60 disabled:hover:scale-100"
                 >
-                  {login.isPending ? "Logging in..." : "Login"}
+                  {isLocked
+                    ? `Locked · ${formatDuration(secondsRemaining)}`
+                    : login.isPending
+                      ? "Logging in..."
+                      : "Login"}
                 </Button>
               </form>
             </Form>
 
-            {error && <p className="text-red-500 mt-4 text-center">{error}</p>}
+            {isLocked && (
+              <div
+                role="alert"
+                aria-live="polite"
+                className="mt-4 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+              >
+                <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <div>
+                  <p className="font-semibold">Account temporarily locked</p>
+                  <p className="mt-1">
+                    Too many failed sign-in attempts. Try again in{" "}
+                    <span className="font-mono font-semibold">
+                      {formatDuration(secondsRemaining)}
+                    </span>
+                    .
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {!isLocked && error && (
+              <p className="text-red-500 mt-4 text-center">{error}</p>
+            )}
           </div>
         </div>
 

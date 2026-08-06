@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Search,
   Settings2,
+  Upload,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
@@ -17,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import TermItem from './_components/TermItem';
 import AddTerm from './_components/AddTerm';
 import { Button } from '@/components/ui/button';
+import { ImportFlashcardsDialog, type ImportedCard } from '@/components/import-flashcards-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,7 +43,7 @@ import TermsFilterBar, {
   type StatusFilter,
 } from '@/components/TermsFilterBar';
 import type { Term } from '@/lib/api';
-import { resetSetProgress } from '@/lib/api';
+import { createTerm as createTermApi, resetSetProgress } from '@/lib/api';
 import { useModule, useCollectModule } from '@/lib/hooks/useModules';
 import {
   useCreateTerm,
@@ -92,8 +94,7 @@ export default function LearnPageClient({ id }: { id: string }) {
   });
   // Server does the filtering; we sort client-side.
   const terms = sortTerms(fetchedTerms, sortField, sortDir);
-  const hasActiveFilter =
-    starredOnly || status !== 'all' || debouncedSearch.trim().length > 0;
+  const hasActiveFilter = starredOnly || status !== 'all' || debouncedSearch.trim().length > 0;
   const createTerm = useCreateTerm();
   const updateTerm = useUpdateTerm();
   const deleteTerm = useDeleteTerm();
@@ -101,6 +102,8 @@ export default function LearnPageClient({ id }: { id: string }) {
   const collectModuleMutation = useCollectModule();
   const [resetOpen, setResetOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const loading = moduleLoading || termsLoading;
   const moduleInfo = moduleData?.data;
@@ -135,6 +138,40 @@ export default function LearnPageClient({ id }: { id: string }) {
     collectModuleMutation.mutate(moduleId);
   }
 
+  async function handleImport(cards: ImportedCard[]) {
+    if (cards.length === 0) return;
+    setImporting(true);
+    try {
+      const results = await Promise.allSettled(
+        cards.map((c) =>
+          createTermApi({
+            moduleId: id,
+            term: c.term,
+            definition: c.definition,
+            isStarred: false,
+          }),
+        ),
+      );
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      const created = cards.length - failed;
+      if (created > 0) {
+        await queryClient.invalidateQueries({
+          queryKey: termKeys.listsForModule(id),
+        });
+        toast.success(
+          `Imported ${created} ${created === 1 ? 'card' : 'cards'}${
+            failed > 0 ? ` — ${failed} failed` : ''
+          }.`,
+        );
+      } else {
+        toast.error('Import failed — no cards were created.');
+      }
+      if (failed === 0) setImportOpen(false);
+    } finally {
+      setImporting(false);
+    }
+  }
+
   async function confirmReset() {
     setResetting(true);
     try {
@@ -166,12 +203,18 @@ export default function LearnPageClient({ id }: { id: string }) {
         </Button>
         <div className="flex items-center gap-1">
           {isOwner && (
-            <Button asChild variant="ghost" size="sm">
-              <Link href={`/sets/${id}/edit`}>
-                <Edit className="h-4 w-4" />
-                Edit
-              </Link>
-            </Button>
+            <>
+              <Button variant="ghost" size="sm" onClick={() => setImportOpen(true)}>
+                <Upload className="h-4 w-4" />
+                Import
+              </Button>
+              <Button asChild variant="ghost" size="sm">
+                <Link href={`/sets/${id}/edit`}>
+                  <Edit className="h-4 w-4" />
+                  Edit
+                </Link>
+              </Button>
+            </>
           )}
           <Button asChild variant="ghost" size="sm">
             <Link href={`/modules/${id}/sessions`}>
@@ -199,9 +242,7 @@ export default function LearnPageClient({ id }: { id: string }) {
         />
       ) : (
         <Card>
-          <CardContent className="text-amber-800">
-            Module not found.
-          </CardContent>
+          <CardContent className="text-amber-800">Module not found.</CardContent>
         </Card>
       )}
 
@@ -216,9 +257,7 @@ export default function LearnPageClient({ id }: { id: string }) {
                 <Card className="cursor-pointer transition-all hover:-translate-y-0.5 hover:bg-brand-300/20">
                   <CardContent className="flex flex-col items-center gap-3">
                     <Image src={m.img} width={120} height={120} alt={m.label} />
-                    <span className="text-lg font-semibold text-neutral-800">
-                      {m.label}
-                    </span>
+                    <span className="text-lg font-semibold text-neutral-800">{m.label}</span>
                   </CardContent>
                 </Card>
               </Link>
@@ -228,15 +267,9 @@ export default function LearnPageClient({ id }: { id: string }) {
       ) : (
         <Card>
           <CardContent className="flex flex-col items-start gap-3">
-            <p className="font-semibold text-neutral-900">
-              Module not in your collection
-            </p>
-            <p className="text-sm text-neutral-600">
-              Collect this module to start studying it.
-            </p>
-            <Button onClick={() => collectModule(id)}>
-              Add to your library
-            </Button>
+            <p className="font-semibold text-neutral-900">Module not in your collection</p>
+            <p className="text-sm text-neutral-600">Collect this module to start studying it.</p>
+            <Button onClick={() => collectModule(id)}>Add to your library</Button>
           </CardContent>
         </Card>
       )}
@@ -251,15 +284,14 @@ export default function LearnPageClient({ id }: { id: string }) {
 
               {/* Settings dropdown — collects destructive / advanced actions
                   so they don't clutter the main surface. Reset lives here
-                  because it's rare and should require an extra click. */}
-              {isCollected && allTerms.length > 0 && (
+                  because it's rare and should require an extra click.
+                  Rendered whenever the viewer is the owner (so Import
+                  stays reachable on an empty module) or whenever there
+                  is progress to manage. */}
+              {(isOwner || (isCollected && allTerms.length > 0)) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      aria-label="Term list settings"
-                    >
+                    <Button variant="outline" size="sm" aria-label="Term list settings">
                       <Settings2 className="h-4 w-4" />
                       Settings
                     </Button>
@@ -267,20 +299,30 @@ export default function LearnPageClient({ id }: { id: string }) {
                   <DropdownMenuContent align="end" className="min-w-56">
                     <DropdownMenuLabel>Study settings</DropdownMenuLabel>
                     <DropdownMenuSeparator />
+                    {isOwner && (
+                      <DropdownMenuItem onClick={() => setImportOpen(true)}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Import flashcards
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem asChild>
                       <Link href={`/modules/${id}/sessions`}>
                         <History className="mr-2 h-4 w-4" />
                         Session history
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => setResetOpen(true)}
-                      className="text-rose-600 focus:bg-rose-50 focus:text-rose-600"
-                    >
-                      <RotateCcw className="mr-2 h-4 w-4" />
-                      Reset progress
-                    </DropdownMenuItem>
+                    {isCollected && allTerms.length > 0 && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setResetOpen(true)}
+                          className="text-rose-600 focus:bg-rose-50 focus:text-rose-600"
+                        >
+                          <RotateCcw className="mr-2 h-4 w-4" />
+                          Reset progress
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
@@ -343,11 +385,7 @@ export default function LearnPageClient({ id }: { id: string }) {
                   </p>
                   <div className="mt-2 flex gap-2">
                     {debouncedSearch && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSearchInput('')}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => setSearchInput('')}>
                         Clear search
                       </Button>
                     )}
@@ -375,9 +413,7 @@ export default function LearnPageClient({ id }: { id: string }) {
                     key={t.id}
                     term={t}
                     onDelete={() => handleDeleteTerm(t.id)}
-                    onToggleStar={() =>
-                      toggleStar.mutate({ id: t.id, isStarred: !t.isStarred })
-                    }
+                    onToggleStar={() => toggleStar.mutate({ id: t.id, isStarred: !t.isStarred })}
                     onSaveEdit={submitEdit}
                   />
                 ))}
@@ -386,34 +422,33 @@ export default function LearnPageClient({ id }: { id: string }) {
           </>
         )}
 
-        {isOwner && (
-          <AddTerm onSubmit={submitNewTerm} isSubmitting={createTerm.isPending} />
-        )}
+        {isOwner && <AddTerm onSubmit={submitNewTerm} isSubmitting={createTerm.isPending} />}
       </section>
+
+      {isOwner && (
+        <ImportFlashcardsDialog
+          open={importOpen}
+          onOpenChange={(open) => !importing && setImportOpen(open)}
+          onImport={handleImport}
+          isSubmitting={importing}
+          closeOnSuccess={false}
+        />
+      )}
 
       <Dialog open={resetOpen} onOpenChange={(open) => !resetting && setResetOpen(open)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reset your progress?</DialogTitle>
             <DialogDescription>
-              This clears your mastery status, streaks, and spaced-repetition
-              schedule for every card in this module. Session history is kept.
-              You can&apos;t undo this.
+              This clears your mastery status, streaks, and spaced-repetition schedule for every
+              card in this module. Session history is kept. You can&apos;t undo this.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setResetOpen(false)}
-              disabled={resetting}
-            >
+            <Button variant="outline" onClick={() => setResetOpen(false)} disabled={resetting}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmReset}
-              disabled={resetting}
-            >
+            <Button variant="destructive" onClick={confirmReset} disabled={resetting}>
               {resetting ? 'Resetting…' : 'Reset progress'}
             </Button>
           </DialogFooter>

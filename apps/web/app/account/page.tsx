@@ -25,6 +25,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/lib/hooks/useUser";
 import ProfileCard from "./_components/ProfileCard";
 import SecurityCard from "./_components/SecurityCard";
+import SessionsCard from "./_components/SessionsCard";
+import ConnectedAccountsCard from "./_components/ConnectedAccountsCard";
 import PreferencesCard from "./_components/PreferencesCard";
 import DangerZone from "./_components/DangerZone";
 
@@ -73,6 +75,8 @@ export default function AccountPage() {
             <ProfileCard user={me} />
             <PreferencesCard />
             <SecurityCard />
+            <ConnectedAccountsCard />
+            <SessionsCard />
             <DangerZone />
           </div>
         ) : null}

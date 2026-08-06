@@ -9,6 +9,8 @@ import { AuthHealthController } from './auth-health.controller';
 import { MagicLinkService } from './magic-link.service';
 import { LoginAttemptsService } from './login-attempts.service';
 import { GoogleStrategy } from './google-oauth20/google.strategy';
+import { SessionsController } from './sessions/sessions.controller';
+import { SessionsService } from './sessions/sessions.service';
 import { MailModule } from 'src/common/mail/mail.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from '../users/user.module';
@@ -41,12 +43,13 @@ import { loadJwtKeyPair } from 'src/common/jwt/key-loader';
       },
     }),
   ],
-  controllers: [AuthController, AuthHealthController],
+  controllers: [AuthController, AuthHealthController, SessionsController],
   providers: [
     AuthService,
     MagicLinkService,
     LoginAttemptsService,
     GoogleStrategy,
+    SessionsService,
   ],
   exports: [AuthService, MagicLinkService],
 })

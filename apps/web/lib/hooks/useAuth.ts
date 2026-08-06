@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { getAuthMe, loginUser, logoutUser, registerUser, type AuthUser } from '@/lib/api/auth';
+import {
+  AuthApiError,
+  getAuthMe,
+  loginUser,
+  logoutUser,
+  registerUser,
+  type AuthUser,
+} from '@/lib/api/auth';
 
 const authKeys = {
   all: ['auth'] as const,
@@ -16,6 +23,8 @@ export function useLogin() {
       await queryClient.invalidateQueries({ queryKey: authKeys.me() });
     },
     onError: (error: Error) => {
+      // Lockout is rendered inline by the login page — don't double-notify.
+      if (error instanceof AuthApiError && error.code === 'ACCOUNT_LOCKED') return;
       toast.error(error.message || 'Login failed');
     },
   });

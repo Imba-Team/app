@@ -3,10 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { Folder as FolderIcon, Globe, Loader2, Lock, Plus, Trash2 } from 'lucide-react';
+import { Folder as FolderIcon, Globe, Loader2, Lock, Plus, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import {
+  ImportFlashcardsDialog,
+  type ImportedCard,
+} from '@/components/import-flashcards-dialog';
 import {
   Dialog,
   DialogContent,
@@ -73,6 +77,7 @@ export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Prop
   const [folderId, setFolderId] = useState<string>(defaultFolderId ?? NO_FOLDER);
   const [cards, setCards] = useState<DraftCard[]>(() => [emptyCard(), emptyCard(), emptyCard()]);
   const [saving, setSaving] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
 
   const folders = useFolders();
@@ -101,6 +106,37 @@ export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Prop
   };
 
   const addCard = () => setCards((prev) => [...prev, emptyCard()]);
+
+  /**
+   * Merge imported cards into the draft list. Empty draft rows are
+   * reused first (so a fresh dialog with 3 blanks + 5 imports ends up
+   * with 5 cards, not 8), then any extras append.
+   */
+  const mergeImported = (imported: ImportedCard[]) => {
+    if (imported.length === 0) return;
+    setCards((prev) => {
+      const next = [...prev];
+      let cursor = 0;
+      for (const c of imported) {
+        while (
+          cursor < next.length &&
+          (next[cursor].term.trim() || next[cursor].definition.trim())
+        ) {
+          cursor++;
+        }
+        if (cursor < next.length) {
+          next[cursor] = { ...next[cursor], term: c.term, definition: c.definition };
+          cursor++;
+        } else {
+          next.push({ key: makeKey(), term: c.term, definition: c.definition });
+        }
+      }
+      return next;
+    });
+    toast.success(
+      `Imported ${imported.length} ${imported.length === 1 ? 'card' : 'cards'}.`,
+    );
+  };
 
   const handleOpenChange = (next: boolean) => {
     if (saving) return;
@@ -262,11 +298,23 @@ export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Prop
           {/* Right column — folder + flashcards */}
           <div className="flex min-h-0 flex-col overflow-hidden">
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-6 pt-4">
-              <div>
-                <Label className="text-neutral-500">Flashcards</Label>
-                <p className="mt-1 text-xs text-neutral-500">
-                  {filledCards.length} of {cards.length} filled — empty rows are skipped.
-                </p>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <Label className="text-neutral-500">Flashcards</Label>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    {filledCards.length} of {cards.length} filled — empty rows are skipped.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setImportOpen(true)}
+                  disabled={saving}
+                >
+                  <Upload className="h-4 w-4" />
+                  Import
+                </Button>
               </div>
 
               <div className="space-y-3">
@@ -333,6 +381,13 @@ export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Prop
           </div>
         </DialogFooter>
       </DialogContent>
+
+      <ImportFlashcardsDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImport={mergeImported}
+        submitLabel="Add to draft"
+      />
     </Dialog>
   );
 }

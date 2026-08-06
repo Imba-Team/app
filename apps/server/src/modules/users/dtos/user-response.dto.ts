@@ -52,4 +52,15 @@ export class UserResponseDto {
   @Expose()
   @ApiProperty({ type: String, nullable: true })
   profilePicture?: string | null;
+
+  @Expose()
+  @ApiProperty({
+    description:
+      'True if the account is linked to a Google identity and can be ' +
+      'signed in via "Continue with Google".',
+  })
+  @Transform(({ obj }) =>
+    Boolean((obj as { googleProviderId?: string | null }).googleProviderId),
+  )
+  googleLinked: boolean;
 }

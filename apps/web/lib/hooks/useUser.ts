@@ -192,3 +192,36 @@ export function useChangePassword() {
     },
   });
 }
+
+/**
+ * Detach the caller's Google identity. Idempotent server-side, so we
+ * treat any 2xx as success and refetch the user to pick up the new
+ * googleLinked=false state.
+ *
+ * Uses raw axios instead of apiFetch: the OpenAPI schema for this
+ * endpoint declares no response body (ResponseDto<null>), which
+ * degrades to `never` under the strict generated types.
+ */
+export function useUnlinkGoogle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await apiClient.delete<{
+        ok: boolean;
+        message?: string;
+      }>("/auth/google/link");
+      if (!data.ok) {
+        throw new Error(data.message || "Failed to disconnect Google");
+      }
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: userKeys.me() });
+      toast.success("Google account disconnected");
+    },
+    onError: (err: unknown) => {
+      toast.error(
+        (err as Error).message || "Failed to disconnect Google",
+      );
+    },
+  });
+}

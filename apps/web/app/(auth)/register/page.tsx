@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff } from 'lucide-react';
 import { useRegister } from '@/lib/hooks/useAuth';
+import { GoogleButton } from '@/components/auth/google-button';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -97,6 +98,18 @@ export default function AuthPage() {
             <h1 className="text-4xl font-bold text-brand-500 mb-8 text-center">
               Create an Account
             </h1>
+
+            <div className="mb-6">
+              <GoogleButton label="Sign up with Google" />
+            </div>
+
+            <div className="flex items-center gap-3 mb-6" aria-hidden="true">
+              <div className="h-px flex-1 bg-gray-200" />
+              <span className="text-xs uppercase tracking-wide text-gray-400">
+                or
+              </span>
+              <div className="h-px flex-1 bg-gray-200" />
+            </div>
 
             <Form {...form}>
               <form className="flex flex-col gap-6" onSubmit={form.handleSubmit(handleSubmit)}>
