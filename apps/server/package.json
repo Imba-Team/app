@@ -29,7 +29,7 @@
     "openapi:check": "bash scripts/generate-api-types.sh && git diff --exit-code generated/"
   },
   "dependencies": {
-    "@elastic/elasticsearch": "^9.4.2",
+    "@elastic/elasticsearch": "^8.19.2",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.0.1",
