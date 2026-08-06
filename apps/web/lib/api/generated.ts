@@ -354,6 +354,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/flashcards/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search cards across the caller's owned + collaborated sets
+         * @description Case-insensitive substring match on term or definition. Scoped to the caller's accessible sets — pass `setId` to narrow to a single set. Backed by Postgres (not Elasticsearch): the per-user corpus is small enough that ILIKE outperforms an ES round-trip and it avoids running a private index.
+         */
+        get: operations["FlashcardController_search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/folders": {
         parameters: {
             query?: never;
@@ -487,6 +507,23 @@ export interface paths {
         get: operations["PrometheusController_index"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/search/admin/reindex-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enqueue an INDEX_SET job for every study set in Postgres. Admin only. Used to backfill after a mapping change or when sync-on-write was introduced. */
+        post: operations["SearchController_reindexAll"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1355,6 +1392,17 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        FlashcardSearchHitDto: {
+            definition: string;
+            id: string;
+            studySetId: string;
+            studySetTitle: string;
+            term: string;
+        };
+        FlashcardSearchResponseDto: {
+            items: components["schemas"]["FlashcardSearchHitDto"][];
+            total: number;
+        };
         FlashcardWithProgressDto: {
             definition: string;
             id: string;
@@ -1944,6 +1992,8 @@ export type SchemaCreateStudySetDto = components['schemas']['CreateStudySetDto']
 export type SchemaCreateStudySetTagDto = components['schemas']['CreateStudySetTagDto'];
 export type SchemaCreateTagDto = components['schemas']['CreateTagDto'];
 export type SchemaFlashcardResponseDto = components['schemas']['FlashcardResponseDto'];
+export type SchemaFlashcardSearchHitDto = components['schemas']['FlashcardSearchHitDto'];
+export type SchemaFlashcardSearchResponseDto = components['schemas']['FlashcardSearchResponseDto'];
 export type SchemaFlashcardWithProgressDto = components['schemas']['FlashcardWithProgressDto'];
 export type SchemaFolderResponseDto = components['schemas']['FolderResponseDto'];
 export type SchemaFolderStudySetItemDto = components['schemas']['FolderStudySetItemDto'];
@@ -2572,6 +2622,34 @@ export interface operations {
             };
         };
     };
+    FlashcardController_search: {
+        parameters: {
+            query: {
+                limit?: number;
+                /** @description Query string. Matches term or definition (case-insensitive). */
+                q: string;
+                /** @description Restrict the search to a single study set the caller can access. Omit to search across every set the caller owns or collaborates on. */
+                setId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Search hits */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["FlashcardSearchResponseDto"];
+                    };
+                };
+            };
+        };
+    };
     FolderController_findAll: {
         parameters: {
             query?: never;
@@ -2868,6 +2946,23 @@ export interface operations {
             };
         };
     };
+    SearchController_reindexAll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     SearchController_searchSets: {
         parameters: {
             query?: {
@@ -2877,6 +2972,8 @@ export interface operations {
                 /** @description 1-based page index. */
                 page?: number;
                 q?: string;
+                /** @description Exact-match tag filter. Matches the tag name as stored on the set (case-sensitive, keyword field on the ES side). */
+                tag?: string;
             };
             header?: never;
             path?: never;

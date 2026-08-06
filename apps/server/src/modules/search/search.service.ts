@@ -142,6 +142,9 @@ export class SearchService implements OnModuleInit {
     if (query.language) {
       filter.push({ term: { language: query.language } });
     }
+    if (query.tag) {
+      filter.push({ term: { tags: query.tag } });
+    }
 
     const result = await this.es.search<IndexedSet>({
       index: STUDY_SETS_INDEX,

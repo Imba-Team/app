@@ -14,6 +14,16 @@ export class SearchSetsQueryDto {
   language?: string;
 
   @ApiPropertyOptional({
+    example: 'biology',
+    description:
+      'Exact-match tag filter. Matches the tag name as stored on the ' +
+      'set (case-sensitive, keyword field on the ES side).',
+  })
+  @IsString()
+  @IsOptional()
+  tag?: string;
+
+  @ApiPropertyOptional({
     example: 1,
     description: '1-based page index.',
     default: 1,

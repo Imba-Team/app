@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Loader2, Search, SearchX } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ChevronLeft, ChevronRight, Loader2, Search, SearchX, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -47,17 +47,56 @@ const ALL_LANGUAGES = '__all__';
 
 export default function DiscoverContent() {
   const router = useRouter();
-  const [searchInput, setSearchInput] = useState('');
-  const [language, setLanguage] = useState<string>(ALL_LANGUAGES);
+  const searchParams = useSearchParams();
+
+  // URL is the source of truth for shareable filter state (q, tag,
+  // language). The input has its own local state so typing feels
+  // instant; a debounce syncs it back into the URL.
+  const urlQ = searchParams.get('q') ?? '';
+  const urlTag = searchParams.get('tag') ?? '';
+  const urlLanguage = searchParams.get('language') ?? '';
+
+  const [searchInput, setSearchInput] = useState(urlQ);
+  const [language, setLanguage] = useState<string>(
+    urlLanguage || ALL_LANGUAGES,
+  );
+  const [tag, setTag] = useState<string>(urlTag);
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(searchInput);
 
-  // Reset to page 1 whenever the debounced query changes so a
-  // narrower search doesn't leave the learner staring at an empty
-  // page 4.
+  // Keep input state in sync when the URL changes externally
+  // (e.g. navbar submit, back button, a clicked tag chip).
+  useEffect(() => {
+    setSearchInput(urlQ);
+  }, [urlQ]);
+  useEffect(() => {
+    setTag(urlTag);
+  }, [urlTag]);
+  useEffect(() => {
+    setLanguage(urlLanguage || ALL_LANGUAGES);
+  }, [urlLanguage]);
+
+  // Mirror the debounced draft state back into the URL so the current
+  // filters can be shared or bookmarked. `router.replace` avoids
+  // stacking a history entry on every keystroke.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (debouncedSearch.trim()) params.set('q', debouncedSearch.trim());
+    if (tag) params.set('tag', tag);
+    if (language !== ALL_LANGUAGES) params.set('language', language);
+    const qs = params.toString();
+    const target = qs ? `/discover?${qs}` : '/discover';
+    const current = searchParams.toString();
+    const currentFull = current ? `/discover?${current}` : '/discover';
+    if (target !== currentFull) {
+      router.replace(target, { scroll: false });
+    }
+  }, [debouncedSearch, tag, language, router, searchParams]);
+
   const query = {
     q: debouncedSearch,
     language: language === ALL_LANGUAGES ? undefined : language,
+    tag: tag || undefined,
     page,
     limit: PAGE_SIZE,
   };
@@ -81,6 +120,16 @@ export default function DiscoverContent() {
     setPage(1);
   };
 
+  const handleTagClick = (t: string) => {
+    setTag((current) => (current === t ? '' : t));
+    setPage(1);
+  };
+
+  const clearTag = () => {
+    setTag('');
+    setPage(1);
+  };
+
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 md:py-8">
       {/* Header Section */}
@@ -98,7 +147,7 @@ export default function DiscoverContent() {
           to-search pattern was cargo-culted from a client-filter world
           where each keystroke was cheap. With an ES call per query, a
           250 ms debounce is a better fit. */}
-      <div className="mb-8 md:mb-10">
+      <div className="mb-6 md:mb-8">
         <div className="flex flex-col sm:flex-row gap-2 w-full max-w-2xl mx-auto">
           <div className="relative flex-1">
             <Input
@@ -136,10 +185,27 @@ export default function DiscoverContent() {
             </SelectContent>
           </Select>
         </div>
+
+        {tag && (
+          <div className="mt-3 flex items-center justify-center gap-2 text-sm">
+            <span className="text-gray-500">Filtering by tag:</span>
+            <button
+              type="button"
+              onClick={clearTag}
+              className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-brand-700 hover:bg-brand-100"
+              aria-label={`Remove tag filter ${tag}`}
+            >
+              #{tag}
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        )}
+
         {total > 0 && (
           <p className="text-xs text-center text-gray-500 mt-2">
             {total.toLocaleString()} {total === 1 ? 'result' : 'results'}
             {debouncedSearch && ` for “${debouncedSearch}”`}
+            {tag && ` tagged #${tag}`}
             {language !== ALL_LANGUAGES && ` in ${language}`}
           </p>
         )}
@@ -149,7 +215,13 @@ export default function DiscoverContent() {
       {items.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {items.map((m: CommunitySearchHit) => (
-            <CommunityCard key={m.id} hit={m} onOpen={() => router.push(`/modules/${m.id}`)} />
+            <CommunityCard
+              key={m.id}
+              hit={m}
+              activeTag={tag}
+              onOpen={() => router.push(`/modules/${m.id}`)}
+              onTagClick={handleTagClick}
+            />
           ))}
         </div>
       )}
@@ -159,11 +231,13 @@ export default function DiscoverContent() {
         <div className="text-center py-12 md:py-16 max-w-lg mx-auto">
           <SearchX className="mx-auto text-gray-400 mb-3" size={36} />
           <p className="text-gray-800 font-semibold mb-1">
-            {debouncedSearch ? `No modules match “${debouncedSearch}”` : 'No community modules yet'}
+            {debouncedSearch || tag
+              ? `No modules match your filters`
+              : 'No community modules yet'}
           </p>
           <p className="text-sm text-gray-500">
-            {debouncedSearch
-              ? 'Try a different search — check spelling or broaden your query.'
+            {debouncedSearch || tag
+              ? 'Try a different search or clear the tag filter.'
               : 'Be the first to share one. Public modules appear here once created.'}
           </p>
         </div>
@@ -197,7 +271,17 @@ export default function DiscoverContent() {
   );
 }
 
-function CommunityCard({ hit, onOpen }: { hit: CommunitySearchHit; onOpen: () => void }) {
+function CommunityCard({
+  hit,
+  activeTag,
+  onOpen,
+  onTagClick,
+}: {
+  hit: CommunitySearchHit;
+  activeTag: string;
+  onOpen: () => void;
+  onTagClick: (tag: string) => void;
+}) {
   const ownerInitials = (hit.ownerUsername ?? '?').slice(0, 2).toUpperCase();
   // Titles/descriptions may be returned with <em>…</em> highlight markup
   // in the future (highlights field). For now render plain text — the
@@ -221,14 +305,28 @@ function CommunityCard({ hit, onOpen }: { hit: CommunitySearchHit; onOpen: () =>
                 {hit.language}
               </span>
             )}
-            {hit.tags.slice(0, 2).map((tag) => (
-              <span
-                key={tag}
-                className="bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 text-xs"
-              >
-                #{tag}
-              </span>
-            ))}
+            {hit.tags.slice(0, 3).map((tagName) => {
+              const isActive = activeTag === tagName;
+              return (
+                <button
+                  key={tagName}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTagClick(tagName);
+                  }}
+                  className={
+                    'rounded-full px-2 py-0.5 text-xs transition-colors ' +
+                    (isActive
+                      ? 'bg-brand-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
+                  }
+                  aria-pressed={isActive}
+                >
+                  #{tagName}
+                </button>
+              );
+            })}
           </div>
         </div>
       </CardHeader>

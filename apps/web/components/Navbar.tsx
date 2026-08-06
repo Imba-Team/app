@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, LogIn, LogOut, Moon, Plus, Search, Settings, Sun, User2 } from 'lucide-react';
+import { Bell, LogIn, LogOut, Moon, Plus, Settings, Sun, User2 } from 'lucide-react';
+
+import { GlobalSearch } from '@/components/global-search';
 
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
@@ -75,7 +77,7 @@ export default function Navbar({ variant }: { variant: NavbarVariant }) {
           Mimir
         </Link>
 
-        {variant === 'app' && <SearchBar />}
+        {variant === 'app' && <GlobalSearch />}
         <div className="ml-auto flex items-center gap-3">
           {variant === 'app' && (
             <Button
@@ -118,22 +120,6 @@ export default function Navbar({ variant }: { variant: NavbarVariant }) {
         </div>
       </div>
     </header>
-  );
-}
-
-// ---------- Search bar ----------
-
-function SearchBar() {
-  return (
-    <div className="relative hidden max-w-md flex-1 md:block">
-      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
-      <input
-        type="search"
-        placeholder="Search modules, terms, users…"
-        aria-label="Search"
-        className="h-11 w-full rounded-full border border-black/5 bg-white pl-11 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/10 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40"
-      />
-    </div>
   );
 }
 

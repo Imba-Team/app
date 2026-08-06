@@ -1502,6 +1502,16 @@
             }
           },
           {
+            "name": "tag",
+            "required": false,
+            "in": "query",
+            "description": "Exact-match tag filter. Matches the tag name as stored on the set (case-sensitive, keyword field on the ES side).",
+            "schema": {
+              "example": "biology",
+              "type": "string"
+            }
+          },
+          {
             "name": "page",
             "required": false,
             "in": "query",
@@ -1555,6 +1565,98 @@
         "summary": "Search public study sets via Elasticsearch (title^3 + tags^2 + description, fuzziness AUTO).",
         "tags": [
           "Search"
+        ]
+      }
+    },
+    "/search/admin/reindex-all": {
+      "post": {
+        "operationId": "SearchController_reindexAll",
+        "parameters": [],
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Enqueue an INDEX_SET job for every study set in Postgres. Admin only. Used to backfill after a mapping change or when sync-on-write was introduced.",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/flashcards/search": {
+      "get": {
+        "description": "Case-insensitive substring match on term or definition. Scoped to the caller's accessible sets — pass `setId` to narrow to a single set. Backed by Postgres (not Elasticsearch): the per-user corpus is small enough that ILIKE outperforms an ES round-trip and it avoids running a private index.",
+        "operationId": "FlashcardController_search",
+        "parameters": [
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "description": "Query string. Matches term or definition (case-insensitive).",
+            "schema": {
+              "minLength": 2,
+              "maxLength": 100,
+              "example": "photosynthesis",
+              "type": "string"
+            }
+          },
+          {
+            "name": "setId",
+            "required": false,
+            "in": "query",
+            "description": "Restrict the search to a single study set the caller can access. Omit to search across every set the caller owns or collaborates on.",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "example": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search hits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/FlashcardSearchResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Search cards across the caller's owned + collaborated sets",
+        "tags": [
+          "Flashcards"
         ]
       }
     },
@@ -4535,6 +4637,51 @@
           "total",
           "page",
           "limit"
+        ]
+      },
+      "FlashcardSearchHitDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "term": {
+            "type": "string"
+          },
+          "definition": {
+            "type": "string"
+          },
+          "studySetId": {
+            "type": "string"
+          },
+          "studySetTitle": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "term",
+          "definition",
+          "studySetId",
+          "studySetTitle"
+        ]
+      },
+      "FlashcardSearchResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlashcardSearchHitDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total"
         ]
       },
       "FlashcardResponseDto": {

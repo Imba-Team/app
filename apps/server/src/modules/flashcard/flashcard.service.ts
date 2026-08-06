@@ -12,6 +12,10 @@ import { StudySetService } from 'src/modules/study-set/study-set.service';
 
 import { CreateFlashcardDto } from './dtos/create-flashcard.dto';
 import { FlashcardResponseDto } from './dtos/flashcard-response.dto';
+import {
+  FlashcardSearchResponseDto,
+  SearchFlashcardsQueryDto,
+} from './dtos/search-flashcards.dto';
 import { UpdateFlashcardDto } from './dtos/update-flashcard.dto';
 
 @Injectable()
@@ -98,6 +102,70 @@ export class FlashcardService {
 
     this.logger.log(`Flashcard updated: id=${flashcardId}`);
     return this.toResponse(saved);
+  }
+
+  /**
+   * Search flashcard text (term + definition) across every set the
+   * caller can access — that is, sets they own OR collaborate on.
+   * Kept in Postgres rather than Elasticsearch: the per-user corpus is
+   * small enough that ILIKE with a limit of 50 is faster than any ES
+   * round-trip, and it dodges an entirely new index + sync flow.
+   *
+   * Result count is capped to `limit`; if a set filter is supplied we
+   * enforce access first so a probing UUID doesn't leak set existence.
+   */
+  async search(
+    userId: string,
+    query: SearchFlashcardsQueryDto,
+  ): Promise<FlashcardSearchResponseDto> {
+    const limit = query.limit ?? 20;
+
+    if (query.setId) {
+      const allowed = await this.studySetService.canAccess(userId, query.setId);
+      if (!allowed) {
+        throw new ForbiddenException('You do not have access to this study set');
+      }
+    }
+
+    const accessFilter: Prisma.StudySetWhereInput = query.setId
+      ? { id: query.setId }
+      : {
+          OR: [
+            { ownerId: userId },
+            { collaborators: { some: { userId } } },
+          ],
+        };
+
+    const where: Prisma.FlashcardWhereInput = {
+      studySet: accessFilter,
+      OR: [
+        { term: { contains: query.q, mode: 'insensitive' } },
+        { definition: { contains: query.q, mode: 'insensitive' } },
+      ],
+    };
+
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.flashcard.findMany({
+        where,
+        include: {
+          studySet: { select: { id: true, title: true } },
+        },
+        orderBy: [{ updatedAt: 'desc' }],
+        take: limit,
+      }),
+      this.prisma.flashcard.count({ where }),
+    ]);
+
+    return {
+      items: rows.map((row) => ({
+        id: row.id,
+        term: row.term,
+        definition: row.definition,
+        studySetId: row.studySet.id,
+        studySetTitle: row.studySet.title,
+      })),
+      total,
+    };
   }
 
   async delete(userId: string, flashcardId: string): Promise<void> {

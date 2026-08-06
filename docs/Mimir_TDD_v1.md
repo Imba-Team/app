@@ -119,7 +119,7 @@ This TDD covers the Phase 1 release of Mimir. It does not cover deferred Phase 2
 | Background Jobs | BullMQ | v5.x | Redis-backed job queues. Retry logic, rate limiting, priority queues, cron scheduling built in. |
 | Email | SendGrid | Latest API | Transactional email with template support, delivery tracking, and bounce handling. |
 | Push Notifications | Firebase Cloud Messaging | v9 | Cross-platform push (iOS, Android, Web) via a single unified API. |
-| Auth | Passport.js + @nestjs/jwt | Latest | Strategy-based auth in NestJS. JWT local + OAuth Google + OAuth Apple strategies. |
+| Auth | Passport.js + @nestjs/jwt | Latest | Strategy-based auth in NestJS. JWT local + OAuth Google strategies. |
 | Validation | class-validator + class-transformer | Latest | Declarative DTO validation via decorators. Used in NestJS ValidationPipe. |
 | Container | Docker | v26 | Multi-stage Dockerfiles for minimal production images. |
 | Orchestration | Kubernetes | v1.29+ | Pod autoscaling, rolling deployments, health probes, config/secret management. |

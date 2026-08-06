@@ -173,6 +173,7 @@ export type CommunitySearchResult = Schemas['SearchSetsResponseDto'];
 export interface CommunitySearchParams {
   q?: string;
   language?: string;
+  tag?: string;
   page?: number;
   limit?: number;
 }
@@ -184,12 +185,14 @@ export async function searchCommunity(
     const query: {
       q?: string;
       language?: string;
+      tag?: string;
       page?: number;
       limit?: number;
     } = {};
     const trimmed = params.q?.trim();
     if (trimmed) query.q = trimmed;
     if (params.language) query.language = params.language;
+    if (params.tag) query.tag = params.tag;
     if (params.page !== undefined) query.page = params.page;
     if (params.limit !== undefined) query.limit = params.limit;
 

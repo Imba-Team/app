@@ -2,7 +2,16 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Folder as FolderIcon, Layers, Plus, Search, SearchX, Star, User } from 'lucide-react';
+import {
+  FileText,
+  Folder as FolderIcon,
+  Layers,
+  Plus,
+  Search,
+  SearchX,
+  Star,
+  User,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,6 +21,10 @@ import { useCreateModuleDialog } from '@/contexts/CreateModuleDialogContext';
 import type { Folder, LibraryItem } from '@/lib/api';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 import { useFolders, useLibrarySets } from '@/lib/hooks/useLibrary';
+import {
+  useFlashcardSearch,
+  type FlashcardSearchHit,
+} from '@/lib/hooks/useFlashcardSearch';
 
 import { NewFolderDialog } from './_components/NewFolderDialog';
 
@@ -34,6 +47,7 @@ export default function LibraryPage() {
 
   const sets = useLibrarySets();
   const folders = useFolders();
+  const cardSearch = useFlashcardSearch({ q: debouncedSearch, limit: 10 });
 
   const q = debouncedSearch.trim().toLowerCase();
 
@@ -153,6 +167,28 @@ export default function LibraryPage() {
         </div>
       )}
 
+      {/* Card matches — appears once the query is long enough to be
+          meaningful. Distinct from the client-side title filter above
+          so users can find a card by its content even if the parent
+          set's title doesn't match. */}
+      {q.length >= 2 && (cardSearch.data?.items?.length ?? 0) > 0 && (
+        <section className="mt-10">
+          <h2 className="mb-3 text-sm font-semibold tracking-wide text-gray-500">
+            Card matches · {cardSearch.data?.total ?? 0}
+          </h2>
+          <div className="space-y-2">
+            {cardSearch.data?.items.map((card) => (
+              <CardMatchRow
+                key={card.id}
+                card={card}
+                query={debouncedSearch.trim()}
+                onOpen={() => router.push(`/modules/${card.studySetId}`)}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       <NewFolderDialog open={newFolderOpen} onOpenChange={setNewFolderOpen} />
     </main>
   );
@@ -212,6 +248,54 @@ function SetCard({ set, onClick }: { set: LibraryItem; onClick: () => void }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function CardMatchRow({
+  card,
+  query,
+  onOpen,
+}: {
+  card: FlashcardSearchHit;
+  query: string;
+  onOpen: () => void;
+}) {
+  return (
+    <Card onClick={onOpen} className="cursor-pointer">
+      <CardContent className="flex items-start gap-3 p-3">
+        <div className="mt-0.5 rounded-md bg-brand-500/10 p-2 text-brand-500">
+          <FileText className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-gray-800">
+            <Highlight text={card.term} needle={query} />
+          </p>
+          <p className="line-clamp-2 text-xs text-gray-500">
+            <Highlight text={card.definition} needle={query} />
+          </p>
+          <p className="mt-1 truncate text-[11px] text-gray-400">
+            in {card.studySetTitle}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Highlight({ text, needle }: { text: string; needle: string }) {
+  if (!needle) return <>{text}</>;
+  const lower = text.toLowerCase();
+  const q = needle.toLowerCase();
+  const idx = lower.indexOf(q);
+  if (idx === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="rounded bg-yellow-100 px-0.5 text-gray-900">
+        {text.slice(idx, idx + needle.length)}
+      </mark>
+      {text.slice(idx + needle.length)}
+    </>
   );
 }
 
