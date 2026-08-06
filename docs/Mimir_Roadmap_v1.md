@@ -87,7 +87,6 @@ graph TD
   FLASH[Flashcard Mode]
   LEARN[Learn Mode]
   WRITE[Write Mode]
-  SPELL[Spell Mode]
   TEST[Test Mode]
   MATCH[Match Game]
   QUIZ[Quiz Mode]
@@ -111,7 +110,6 @@ graph TD
   CARDS --> FLASH
   CARDS --> LEARN
   CARDS --> WRITE
-  CARDS --> SPELL
   CARDS --> TEST
   CARDS --> MATCH
   CARDS --> QUIZ
@@ -235,7 +233,6 @@ The MVP scope is determined by applying three filters to every feature: (1) Does
 | Flashcard Mode | ✓ YES | Simplest mode; core product experience. | Critical | M |
 | Learn Mode | ✓ YES | Primary adaptive learning mode; core value prop. | Critical | L |
 | Write Mode | ✓ YES | Active recall — essential for retention. | Critical | M |
-| Spell Mode | ✓ YES | Differentiator for language learners. | High | M |
 | Test Mode | ✓ YES | High teacher demand for assessments. | High | L |
 | Match Game | ✓ YES | Engagement/fun; low dev cost. | Medium | M |
 | Quiz Mode (custom builder) | ✗ NO | Adds significant scope. Defer to v1.1. | Medium | L |
@@ -286,7 +283,7 @@ The MVP scope is determined by applying three filters to every feature: (1) Does
 |---|---|---|---|
 | Authentication | 4 / 6 | 2 (2FA, Apple UI) | Backend Apple auth ready; iOS UI Phase 2 |
 | Study Sets & Cards | 6 / 8 | 2 (Version History, Collab) | Core CRUD fully in MVP |
-| Study Modes | 5 / 7 | 2 (Spell Mode, Custom Quiz Builder) | Flashcard/Learn/Write/Test/Match in MVP; Spell Mode deferred with TTS |
+| Study Modes | 5 / 6 | 1 (Custom Quiz Builder) | Flashcard/Learn/Write/Test/Match in MVP |
 | Spaced Repetition | 3 / 4 | 1 (Forecast chart) | SM-2 engine fully in MVP |
 | AI Features | 3 / 3 | 0 | All 3 AI modes in MVP — core differentiators |
 | Audio / TTS | 0 / 2 | 2 (TTS, Recording) | Both deferred to post-MVP |
@@ -330,7 +327,7 @@ Mimir follows a staged release strategy: each version builds on the validated fo
 
 | Attribute | Detail |
 |---|---|
-| **Scope** | TTS pronunciation (Google TTS proxy + rate limiter + `AudioButton` component), Spell Mode (hear-then-type mode built on TTS), Autocomplete search, Custom Quiz builder, Export (PDF + Anki), Push notifications (web), SRS 30-day forecast, Admin analytics dashboard, Profile heatmap, Email weekly summary. |
+| **Scope** | TTS pronunciation (Google TTS proxy + rate limiter + `AudioButton` component), Autocomplete search, Custom Quiz builder, Export (PDF + Anki), Push notifications (web), SRS 30-day forecast, Admin analytics dashboard, Profile heatmap, Email weekly summary. |
 | **Objective** | Complete the study experience; give users more control over their progress; enable teachers to export grades. |
 | **Expected Outcome** | Improved Day-30 retention (+5 pp). Teacher NPS improvement from report exports. |
 
@@ -434,7 +431,6 @@ Development is broken into 10 sequential phases. Each phase has clear entry crit
 | **Dependencies** | Phase 5 (answer evaluation logic) complete. |
 | **Risks** | Test Mode distractor generation quality. Use other cards in the set as distractors; fallback to True/False format when fewer than 4 cards available. |
 | **Exit Criteria** | Both modes fully playable. Test Mode generates valid assessments for any 10+ card set. |
-| **Deferred to post-MVP** | Spell Mode — depends on TTS audio playback and moves to post-MVP alongside it. |
 
 ### Phase 8: AI Learning Features (Weeks 15–18)
 
@@ -483,7 +479,6 @@ Epics group related user stories into meaningful units of work. Effort is in eng
 | EPIC-07: Write Mode | P0 | 5 | 6 | Medium | Sets (EPIC-04) |
 | EPIC-08: Progress Tracking | P0 | 4–5 | 6 | Medium | Absorbed into EPIC-05 mastery engine + Learn/Write |
 | EPIC-09: SRS Engine | P0 | 6 | 14 | High | Progress (EPIC-08) |
-| EPIC-10: Spell Mode | **Post-MVP** | v1.1 | 5 | Low | TTS proxy (post-MVP) |
 | EPIC-11: Test Mode | P1 | 7 | 8 | Medium | Cards (EPIC-04) |
 | EPIC-12: Match Game | P1 | 7 | 4 | Low | Cards (EPIC-04) |
 | EPIC-XX: TTS Integration | **Post-MVP** | v1.1 | 6 | Medium | Google TTS (or ElevenLabs), Redis rate limiter |
@@ -511,7 +506,6 @@ graph TD
   E07[EPIC-07 Write Mode]
   E08[EPIC-08 Progress]
   E09[EPIC-09 SRS Engine]
-  E10[EPIC-10 Spell Mode]
   E11[EPIC-11 Test Mode]
   E12[EPIC-12 Match Game]
   E13[EPIC-13 AI Generation]
@@ -528,7 +522,6 @@ graph TD
   E04 --> E05 --> E06 --> E08
   E04 --> E07 --> E08
   E08 --> E09
-  E05 --> E10
   E04 --> E11
   E04 --> E12
   E09 --> E13
@@ -755,8 +748,6 @@ Sprints 1–12 cover the MVP build (Weeks 1–24). Sprints 13–20 are summarise
 - US-016: As a learner, I can take a Test to assess my full knowledge.
 - US-017: As a learner, I can play the Match Game.
 
-*(Spell Mode / US-015 depends on TTS audio playback and is deferred to post-MVP alongside the TTS integration.)*
-
 **Technical Tasks**
 - Implement Test Mode auto-generator: MC, matching, written, true/false from set cards.
 - Implement test result saving: per-question analysis, time-per-question, retake tracking.
@@ -924,10 +915,10 @@ Sprints 1–12 cover the MVP build (Weeks 1–24). Sprints 13–20 are summarise
 | Role | Sprint 1–2 | Sprint 3–6 | Sprint 7–10 | Sprint 11–12 |
 |---|---|---|---|---|
 | Backend Engineer 1 (Lead) | Auth Service | Auth + Study + Learning | SRS + AI Service | Classroom + Analytics |
-| Backend Engineer 2 | Study Service scaffold | Study Service + Cards | Spell/Test/Match + AI | Notification + Polish |
+| Backend Engineer 2 | Study Service scaffold | Study Service + Cards | Test/Match + AI | Notification + Polish |
 | Backend Engineer 3 | SRS scaffold + DB schema | Learn/Write modes | Search Service | Security + Load Test |
 | Frontend Engineer 1 | mimir-web scaffold | Auth pages + Profiles | Flashcard + Learn + Write UIs | Classroom + Analytics UIs |
-| Frontend Engineer 2 | Design system primitives | Set Editor + Import | Spell + Test + Match + AI UIs | Search + Polish + A11y |
+| Frontend Engineer 2 | Design system primitives | Set Editor + Import | Test + Match + AI UIs | Search + Polish + A11y |
 | DevOps Engineer | All infra (Docker, K8s, CI/CD, monitoring) | Ongoing infra support | Elasticsearch tuning, MinIO | Load testing, security hardening |
 
 ### 9.2 Decision Authority
@@ -963,7 +954,7 @@ Sprints 1–12 cover the MVP build (Weeks 1–24). Sprints 13–20 are summarise
 | M4 | Core Study Loop Playable | Week 10 | Flashcard Mode + mastery engine working in browser. | BE1, FE2 |
 | M5 | Active Recall Modes Complete | Week 12 | Learn Mode + Write Mode with progress tracking. | BE2, FE1 |
 | M6 | SRS Engine Live | Week 14 | SM-2 queue, daily reviews, nightly reminders. | BE3 |
-| M7 | MVP Study Modes Complete | Week 16 | Test Mode + Match Game working. (Spell Mode + TTS post-MVP.) | BE2, FE2 |
+| M7 | MVP Study Modes Complete | Week 16 | Test Mode + Match Game working. (TTS post-MVP.) | BE2, FE2 |
 | M8 | AI Features Live | Week 18 | Flashcard Gen, Fill-Blank, Guess Word all working. | BE1, FE2 |
 | M9 | Search Live | Week 20 | Full-text search returns results in < 300 ms. | BE3, FE1 |
 | M10 | Classroom Complete | Week 22 | Class creation, assignments, teacher analytics working. | BE1, FE1 |
@@ -1141,7 +1132,7 @@ Every step is justified against four optimisation criteria: **fastest MVP delive
 | 7 | Learn Mode + session model + progress tracking | Learn Mode is the primary driver of mastery and retention. It also establishes the session state machine that Test Mode and SRS reuse. Build it before Test/SRS. | Business value ↑, Risk ↓ (foundational) |
 | 8 | Write Mode — active recall | Write Mode shares 80% of the infrastructure built for Learn Mode (session model, answer evaluation). Build it immediately after. | MVP speed ↑ (low marginal cost) |
 | 9 | Spaced Repetition Engine (SM-2) | This is the hardest backend component and the biggest differentiator. Build it before modes that depend on it (Test is simpler and can wait). Getting SM-2 into users' hands early generates the retention data the product needs. | Business value ↑ (core differentiator), Risk ↓ (test early) |
-| 10 | Test Mode + Match Game | Two straightforward modes given the existing session model and evaluation logic. Build together in one sprint. Spell Mode intentionally deferred to post-MVP with its TTS dependency. | MVP speed ↑ (batch work) |
+| 10 | Test Mode + Match Game | Two straightforward modes given the existing session model and evaluation logic. Build together in one sprint. | MVP speed ↑ (batch work) |
 | 11 | AI Flashcard Generation | The single biggest user acquisition hook. Reduces the #1 friction point (creating cards) to zero. Also the largest technical risk due to Claude API reliability — build and test it before it is on the critical path. | Business value ↑ (acquisition), Risk ↓ (isolated) |
 | 12 | AI Fill-in-the-Blank Mode + AI Guess the Word Mode | These modes are built on top of the same Learning Service session model and the same AnthropicService. Build both together after Flashcard Generation proves the AI integration is stable. | Business value ↑ (retention differentiator) |
 | 13 | Elasticsearch search + BullMQ sync | Search is needed for public set discovery, which is needed for social growth. But it is not a blocker for the core study loop. Build it after the core product is solid. | Business value ↑ (growth) |

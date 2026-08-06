@@ -32,7 +32,7 @@ A single wrong answer always resets the streak to zero, including demoting an al
 
 ## The core idea: normalize every mode into one event
 
-Every study mode — Flashcards, Learn Mode, Write Mode, Spell Mode, Test Mode, the AI modes — has a different UI and a different way of producing a result. Rather than duplicating mastery logic per mode, each one normalizes its outcome into a single shared event shape before it reaches the progress engine:
+Every study mode — Flashcards, Learn Mode, Write Mode, Test Mode, the AI modes — has a different UI and a different way of producing a result. Rather than duplicating mastery logic per mode, each one normalizes its outcome into a single shared event shape before it reaches the progress engine:
 
 ```typescript
 interface CardAttemptEvent {
@@ -40,7 +40,7 @@ interface CardAttemptEvent {
   cardId: string;
   setId: string;
   sessionId: string;
-  studyMode: 'FLASHCARD' | 'LEARN' | 'WRITE' | 'SPELL' | 'TEST' | 'AI_FILL_BLANK' | 'AI_GUESS_WORD';
+  studyMode: 'FLASHCARD' | 'LEARN' | 'WRITE' | 'TEST' | 'AI_FILL_BLANK' | 'AI_GUESS_WORD';
   outcome: 'CORRECT' | 'INCORRECT' | 'SKIPPED';
   hintUsed: boolean;
   attemptedAt: Date;
@@ -61,7 +61,6 @@ A typed answer in Write Mode is real recall. A multiple-choice guess or a self-r
 | Learn Mode — multiple choice | Recognition | 0.5 | 0.25 |
 | Learn Mode — written | Recall | 1.0 | 0.5 |
 | Write Mode | Recall | 1.0 | 0.5 |
-| Spell Mode | Recall | 1.0 | 0.5 |
 | Test Mode — written / fill-in-blank | Recall | 1.0 | 0.5 |
 | Test Mode — multiple choice / true-false | Recognition | 0.5 / 0.3 | 0.25 / 0.15 |
 | AI Fill-in-the-Blank | Recall (contextual) | 1.0 | 0.5 |
@@ -202,7 +201,7 @@ The mode weights and the 3.0 mastery threshold are a reasonable starting point, 
 | Parameter | Default | Notes |
 |---|---|---|
 | `MASTERY_THRESHOLD` | 3.0 | Weighted streak required to reach Mastered |
-| Recall weight (typed answer) | 1.0 | Write, Spell, Learn-written, Test-written, both AI modes |
+| Recall weight (typed answer) | 1.0 | Write, Learn-written, Test-written, both AI modes |
 | Recognition weight (multiple choice) | 0.5 | Learn Mode MC, Test Mode MC |
 | True/False weight | 0.3 | Highly guessable — lowest recognition weight |
 | Self-report weight (Flashcards "Know it") | 0.5 | No actual recall test performed |

@@ -1345,7 +1345,7 @@ Each study mode normalises its outcome into this shape before reaching the engin
 // apps/services/learning/src/modules/progress/card-attempt.event.ts
 export type StudyMode =
   | 'FLASHCARD' | 'LEARN_MC' | 'LEARN_WRITTEN'
-  | 'WRITE' | 'SPELL'
+  | 'WRITE'
   | 'TEST_WRITTEN' | 'TEST_MC' | 'TEST_TF'
   | 'AI_FILL_BLANK' | 'AI_GUESS_WORD'
   | 'MATCH'; // ingested but never affects mastery (see §8a.3)
@@ -1373,7 +1373,6 @@ export interface CardAttemptEvent {
 | `LEARN_MC` | 0.5 | 0.25 |
 | `LEARN_WRITTEN` | 1.0 | 0.5 |
 | `WRITE` | 1.0 | 0.5 |
-| `SPELL` | 1.0 | 0.5 |
 | `TEST_WRITTEN` | 1.0 | 0.5 |
 | `TEST_MC` | 0.5 | 0.25 |
 | `TEST_TF` | 0.3 | 0.15 |
@@ -1393,7 +1392,7 @@ export const MASTERY_THRESHOLD = 3.0;
 
 const MODE_WEIGHT: Record<StudyMode, number> = {
   FLASHCARD: 0.5, LEARN_MC: 0.5, LEARN_WRITTEN: 1.0,
-  WRITE: 1.0, SPELL: 1.0,
+  WRITE: 1.0,
   TEST_WRITTEN: 1.0, TEST_MC: 0.5, TEST_TF: 0.3,
   AI_FILL_BLANK: 1.0, AI_GUESS_WORD: 1.0,
   MATCH: 0,
@@ -1534,7 +1533,7 @@ The hot path never reads attempt history. A separate `CardAttemptEvent` is BullM
 | Parameter | Default | Where stored | Notes |
 |---|---|---|---|
 | `MASTERY_THRESHOLD` | 3.0 | Code constant (MVP); `system_config` row (v1.1) | Three recall-grade correct answers, or six recognition-grade, get a card to MASTERED. |
-| Recall weight | 1.0 | Code constant | Write / Spell / Learn-written / Test-written / both AI modes. |
+| Recall weight | 1.0 | Code constant | Write / Learn-written / Test-written / both AI modes. |
 | Recognition weight | 0.5 | Code constant | Learn-MC / Test-MC / Flashcards self-report. |
 | True/False weight | 0.3 | Code constant | Highly guessable. |
 | Hint multiplier | × 0.5 | Code constant | Applied on top of base. |
@@ -1801,7 +1800,7 @@ export class AiRateLimiterService {
 
 ## 10. TTS Integration
 
-> **⚠ Deferred to post-MVP (v1.1).** No TTS code ships in v1.0. The design below is preserved as the intended implementation for when the feature is re-scoped — do not build against it during MVP sprints. Spell Mode (which depends on this) is deferred with it. See the roadmap Post-MVP scope table for the v1.1 slot.
+> **⚠ Deferred to post-MVP (v1.1).** No TTS code ships in v1.0. The design below is preserved as the intended implementation for when the feature is re-scoped — do not build against it during MVP sprints. See the roadmap Post-MVP scope table for the v1.1 slot.
 
 ### 10.1 Architecture Overview
 
@@ -1887,7 +1886,7 @@ TTS is rate-limited per user session to prevent runaway API costs. The limit is 
 
 | Configuration | Value | Notes |
 |---|---|---|
-| Max calls / 30-min window | 200 | Covers a typical Flashcard or Spell Mode session |
+| Max calls / 30-min window | 200 | Covers a typical Flashcard Mode session |
 | Cooldown on limit breach | 30 minutes | Window slides; block lifted when oldest call exits window |
 | Cache TTL (browser) | 86400 seconds (24h) | Cache-Control: public, max-age=86400 on response |
 | Fallback behaviour | Return 429 with Retry-After header | Client shows "Audio temporarily unavailable" button state |
@@ -1923,7 +1922,6 @@ mimir-web/src/                        # Standalone React repo (mimir-web)
 │   │   │   ├── FlashcardsMode.tsx
 │   │   │   ├── LearnMode.tsx
 │   │   │   ├── WriteMode.tsx
-│   │   │   ├── SpellMode.tsx     # post-MVP (needs TTS)
 │   │   │   ├── TestMode.tsx
 │   │   │   ├── MatchMode.tsx
 │   │   │   ├── AiFillBlankMode.tsx
