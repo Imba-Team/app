@@ -63,4 +63,20 @@ export class UserResponseDto {
     Boolean((obj as { googleProviderId?: string | null }).googleProviderId),
   )
   googleLinked: boolean;
+
+  @Expose()
+  @ApiProperty({
+    description:
+      'IANA timezone identifier (e.g. "Europe/Berlin"). Drives per-user ' +
+      'SRS today-queue and reminder delivery times.',
+    example: 'Europe/Berlin',
+  })
+  timezone: string;
+
+  @Expose()
+  @ApiProperty({
+    description: 'BCP-47 language code. Currently one of "en", "ru", "az".',
+    example: 'en',
+  })
+  preferredLanguage: string;
 }

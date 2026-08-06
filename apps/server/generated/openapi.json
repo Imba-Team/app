@@ -3548,7 +3548,7 @@
     },
     "/srs/queue/today": {
       "get": {
-        "description": "Includes overdue cards. Ordered by dueDate ascending. UTC-based until per-user timezone lands.",
+        "description": "Includes overdue cards. Ordered by dueDate ascending. \"Today\" respects the user's saved timezone (defaults to UTC).",
         "operationId": "SrsController_todayQueue",
         "parameters": [
           {
@@ -3932,6 +3932,16 @@
           "googleLinked": {
             "type": "boolean",
             "description": "True if the account is linked to a Google identity and can be signed in via \"Continue with Google\"."
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone identifier (e.g. \"Europe/Berlin\"). Drives per-user SRS today-queue and reminder delivery times.",
+            "example": "Europe/Berlin"
+          },
+          "preferredLanguage": {
+            "type": "string",
+            "description": "BCP-47 language code. Currently one of \"en\", \"ru\", \"az\".",
+            "example": "en"
           }
         },
         "required": [
@@ -3946,7 +3956,9 @@
           "createdAt",
           "updatedAt",
           "profilePicture",
-          "googleLinked"
+          "googleLinked",
+          "timezone",
+          "preferredLanguage"
         ]
       },
       "UpdateMyProfileDto": {
@@ -3960,6 +3972,21 @@
             "type": "string",
             "example": "Vocabulary nerd. Always learning.",
             "maxLength": 280
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Europe/Berlin",
+            "description": "IANA timezone identifier. Used by SRS to compute the user's local \"today\" and to fire reminders at their local morning."
+          },
+          "preferredLanguage": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ru",
+              "az"
+            ],
+            "example": "en",
+            "description": "BCP-47 language code. Currently used to set the <html lang> attribute; future email templates and AI generation will read from this too."
           }
         }
       },

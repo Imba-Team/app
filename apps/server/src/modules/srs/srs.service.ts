@@ -19,6 +19,7 @@ import { ReviewSrsCardDto } from './dtos/review-srs-card.dto';
 import { SrsCardDto } from './dtos/srs-card.dto';
 import { SrsReviewResponseDto } from './dtos/srs-review-response.dto';
 import { processReview, Sm2Rating } from './domain/sm2';
+import { startOfLocalDayInUtc } from 'src/common/time/timezone.util';
 
 const IDEMPOTENCY_TTL_SECONDS = 300;
 
@@ -26,8 +27,10 @@ const IDEMPOTENCY_TTL_SECONDS = 300;
  * SRS = Spaced Repetition Scheduler. Wraps the pure SM-2 function
  * ([sm2.ts](./domain/sm2.ts)) with the persistence + HTTP query layer.
  *
- * "Today" is UTC-based for now — per-user timezone lands in Sprint 4
- * when the User.timezone column is added.
+ * "Today" is per-user local: `getUserDayStart(userId)` reads the saved
+ * `User.timezone` and returns the UTC instant matching that user's
+ * local midnight. Cards created without a saved timezone default to
+ * UTC via the DB column default.
  */
 @Injectable()
 export class SrsService {
@@ -36,13 +39,6 @@ export class SrsService {
     private readonly prisma: PrismaService,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
-
-  /** UTC midnight for the given date. */
-  private static startOfUtcDay(now: Date = new Date()): Date {
-    const d = new Date(now);
-    d.setUTCHours(0, 0, 0, 0);
-    return d;
-  }
 
   private static addDays(date: Date, days: number): Date {
     const d = new Date(date);
@@ -54,12 +50,28 @@ export class SrsService {
     return date.toISOString().slice(0, 10);
   }
 
+  /**
+   * UTC instant matching 00:00 local for the given user. Falls back to
+   * UTC midnight if the user has no saved zone (shouldn't happen — the
+   * column has a DB default — but safe against a stray null).
+   */
+  private async getUserDayStart(
+    userId: string,
+    now: Date = new Date(),
+  ): Promise<Date> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { timezone: true },
+    });
+    return startOfLocalDayInUtc(user?.timezone ?? 'UTC', now);
+  }
+
   async getTodayQueue(
     userId: string,
     limit = 50,
     offset = 0,
   ): Promise<{ items: SrsCardDto[]; total: number }> {
-    const today = SrsService.startOfUtcDay();
+    const today = await this.getUserDayStart(userId);
     const upperBound = SrsService.addDays(today, 1);
 
     const where: Prisma.SrsCardWhereInput = {
@@ -162,7 +174,7 @@ export class SrsService {
       );
 
       const now = new Date();
-      const today = SrsService.startOfUtcDay(now);
+      const today = await this.getUserDayStart(userId, now);
       const nextDue = SrsService.addDays(today, next.intervalDays);
 
       const updated = await tx.srsCard.update({
@@ -224,7 +236,7 @@ export class SrsService {
     userId: string,
     days = 30,
   ): Promise<ForecastResponseDto> {
-    const today = SrsService.startOfUtcDay();
+    const today = await this.getUserDayStart(userId);
     // Cards due before today collapse into today's bucket, so we scan
     // from the epoch of the user's earliest due date up to today+days.
     const upperBound = SrsService.addDays(today, days);

@@ -42,9 +42,12 @@ export class SrsRemindersScheduler implements OnModuleInit {
       return;
     }
 
-    // 03:00 UTC every day. Cheap, off-peak, and matches the "morning" spike
-    // we expect once the notifications module delivers reminders.
-    const cron = this.config.get<string>('SRS_REMINDERS_CRON') ?? '0 3 * * *';
+    // Fire every hour on the hour, UTC. The processor picks out the
+    // users whose *local* hour matches SRS_REMINDER_LOCAL_HOUR (default
+    // 8). This gives us per-user reminder timing without maintaining
+    // 24 separate schedulers, and delivery volume is naturally smeared
+    // across the day rather than spiking once at 03:00 UTC.
+    const cron = this.config.get<string>('SRS_REMINDERS_CRON') ?? '0 * * * *';
 
     // Fire-and-forget. `upsertJobScheduler` is idempotent — same
     // schedulerId replaces the entry, so repeated boots don't stack

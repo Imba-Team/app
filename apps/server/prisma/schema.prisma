@@ -52,6 +52,13 @@ model User {
   emailVerified      Boolean                @default(false)
   verifiedAt         DateTime?              @db.Timestamp(6)
   googleProviderId   String?                @unique
+  // IANA name (e.g. "Europe/Berlin"). Used by SRS to compute the user's
+  // local "today" and by the reminder scheduler to fire at their local
+  // morning instead of a fixed UTC hour.
+  timezone           String                 @default("UTC") @db.VarChar
+  // BCP-47 language code. Currently persisted for future email/AI use
+  // and to drive the <html lang> attribute; the app UI is still English.
+  preferredLanguage  String                 @default("en") @db.VarChar
   createdAt          DateTime               @default(now()) @db.Timestamp(6)
   updatedAt          DateTime               @default(now()) @updatedAt @db.Timestamp(6)
   studySets          StudySet[]

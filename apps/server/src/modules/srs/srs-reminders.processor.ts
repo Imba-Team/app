@@ -8,21 +8,30 @@ import {
   SrsRemindersJobName,
   SrsRemindUserPayload,
 } from 'src/common/queue/queue.constants';
+import {
+  localHour,
+  startOfLocalDayInUtc,
+} from 'src/common/time/timezone.util';
+
+const DEFAULT_REMINDER_LOCAL_HOUR = 8;
 
 /**
  * Consumes the srs-reminders queue. Two job kinds:
  *
- * - `srs.schedule_daily`: registered as a repeatable job at boot. Fans out
- *   one `srs.remind_user` job per user with cards due today.
+ * - `srs.schedule_daily`: registered as an hourly cron at boot. Each
+ *   hour we look for users whose *local* time now matches the reminder
+ *   hour (default 8am), and fan out one `srs.remind_user` job per
+ *   such user with cards due in their local day.
  * - `srs.remind_user`: currently a stub — logs the reminder payload. The
- *   Sprint 7 notifications module will replace the body here with a real
- *   push + in-app notification write.
+ *   notifications module will replace the body here with a real push +
+ *   in-app notification write.
  */
 @Processor(SRS_REMINDERS_QUEUE, {
   concurrency: Number(process.env.SRS_REMINDERS_CONCURRENCY ?? '5'),
 })
 export class SrsRemindersProcessor extends WorkerHost {
   private readonly context = 'SrsRemindersProcessor';
+  private readonly reminderHour: number;
 
   constructor(
     private readonly logger: LoggerService,
@@ -32,6 +41,11 @@ export class SrsRemindersProcessor extends WorkerHost {
   ) {
     super();
     this.logger.setContext(this.context);
+    const raw = Number(process.env.SRS_REMINDER_LOCAL_HOUR);
+    this.reminderHour =
+      Number.isInteger(raw) && raw >= 0 && raw <= 23
+        ? raw
+        : DEFAULT_REMINDER_LOCAL_HOUR;
   }
 
   async process(
@@ -43,7 +57,7 @@ export class SrsRemindersProcessor extends WorkerHost {
   ): Promise<void> {
     switch (job.name) {
       case SrsRemindersJob.SCHEDULE_DAILY:
-        await this.fanOutDaily(job.id ?? 'unknown');
+        await this.fanOutHourly(job.id ?? 'unknown');
         return;
       case SrsRemindersJob.REMIND_USER:
         await this.remindUser(
@@ -56,28 +70,58 @@ export class SrsRemindersProcessor extends WorkerHost {
     }
   }
 
-  private async fanOutDaily(jobId: string): Promise<void> {
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const upperBound = new Date(today);
-    upperBound.setUTCDate(upperBound.getUTCDate() + 1);
+  /**
+   * Runs every hour. Filters to users whose current local hour matches
+   * `reminderHour`, then queues one reminder job per user with cards due
+   * in *their* local day (not UTC).
+   *
+   * Uses two queries instead of a join: (1) all users with a
+   * SRS-relevant zone touching the reminder hour right now,
+   * (2) the count of their due cards. Cheap for our expected scale
+   * (< 100k users); can be swapped for a raw SQL grouped query when it
+   * matters.
+   */
+  private async fanOutHourly(jobId: string): Promise<void> {
+    const now = new Date();
 
-    const rows = await this.prisma.srsCard.groupBy({
-      by: ['userId'],
-      where: { dueDate: { lt: upperBound } },
-      _count: { _all: true },
+    // Filter users by matching their local hour against the reminder
+    // hour. Doing this in JS rather than SQL avoids needing a
+    // Postgres-side timezone catalog; the User table is small enough
+    // that a full scan of the timezone column is fine at this scale.
+    const users = await this.prisma.user.findMany({
+      select: { id: true, timezone: true },
     });
-
-    this.logger.log(
-      `[job=${jobId}] SRS daily fan-out: ${rows.length} user(s) with due cards`,
+    const dueUsers = users.filter(
+      (u) => localHour(u.timezone ?? 'UTC', now) === this.reminderHour,
     );
 
-    for (const row of rows) {
-      await this.queue.add(SrsRemindersJob.REMIND_USER, {
-        userId: row.userId,
-        dueCount: row._count._all,
-      });
+    if (dueUsers.length === 0) {
+      this.logger.debug(
+        `[job=${jobId}] SRS hourly fan-out: no users at local hour=${this.reminderHour}`,
+      );
+      return;
     }
+
+    let enqueued = 0;
+    for (const user of dueUsers) {
+      const dayStart = startOfLocalDayInUtc(user.timezone ?? 'UTC', now);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      const dueCount = await this.prisma.srsCard.count({
+        where: { userId: user.id, dueDate: { lt: dayEnd } },
+      });
+      if (dueCount === 0) continue;
+
+      await this.queue.add(SrsRemindersJob.REMIND_USER, {
+        userId: user.id,
+        dueCount,
+      });
+      enqueued++;
+    }
+
+    this.logger.log(
+      `[job=${jobId}] SRS hourly fan-out: hour=${this.reminderHour} ` +
+        `matched=${dueUsers.length} enqueued=${enqueued}`,
+    );
   }
 
   private async remindUser(

@@ -801,7 +801,7 @@ export interface paths {
         };
         /**
          * List today's due SRS cards for the caller
-         * @description Includes overdue cards. Ordered by dueDate ascending. UTC-based until per-user timezone lands.
+         * @description Includes overdue cards. Ordered by dueDate ascending. "Today" respects the user's saved timezone (defaults to UTC).
          */
         get: operations["SrsController_todayQueue"];
         put?: never;
@@ -1826,6 +1826,17 @@ export interface components {
             bio?: string;
             /** @example John Doe */
             name?: string;
+            /**
+             * @description BCP-47 language code. Currently used to set the <html lang> attribute; future email templates and AI generation will read from this too.
+             * @example en
+             * @enum {string}
+             */
+            preferredLanguage?: "en" | "ru" | "az";
+            /**
+             * @description IANA timezone identifier. Used by SRS to compute the user's local "today" and to fire reminders at their local morning.
+             * @example Europe/Berlin
+             */
+            timezone?: string;
         };
         UpdateStudySetDto: {
             /** @example Notes and flashcards for bio exams */
@@ -1862,10 +1873,20 @@ export interface components {
             id: string;
             /** @description Display name (maps from username) */
             name: string;
+            /**
+             * @description BCP-47 language code. Currently one of "en", "ru", "az".
+             * @example en
+             */
+            preferredLanguage: string;
             profilePicture: string | null;
             role: string;
             /** @enum {string} */
             status: "active" | "inactive";
+            /**
+             * @description IANA timezone identifier (e.g. "Europe/Berlin"). Drives per-user SRS today-queue and reminder delivery times.
+             * @example Europe/Berlin
+             */
+            timezone: string;
             /** Format: date-time */
             updatedAt: string;
             username: string;

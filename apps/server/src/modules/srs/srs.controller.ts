@@ -53,7 +53,7 @@ export class SrsController {
   @ApiOperation({
     summary: "List today's due SRS cards for the caller",
     description:
-      'Includes overdue cards. Ordered by dueDate ascending. UTC-based until per-user timezone lands.',
+      'Includes overdue cards. Ordered by dueDate ascending. "Today" respects the user\'s saved timezone (defaults to UTC).',
   })
   @ApiOkEnvelope(SrsCardDto, {
     isArray: true,

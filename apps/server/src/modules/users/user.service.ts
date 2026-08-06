@@ -152,7 +152,12 @@ export class UsersService {
    */
   async updateMyProfile(
     id: string,
-    dto: { name?: string; bio?: string },
+    dto: {
+      name?: string;
+      bio?: string;
+      timezone?: string;
+      preferredLanguage?: string;
+    },
   ): Promise<User> {
     const existing = await this.findById(id);
     const patch: Prisma.UserUpdateInput = {};
@@ -162,6 +167,12 @@ export class UsersService {
     }
     if (dto.bio !== undefined) {
       patch.bio = dto.bio;
+    }
+    if (dto.timezone !== undefined) {
+      patch.timezone = dto.timezone;
+    }
+    if (dto.preferredLanguage !== undefined) {
+      patch.preferredLanguage = dto.preferredLanguage;
     }
 
     if (Object.keys(patch).length === 0) {

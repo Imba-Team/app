@@ -11,6 +11,9 @@ interface PrismaMock {
     update: jest.Mock;
     groupBy: jest.Mock;
   };
+  user: {
+    findUnique: jest.Mock;
+  };
   $transaction: jest.Mock;
 }
 
@@ -22,6 +25,11 @@ const makePrisma = (): PrismaMock => {
       count: jest.fn(),
       update: jest.fn(),
       groupBy: jest.fn(),
+    },
+    user: {
+      // Default: unknown user → SrsService falls back to UTC. Tests
+      // that care about a specific timezone override this per-case.
+      findUnique: jest.fn().mockResolvedValue({ timezone: 'UTC' }),
     },
     $transaction: jest.fn(),
   };
