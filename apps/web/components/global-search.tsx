@@ -43,6 +43,7 @@ import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 import { useFlashcardSearch } from '@/lib/hooks/useFlashcardSearch';
 import { useCommunityModules } from '@/lib/hooks/useModules';
 import { useFolders, useLibrarySets } from '@/lib/hooks/useLibrary';
+import { Input } from './ui/input';
 
 const LIMIT = 5;
 const MIN_LENGTH_FOR_REMOTE = 2;
@@ -64,7 +65,19 @@ const PAGES: PageEntry[] = [
     path: '/account',
     title: 'Account settings',
     description: 'Profile, security, preferences, connected accounts',
-    keywords: ['account', 'settings', 'preferences', 'profile', 'password', 'security', 'timezone', 'language', 'sessions', 'google', 'delete account'],
+    keywords: [
+      'account',
+      'settings',
+      'preferences',
+      'profile',
+      'password',
+      'security',
+      'timezone',
+      'language',
+      'sessions',
+      'google',
+      'delete account',
+    ],
     icon: Settings,
   },
   {
@@ -99,8 +112,7 @@ const includes = (q: string, ...hs: (string | null | undefined)[]) =>
 // commit that follows hydration — no cascading render.
 const NEVER_SUBSCRIBE = () => () => {};
 const SERVER_SHORTCUT = () => 'Ctrl K';
-const CLIENT_SHORTCUT = () =>
-  /Mac|iPhone|iPod|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K';
+const CLIENT_SHORTCUT = () => (/Mac|iPhone|iPod|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K');
 
 function useShortcutLabel(): string {
   return useSyncExternalStore(NEVER_SUBSCRIBE, CLIENT_SHORTCUT, SERVER_SHORTCUT);
@@ -133,9 +145,7 @@ export function GlobalSearch() {
   const folderMatches = useMemo(
     () =>
       q
-        ? (folders.data ?? [])
-            .filter((f) => includes(q, f.name, f.description))
-            .slice(0, LIMIT)
+        ? (folders.data ?? []).filter((f) => includes(q, f.name, f.description)).slice(0, LIMIT)
         : [],
     [q, folders.data],
   );
@@ -202,13 +212,17 @@ export function GlobalSearch() {
 
   return (
     <div ref={rootRef} className="relative hidden max-w-2xl flex-1 md:block">
-      {/* cmdk needs its state under Command for keyboard nav; we forward
-          our input value via `value`/`onValueChange` instead of using
-          <CommandInput> so the navbar keeps its custom styled input. */}
-      <Command shouldFilter={false} value={value} onValueChange={setValue}>
+      {/* cmdk handles keyboard nav across CommandItems on its own. We do NOT
+          wire `value`/`onValueChange` here — on <Command> those track the
+          highlighted item, not the input text, so binding them to our input
+          state made hover replace the query with e.g. "folder:<id>". Filtering
+          is done manually in the hooks, hence shouldFilter={false}. Also
+          strip the wrapper's rounded-md/overflow-hidden so the pill-shaped
+          <Input> inside isn't clipped to a smaller radius. */}
+      <Command shouldFilter={false} className="overflow-visible rounded-none bg-transparent">
         <form onSubmit={handleSubmit} role="search">
           <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
-          <input
+          <Input
             ref={inputRef}
             type="search"
             value={value}
@@ -224,7 +238,7 @@ export function GlobalSearch() {
           />
           <kbd
             aria-hidden="true"
-            className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 select-none rounded-md border border-black/10 bg-neutral-50 px-1.5 py-0.5 font-mono text-[10px] font-medium text-neutral-500 sm:inline-block"
+            className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 select-none border border-black/5 bg-neutral-50 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-medium text-neutral-500 sm:inline-block"
           >
             {shortcut}
           </kbd>
@@ -250,7 +264,9 @@ export function GlobalSearch() {
                         title={p.title}
                         badge="Page"
                         subtitle={p.description}
-                        trailing={<ChevronRight className="mt-1 h-4 w-4 shrink-0 text-brand-500/60" />}
+                        trailing={
+                          <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-brand-500/60" />
+                        }
                       />
                     );
                   })}
