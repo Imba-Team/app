@@ -18,6 +18,15 @@ export class FlashcardResponseDto {
   @Expose()
   definition!: string;
 
+  @ApiProperty({
+    type: [String],
+    description:
+      'Extra accepted answers for the written evaluator. Empty when the author has not provided synonyms/variants.',
+    example: [],
+  })
+  @Expose()
+  alternateAnswers!: string[];
+
   @ApiPropertyOptional({ nullable: true })
   @Expose()
   example?: string | null;

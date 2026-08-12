@@ -1,8 +1,8 @@
 import { CardAttemptEvent } from './card-attempt-event';
 import {
-  HINT_MULTIPLIER,
-  MASTERY_THRESHOLD,
+  DEFAULT_MASTERY_CONFIG,
   MODE_WEIGHT,
+  MasteryConfig,
 } from './mode-weights';
 
 export type MasteryStatus = 'NEW' | 'LEARNING' | 'MASTERED';
@@ -27,6 +27,7 @@ export function applyAttempt(
   prev: ProgressState,
   event: CardAttemptEvent,
   now: Date = new Date(),
+  config: MasteryConfig = DEFAULT_MASTERY_CONFIG,
 ): ApplyResult {
   if (event.outcome === 'SKIPPED') {
     return { next: prev, graduated: false, demoted: false };
@@ -52,9 +53,9 @@ export function applyAttempt(
     return { next: prev, graduated: false, demoted: false };
   }
 
-  const credit = event.hintUsed ? base * HINT_MULTIPLIER : base;
+  const credit = event.hintUsed ? base * config.hintMultiplier : base;
   const newStreak = prev.weightedStreak + credit;
-  const reachedMastery = newStreak >= MASTERY_THRESHOLD;
+  const reachedMastery = newStreak >= config.masteryThreshold;
   const graduated = reachedMastery && prev.status !== 'MASTERED';
   const nextStatus: MasteryStatus = reachedMastery ? 'MASTERED' : 'LEARNING';
 

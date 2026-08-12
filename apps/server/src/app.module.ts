@@ -26,6 +26,7 @@ import { RedisModule } from './common/redis/redis.module';
 import { StorageModule } from './common/storage/storage.module';
 import { MediaModule } from './common/media/media.module';
 import { LearningModule } from './modules/learning/learning.module';
+import { SetPreferencesModule } from './modules/set-preferences/set-preferences.module';
 import { SrsModule } from './modules/srs/srs.module';
 import { AiModule } from './modules/ai/ai.module';
 import { ClassroomModule } from './modules/classroom/classroom.module';
@@ -78,6 +79,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     FolderStudySetModule,
     CommentModule,
     LearningModule,
+    SetPreferencesModule,
     SrsModule,
     AiModule,
     ClassroomModule,

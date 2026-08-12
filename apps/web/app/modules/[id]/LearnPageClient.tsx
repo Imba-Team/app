@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Search,
   Settings2,
+  SlidersHorizontal,
   Upload,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,6 +20,7 @@ import TermItem from './_components/TermItem';
 import AddTerm from './_components/AddTerm';
 import { Button } from '@/components/ui/button';
 import { ImportFlashcardsDialog, type ImportedCard } from '@/components/import-flashcards-dialog';
+import { StudyPreferencesDialog } from '@/components/study-preferences-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +47,7 @@ import TermsFilterBar, {
 import type { Term } from '@/lib/api';
 import { createTerm as createTermApi, resetSetProgress } from '@/lib/api';
 import { useModule, useCollectModule } from '@/lib/hooks/useModules';
+import { useDueQueue } from '@/lib/hooks/useDueQueue';
 import {
   useCreateTerm,
   useUpdateTerm,
@@ -104,11 +107,14 @@ export default function LearnPageClient({ id }: { id: string }) {
   const [resetting, setResetting] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [preferencesOpen, setPreferencesOpen] = useState(false);
 
   const loading = moduleLoading || termsLoading;
   const moduleInfo = moduleData?.data;
   const isOwner = !!moduleInfo?.isOwner;
   const isCollected = !!moduleInfo?.isCollected;
+  const { data: dueQueue } = useDueQueue(id, isCollected);
+  const dueCount = dueQueue?.total ?? 0;
 
   function submitNewTerm(term: string, definition: string) {
     if (!term.trim() || !definition.trim()) {
@@ -250,7 +256,17 @@ export default function LearnPageClient({ id }: { id: string }) {
         <ModeChooserSkeleton />
       ) : isCollected ? (
         <section>
-          <h2 className="mb-4 text-xl font-bold text-neutral-700">Choose your mode</h2>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-xl font-bold text-neutral-700">Choose your mode</h2>
+            {dueCount > 0 && (
+              <Link
+                href={`/modules/${id}/learn?dueFirst=1`}
+                className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-3 py-1 text-sm font-semibold text-white hover:bg-brand-400"
+              >
+                Review {dueCount} due today →
+              </Link>
+            )}
+          </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {MODE_CARDS.map((m) => (
               <Link key={m.label} href={m.href(id)} className="group">
@@ -299,6 +315,12 @@ export default function LearnPageClient({ id }: { id: string }) {
                   <DropdownMenuContent align="end" className="min-w-56">
                     <DropdownMenuLabel>Study settings</DropdownMenuLabel>
                     <DropdownMenuSeparator />
+                    {isCollected && (
+                      <DropdownMenuItem onClick={() => setPreferencesOpen(true)}>
+                        <SlidersHorizontal className="mr-2 h-4 w-4" />
+                        Study preferences…
+                      </DropdownMenuItem>
+                    )}
                     {isOwner && (
                       <DropdownMenuItem onClick={() => setImportOpen(true)}>
                         <Upload className="mr-2 h-4 w-4" />
@@ -432,6 +454,14 @@ export default function LearnPageClient({ id }: { id: string }) {
           onImport={handleImport}
           isSubmitting={importing}
           closeOnSuccess={false}
+        />
+      )}
+
+      {isCollected && (
+        <StudyPreferencesDialog
+          open={preferencesOpen}
+          onOpenChange={setPreferencesOpen}
+          setId={id}
         />
       )}
 

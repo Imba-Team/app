@@ -3449,6 +3449,16 @@
               "default": 10,
               "type": "number"
             }
+          },
+          {
+            "name": "dueFirst",
+            "required": false,
+            "in": "query",
+            "description": "When true, prioritize cards that are due today per SRS. Falls back to the standard learning/new mix when no due cards remain. Powers the \"review due\" entry from the module page.",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -3527,6 +3537,202 @@
           }
         ],
         "summary": "Mark a session complete and return the summary",
+        "tags": [
+          "Learning"
+        ]
+      }
+    },
+    "/sessions/inflight": {
+      "get": {
+        "description": "Returns the most recent ACTIVE or PAUSED session — with resumeState — so the Learn entry page can render a Resume dialog before starting a new session. `null` when nothing is in flight. Sweeps long-idle rows to ABANDONED before responding.",
+        "operationId": "SessionController_inflight",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "mode",
+            "required": true,
+            "in": "query",
+            "description": "Only the mode you plan to enter is looked up.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "FLASHCARD",
+                "LEARN",
+                "WRITE",
+                "SPELL",
+                "TEST",
+                "MATCH",
+                "AI_FILL_BLANK",
+                "AI_GUESS_WORD"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inflight lookup (data is null when nothing is in flight)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/InflightSessionResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Find the caller's in-flight session for a (set, mode)",
+        "tags": [
+          "Learning"
+        ]
+      }
+    },
+    "/sessions/{id}/mark-correct": {
+      "post": {
+        "description": "Learner-facing 'I answered correctly' override. Flips the most recent CardAttempt for (session, card) from INCORRECT to CORRECT, adjusts UserCardProgress counters, adds credit to the weighted streak, and forwards a compensating GOOD rating to SRS. Idempotent: overriding an already-CORRECT attempt returns the current progress unchanged.",
+        "operationId": "SessionController_markCorrect",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkCorrectDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Answer overridden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/AnswerResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Override the last answer for a card as CORRECT",
+        "tags": [
+          "Learning"
+        ]
+      }
+    },
+    "/sessions/{id}/pause": {
+      "post": {
+        "description": "Flips the session to PAUSED and stores the opaque resumeState blob. Idempotent; a pause on a completed/abandoned session is a noop.",
+        "operationId": "SessionController_pause",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PauseSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Pause an in-flight session and snapshot its resumeState",
+        "tags": [
+          "Learning"
+        ]
+      }
+    },
+    "/sessions/{id}/abandon": {
+      "post": {
+        "description": "Explicit \"Start fresh\" path from the Resume dialog. Marks the session ABANDONED so the concurrent-session guard on POST /sessions lets a new one through. Mastery is unaffected — CardAttempt rows and UserCardProgress persist.",
+        "operationId": "SessionController_abandon",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Abandon an in-flight session",
         "tags": [
           "Learning"
         ]
@@ -3622,6 +3828,168 @@
           }
         ],
         "summary": "Reset my mastery + SRS state for a study set",
+        "tags": [
+          "Learning"
+        ]
+      }
+    },
+    "/sets/{setId}/preferences": {
+      "get": {
+        "description": "Returns the caller’s per-set preferences, or the module-level defaults when the learner has never overridden anything.",
+        "operationId": "SetPreferencesController_get",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preferences read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SetPreferencesResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get my study preferences for this set",
+        "tags": [
+          "Learning"
+        ]
+      },
+      "put": {
+        "description": "Partial update. Only fields present in the body are written; omitted fields keep their prior value (or the module default on first write).",
+        "operationId": "SetPreferencesController_update",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSetPreferencesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Preferences updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SetPreferencesResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update my study preferences for this set",
+        "tags": [
+          "Learning"
+        ]
+      }
+    },
+    "/sets/{setId}/preferences/apply-preset": {
+      "post": {
+        "description": "Overwrites batchSize, mcWrittenBias, masteryThreshold, and autoAdvanceMs with the values baked into the chosen preset. Other fields (hintMultiplier, autoAdvance, audioEnabled) are left as-is so the preset does not silently rewrite unrelated toggles.",
+        "operationId": "SetPreferencesController_applyPreset",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyPresetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Preset applied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SetPreferencesResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Apply a pace preset",
         "tags": [
           "Learning"
         ]
@@ -3765,6 +4133,78 @@
           }
         ],
         "summary": "Submit a rating for a due SRS card",
+        "tags": [
+          "srs"
+        ]
+      }
+    },
+    "/sets/{setId}/due-queue": {
+      "get": {
+        "description": "Same \"today\" semantics as /srs/queue/today, filtered to a single study set. Powers the \"cards due today\" affordance on the module page and the due-first pull in Learn Mode.",
+        "operationId": "SrsController_dueQueueForSet",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50,
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 0,
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Set due queue retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/SrsCardDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Due SRS cards for the caller within a specific set",
         "tags": [
           "srs"
         ]
@@ -4699,6 +5139,14 @@
           "definition": {
             "type": "string"
           },
+          "alternateAnswers": {
+            "description": "Extra accepted answers for the written evaluator. Empty when the author has not provided synonyms/variants.",
+            "example": [],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "example": {
             "type": "object",
             "nullable": true
@@ -4732,6 +5180,7 @@
           "studySetId",
           "term",
           "definition",
+          "alternateAnswers",
           "orderIndex",
           "createdAt",
           "updatedAt"
@@ -4768,6 +5217,18 @@
             "type": "number",
             "example": 3,
             "description": "Position within the set. Auto-assigned if omitted."
+          },
+          "alternateAnswers": {
+            "description": "Extra accepted answers for the written evaluator (author-provided synonyms or variants). The primary `definition` is always accepted; these are additional matches that all count as CORRECT.",
+            "example": [
+              "the powerhouse of the cell",
+              "cell powerhouse"
+            ],
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -4802,6 +5263,18 @@
             "type": "number",
             "example": 3,
             "description": "Position within the set. Auto-assigned if omitted."
+          },
+          "alternateAnswers": {
+            "description": "Extra accepted answers for the written evaluator (author-provided synonyms or variants). The primary `definition` is always accepted; these are additional matches that all count as CORRECT.",
+            "example": [
+              "the powerhouse of the cell",
+              "cell powerhouse"
+            ],
+            "maxItems": 25,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
@@ -5136,6 +5609,21 @@
               "AI_GUESS_WORD"
             ]
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "ABANDONED",
+              "COMPLETED"
+            ],
+            "description": "Session lifecycle. On a fresh start this is ACTIVE. On a resumed in-flight session it may be ACTIVE or PAUSED — the client should treat both as continuable."
+          },
+          "resumed": {
+            "type": "boolean",
+            "description": "True when the caller already had an in-flight session for this (set, mode) pair and the server returned it instead of creating a new one. The client can use this to render \"resumed\" UI without a separate lookup.",
+            "example": false
+          },
           "startedAt": {
             "format": "date-time",
             "type": "string"
@@ -5145,6 +5633,8 @@
           "sessionId",
           "studySetId",
           "mode",
+          "status",
+          "resumed",
           "startedAt"
         ]
       },
@@ -5198,6 +5688,16 @@
               "AI_GUESS_WORD"
             ]
           },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "ABANDONED",
+              "COMPLETED"
+            ],
+            "description": "Lifecycle status. Renders in the history list as a badge — active/paused sessions show a Resume affordance; abandoned/completed sessions are read-only."
+          },
           "cardsStudied": {
             "type": "number"
           },
@@ -5230,6 +5730,7 @@
           "sessionId",
           "studySetId",
           "mode",
+          "status",
           "cardsStudied",
           "correctAnswers",
           "incorrectAnswers",
@@ -5373,6 +5874,12 @@
             "type": "string",
             "description": "The learner-typed response for written modes. Used to echo back on the client; not stored on the mastery row.",
             "maxLength": 500
+          },
+          "responseMs": {
+            "type": "number",
+            "description": "Client-measured milliseconds from card render to submit. Logged on the CardAttempt audit row for analytics and adaptive difficulty.",
+            "example": 4200,
+            "minimum": 0
           }
         },
         "required": [
@@ -5381,6 +5888,29 @@
           "studyMode",
           "outcome",
           "hintUsed"
+        ]
+      },
+      "DiffSegmentDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "match",
+              "wrong",
+              "missing",
+              "extra"
+            ],
+            "description": "match: identical in both. wrong: the input character(s) at this position differ from expected (rendered highlighted). missing: expected character(s) the learner omitted. extra: characters the learner added."
+          },
+          "text": {
+            "type": "string",
+            "description": "Verbatim run of characters for this segment. Segments always come from the normalized forms, not the raw input."
+          }
+        },
+        "required": [
+          "type",
+          "text"
         ]
       },
       "WriteEvaluationDto": {
@@ -5393,7 +5923,7 @@
               "TYPO_ACCEPTED",
               "WRONG"
             ],
-            "description": "EXACT = normalized strings match. TYPO_ACCEPTED = Levenshtein distance ≤ 1 in a 6+ character answer (still scored CORRECT). WRONG = anything else."
+            "description": "EXACT = normalized strings match (or token-set match for multi-word answers). TYPO_ACCEPTED = Levenshtein distance ≤ 1 in a 6+ character answer (still scored CORRECT). WRONG = anything else."
           },
           "similarity": {
             "type": "number",
@@ -5411,6 +5941,17 @@
           "normalizedExpected": {
             "type": "string",
             "description": "The canonical answer after normalization."
+          },
+          "matchedAgainst": {
+            "type": "string",
+            "description": "Raw text of the candidate that produced the best score — either the primary card definition or one of the author-provided alternate answers."
+          },
+          "diff": {
+            "description": "Character-level diff of the normalized input against the matched candidate. Rendered directly by the UI feedback panel.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiffSegmentDto"
+            }
           }
         },
         "required": [
@@ -5418,7 +5959,9 @@
           "similarity",
           "editDistance",
           "normalizedInput",
-          "normalizedExpected"
+          "normalizedExpected",
+          "matchedAgainst",
+          "diff"
         ]
       },
       "WrittenAnswerResponseDto": {
@@ -5488,6 +6031,12 @@
           "hintUsed": {
             "type": "boolean",
             "example": false
+          },
+          "responseMs": {
+            "type": "number",
+            "description": "Client-measured milliseconds from card render to submit. Logged on the CardAttempt audit row for analytics and adaptive difficulty.",
+            "example": 6800,
+            "minimum": 0
           }
         },
         "required": [
@@ -5507,7 +6056,15 @@
           },
           "term": {
             "type": "string",
-            "description": "The term shown to the learner as the prompt."
+            "description": "The text shown as the prompt. Which side of the card this is depends on `answerDirection`: the term (TERM_TO_DEFINITION) or the definition (DEFINITION_TO_TERM)."
+          },
+          "answerDirection": {
+            "type": "string",
+            "enum": [
+              "TERM_TO_DEFINITION",
+              "DEFINITION_TO_TERM"
+            ],
+            "description": "Which side of the card the learner is being asked to produce. Determined server-side from UserSetPreferences.answerDirection and echoed here so the client renders the right labels."
           },
           "hint": {
             "type": "string",
@@ -5537,6 +6094,7 @@
         "required": [
           "cardId",
           "term",
+          "answerDirection",
           "promptType"
         ]
       },
@@ -5626,6 +6184,256 @@
           "accuracy",
           "startedAt",
           "completedAt"
+        ]
+      },
+      "InflightSessionResponseDto": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studySetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "FLASHCARD",
+              "LEARN",
+              "WRITE",
+              "SPELL",
+              "TEST",
+              "MATCH",
+              "AI_FILL_BLANK",
+              "AI_GUESS_WORD"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "ABANDONED",
+              "COMPLETED"
+            ]
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lastActivityAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "Wall-clock timestamp of the last mutation (answer, pause, resume). Powers the \"paused N minutes ago\" copy on the resume dialog."
+          },
+          "cardsStudied": {
+            "type": "number",
+            "description": "Number of cards answered so far in this session — cardsStudied on the session row.",
+            "example": 4
+          },
+          "resumeState": {
+            "type": "object",
+            "nullable": true,
+            "description": "Opaque JSON blob written by the client on pause. Structure is a client-side contract (LearnResumeState in the web app); the server only round-trips it. Null when the session was never paused."
+          }
+        },
+        "required": [
+          "sessionId",
+          "studySetId",
+          "mode",
+          "status",
+          "startedAt",
+          "lastActivityAt",
+          "cardsStudied"
+        ]
+      },
+      "MarkCorrectDto": {
+        "type": "object",
+        "properties": {
+          "cardId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The card whose last-in-session attempt should be reclassified as CORRECT. Only the most recent CardAttempt for this (session, card) pair is affected."
+          }
+        },
+        "required": [
+          "cardId"
+        ]
+      },
+      "PauseSessionDto": {
+        "type": "object",
+        "properties": {
+          "resumeState": {
+            "type": "object",
+            "description": "Opaque JSON blob (LearnResumeState on the client) — current batch, batchIndex, hasMoreCards flag, and anything else the client wants to restore. The server only round-trips it. Omit to pause without saving state (rare)."
+          }
+        }
+      },
+      "SetPreferencesResponseDto": {
+        "type": "object",
+        "properties": {
+          "batchSize": {
+            "type": "number",
+            "description": "Cards per Learn batch. Range 1–50; the batch algorithm caps at this value.",
+            "example": 10
+          },
+          "mcWrittenBias": {
+            "type": "number",
+            "description": "Multiplier on the weighted-streak threshold that flips a card from LEARN_MC (recognition) to LEARN_WRITTEN (recall). Higher = written triggers sooner. 0 keeps a card on MC until mastery.",
+            "example": 1
+          },
+          "masteryThreshold": {
+            "type": "number",
+            "description": "Weighted-streak needed for a card to graduate to MASTERED. Range 1.0–10.0.",
+            "example": 3
+          },
+          "hintMultiplier": {
+            "type": "number",
+            "description": "Credit multiplier applied when the learner used the hint. Range 0.0–1.0.",
+            "example": 0.5
+          },
+          "autoAdvance": {
+            "type": "boolean",
+            "description": "Whether the client auto-advances past the feedback screen after an answer.",
+            "example": true
+          },
+          "autoAdvanceMs": {
+            "type": "number",
+            "description": "Milliseconds to hold the feedback panel when auto-advancing.",
+            "example": 1400
+          },
+          "audioEnabled": {
+            "type": "boolean",
+            "description": "Whether card audio (TTS) is enabled. Placeholder for now.",
+            "example": false
+          },
+          "starredOnly": {
+            "type": "boolean",
+            "description": "Restrict the batch to cards the learner has starred. Empty starred pool triggers a UI empty state.",
+            "example": false
+          },
+          "shuffleEnabled": {
+            "type": "boolean",
+            "description": "False = deterministic order by Flashcard.orderIndex. True = current behaviour (LEARNING first, shuffled within groups).",
+            "example": true
+          },
+          "strictness": {
+            "type": "string",
+            "enum": [
+              "STRICT",
+              "NORMAL",
+              "LENIENT"
+            ],
+            "description": "Written-answer evaluator leniency. STRICT = literal after case-insensitive + trim. NORMAL = current defaults. LENIENT = NORMAL + wider typo tolerance."
+          },
+          "answerDirection": {
+            "type": "string",
+            "enum": [
+              "TERM_TO_DEFINITION",
+              "DEFINITION_TO_TERM"
+            ],
+            "description": "Which side the learner types. TERM_TO_DEFINITION: prompt = term, expected = definition (default). DEFINITION_TO_TERM: prompt = definition, expected = term (alternates ignored)."
+          }
+        },
+        "required": [
+          "batchSize",
+          "mcWrittenBias",
+          "masteryThreshold",
+          "hintMultiplier",
+          "autoAdvance",
+          "autoAdvanceMs",
+          "audioEnabled",
+          "starredOnly",
+          "shuffleEnabled",
+          "strictness",
+          "answerDirection"
+        ]
+      },
+      "UpdateSetPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "batchSize": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 50,
+            "example": 10
+          },
+          "mcWrittenBias": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5,
+            "example": 1
+          },
+          "masteryThreshold": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 10,
+            "example": 3
+          },
+          "hintMultiplier": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "example": 0.5
+          },
+          "autoAdvance": {
+            "type": "boolean",
+            "example": true
+          },
+          "autoAdvanceMs": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "example": 1400
+          },
+          "audioEnabled": {
+            "type": "boolean",
+            "example": false
+          },
+          "starredOnly": {
+            "type": "boolean",
+            "example": false
+          },
+          "shuffleEnabled": {
+            "type": "boolean",
+            "example": true
+          },
+          "strictness": {
+            "type": "string",
+            "enum": [
+              "STRICT",
+              "NORMAL",
+              "LENIENT"
+            ],
+            "example": "NORMAL"
+          },
+          "answerDirection": {
+            "type": "string",
+            "enum": [
+              "TERM_TO_DEFINITION",
+              "DEFINITION_TO_TERM"
+            ],
+            "example": "TERM_TO_DEFINITION"
+          }
+        }
+      },
+      "ApplyPresetDto": {
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "string",
+            "enum": [
+              "chill",
+              "default",
+              "aggressive"
+            ],
+            "description": "Study pace preset. Populates batchSize, mcWrittenBias, masteryThreshold, and autoAdvanceMs with the preset values, leaving other fields untouched."
+          }
+        },
+        "required": [
+          "preset"
         ]
       },
       "SrsCardDto": {

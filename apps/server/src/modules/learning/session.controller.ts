@@ -22,9 +22,13 @@ import { JwtGuard } from 'src/guards/jwt.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
 
 import { AnswerResponseDto } from './dtos/answer-response.dto';
+import { GetInflightQueryDto } from './dtos/get-inflight-query.dto';
 import { GetNextBatchQueryDto } from './dtos/get-next-batch-query.dto';
+import { InflightSessionResponseDto } from './dtos/inflight-session-response.dto';
 import { LearnBatchResponseDto } from './dtos/learn-batch-response.dto';
 import { ListSessionsQueryDto } from './dtos/list-sessions-query.dto';
+import { MarkCorrectDto } from './dtos/mark-correct.dto';
+import { PauseSessionDto } from './dtos/pause-session.dto';
 import { SessionHistoryItemDto } from './dtos/session-history-item.dto';
 import { SessionSummaryDto } from './dtos/session-summary.dto';
 import { StartSessionResponseDto } from './dtos/start-session-response.dto';
@@ -147,6 +151,7 @@ export class SessionController {
       user.id,
       sessionId,
       query.size ?? 10,
+      { dueFirst: query.dueFirst ?? false },
     );
     return { ok: true, message: 'Batch retrieved', data };
   }
@@ -161,5 +166,77 @@ export class SessionController {
   ): Promise<ResponseDto<SessionSummaryDto>> {
     const data = await this.learningService.completeSession(user.id, sessionId);
     return { ok: true, message: 'Session completed', data };
+  }
+
+  @Get('inflight')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: "Find the caller's in-flight session for a (set, mode)",
+    description:
+      'Returns the most recent ACTIVE or PAUSED session — with resumeState — so the Learn entry page can render a Resume dialog before starting a new session. `null` when nothing is in flight. Sweeps long-idle rows to ABANDONED before responding.',
+  })
+  @ApiOkEnvelope(InflightSessionResponseDto, {
+    description: 'Inflight lookup (data is null when nothing is in flight)',
+  })
+  async inflight(
+    @CurrentUser() user: IUser,
+    @Query() query: GetInflightQueryDto,
+  ): Promise<ResponseDto<InflightSessionResponseDto | null>> {
+    const data = await this.learningService.getInflightSession(
+      user.id,
+      query.setId,
+      query.mode,
+    );
+    return { ok: true, message: 'Inflight lookup', data };
+  }
+
+  @Post(':id/mark-correct')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Override the last answer for a card as CORRECT',
+    description:
+      "Learner-facing 'I answered correctly' override. Flips the most recent CardAttempt for (session, card) from INCORRECT to CORRECT, adjusts UserCardProgress counters, adds credit to the weighted streak, and forwards a compensating GOOD rating to SRS. Idempotent: overriding an already-CORRECT attempt returns the current progress unchanged.",
+  })
+  @ApiOkEnvelope(AnswerResponseDto, { description: 'Answer overridden' })
+  async markCorrect(
+    @CurrentUser() user: IUser,
+    @Param('id', new ParseUUIDPipe()) sessionId: string,
+    @Body() dto: MarkCorrectDto,
+  ): Promise<ResponseDto<AnswerResponseDto>> {
+    const data = await this.learningService.markAnswerCorrect(
+      user.id,
+      sessionId,
+      dto,
+    );
+    return { ok: true, message: 'Answer overridden', data };
+  }
+
+  @Post(':id/pause')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Pause an in-flight session and snapshot its resumeState',
+    description:
+      'Flips the session to PAUSED and stores the opaque resumeState blob. Idempotent; a pause on a completed/abandoned session is a noop.',
+  })
+  async pause(
+    @CurrentUser() user: IUser,
+    @Param('id', new ParseUUIDPipe()) sessionId: string,
+    @Body() dto: PauseSessionDto,
+  ): Promise<void> {
+    await this.learningService.pauseSession(user.id, sessionId, dto);
+  }
+
+  @Post(':id/abandon')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Abandon an in-flight session',
+    description:
+      'Explicit "Start fresh" path from the Resume dialog. Marks the session ABANDONED so the concurrent-session guard on POST /sessions lets a new one through. Mastery is unaffected — CardAttempt rows and UserCardProgress persist.',
+  })
+  async abandon(
+    @CurrentUser() user: IUser,
+    @Param('id', new ParseUUIDPipe()) sessionId: string,
+  ): Promise<void> {
+    await this.learningService.abandonSession(user.id, sessionId);
   }
 }

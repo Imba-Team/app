@@ -1,5 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsIn, IsString, IsUUID, MaxLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { StudyMode } from '../domain/card-attempt-event';
 
 const WRITTEN_STUDY_MODES: StudyMode[] = [
@@ -44,4 +53,15 @@ export class SubmitWrittenAnswerDto {
   @ApiProperty({ example: false })
   @IsBoolean()
   hintUsed!: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'Client-measured milliseconds from card render to submit. Logged on the CardAttempt audit row for analytics and adaptive difficulty.',
+    example: 6800,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  responseMs?: number;
 }

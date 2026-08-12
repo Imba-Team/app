@@ -103,6 +103,44 @@ export class SrsController {
     return { ok: true, message: 'Review applied', data };
   }
 
+  @Get('sets/:setId/due-queue')
+  @HttpCode(200)
+  @UseGuards(JwtGuard, RolesGuard)
+  @Roles(Role.USER, Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Due SRS cards for the caller within a specific set',
+    description:
+      'Same "today" semantics as /srs/queue/today, filtered to a single study set. Powers the "cards due today" affordance on the module page and the due-first pull in Learn Mode.',
+  })
+  @ApiOkEnvelope(SrsCardDto, {
+    isArray: true,
+    description: 'Set due queue retrieved',
+  })
+  async dueQueueForSet(
+    @CurrentUser() user: IUser,
+    @Param('setId', new ParseUUIDPipe()) setId: string,
+    @Query() query: QueueQueryDto,
+  ): Promise<ResponseDto<SrsCardDto[]>> {
+    const limit = query.limit ?? 50;
+    const { items, total } = await this.srsService.getDueQueueForSet(
+      user.id,
+      setId,
+      limit,
+    );
+    return {
+      ok: true,
+      message: 'Set due queue retrieved',
+      data: items,
+      meta: {
+        total,
+        limit,
+        page: 1,
+        totalPages: 1,
+      },
+    };
+  }
+
   @Get('srs/forecast')
   @HttpCode(200)
   @UseGuards(JwtGuard, RolesGuard)

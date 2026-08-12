@@ -43,6 +43,7 @@ export class FlashcardService {
         studySetId,
         term: dto.term,
         definition: dto.definition,
+        alternateAnswers: dto.alternateAnswers ?? [],
         example: dto.example,
         phonetic: dto.phonetic,
         hint: dto.hint,
@@ -85,6 +86,8 @@ export class FlashcardService {
     const patch: Prisma.FlashcardUpdateInput = {};
     if (dto.term !== undefined) patch.term = dto.term;
     if (dto.definition !== undefined) patch.definition = dto.definition;
+    if (dto.alternateAnswers !== undefined)
+      patch.alternateAnswers = { set: dto.alternateAnswers };
     if (dto.example !== undefined) patch.example = dto.example;
     if (dto.phonetic !== undefined) patch.phonetic = dto.phonetic;
     if (dto.hint !== undefined) patch.hint = dto.hint;
@@ -212,6 +215,7 @@ export class FlashcardService {
     studySetId: string;
     term: string;
     definition: string;
+    alternateAnswers: string[];
     example: string | null;
     phonetic: string | null;
     hint: string | null;

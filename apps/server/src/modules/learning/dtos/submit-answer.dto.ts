@@ -2,10 +2,12 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsIn,
+  IsInt,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
+  Min,
 } from 'class-validator';
 import { AttemptOutcome, StudyMode } from '../domain/card-attempt-event';
 
@@ -59,4 +61,15 @@ export class SubmitAnswerDto {
   @IsString()
   @MaxLength(500)
   response?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Client-measured milliseconds from card render to submit. Logged on the CardAttempt audit row for analytics and adaptive difficulty.',
+    example: 4200,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  responseMs?: number;
 }
