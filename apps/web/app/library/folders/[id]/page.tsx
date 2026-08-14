@@ -1,28 +1,21 @@
-"use client";
+'use client';
 
-import { use, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  Edit2,
-  Layers,
-  Loader2,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { use, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Edit2, Layers, Loader2, Plus, Trash2 } from 'lucide-react';
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import {
   useAddSetsToFolder,
@@ -31,13 +24,9 @@ import {
   useLibrarySets,
   useRemoveSetFromFolder,
   useUpdateFolder,
-} from "@/lib/hooks/useLibrary";
+} from '@/lib/hooks/useLibrary';
 
-export default function FolderDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function FolderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
 
@@ -91,12 +80,8 @@ export default function FolderDetailPage({
           >
             <ArrowLeft className="h-4 w-4" /> Library
           </Link>
-          <h1 className="truncate text-3xl font-bold text-brand-500">
-            {f.name}
-          </h1>
-          {f.description && (
-            <p className="mt-1 text-sm text-gray-600">{f.description}</p>
-          )}
+          <h1 className="truncate text-3xl font-bold text-brand-500">{f.name}</h1>
+          {f.description && <p className="mt-1 text-sm text-gray-600">{f.description}</p>}
         </div>
         <div className="flex shrink-0 gap-2">
           <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
@@ -126,9 +111,7 @@ export default function FolderDetailPage({
         <Card>
           <CardContent className="p-10 text-center">
             <p className="font-semibold text-gray-800">Empty folder.</p>
-            <p className="text-sm text-gray-500">
-              Add modules to keep them grouped.
-            </p>
+            <p className="text-sm text-gray-500">Add modules to keep them grouped.</p>
           </CardContent>
         </Card>
       ) : (
@@ -143,13 +126,11 @@ export default function FolderDetailPage({
                   className="min-w-0 flex-1 cursor-pointer"
                   onClick={() => router.push(`/modules/${s.id}`)}
                 >
-                  <p className="truncate font-semibold text-gray-900 hover:underline">
+                  <p className="truncate font-semibold text-neutral-700 hover:underline">
                     {s.title}
                   </p>
                   {s.description && (
-                    <p className="truncate text-sm text-gray-500">
-                      {s.description}
-                    </p>
+                    <p className="truncate text-sm text-gray-500">{s.description}</p>
                   )}
                 </div>
                 <Button
@@ -157,9 +138,7 @@ export default function FolderDetailPage({
                   size="icon"
                   className="text-gray-400 hover:text-red-600"
                   disabled={removeSet.isPending}
-                  onClick={() =>
-                    removeSet.mutate({ folderId: f.id, studySetId: s.id })
-                  }
+                  onClick={() => removeSet.mutate({ folderId: f.id, studySetId: s.id })}
                   title="Remove from folder"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -173,7 +152,7 @@ export default function FolderDetailPage({
       <EditFolderDialog
         open={editing}
         onOpenChange={setEditing}
-        folder={{ id: f.id, name: f.name, description: f.description ?? "" }}
+        folder={{ id: f.id, name: f.name, description: f.description ?? '' }}
         onSubmit={(data) =>
           updateFolder.mutateAsync({ id: f.id, data }).then(() => setEditing(false))
         }
@@ -186,8 +165,7 @@ export default function FolderDetailPage({
             <DialogTitle>Delete this folder?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-gray-500">
-            The modules inside stay in your library — only the folder is
-            removed.
+            The modules inside stay in your library — only the folder is removed.
           </p>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
@@ -198,10 +176,10 @@ export default function FolderDetailPage({
               disabled={deleteFolder.isPending}
               onClick={async () => {
                 await deleteFolder.mutateAsync(f.id);
-                router.push("/library");
+                router.push('/library');
               }}
             >
-              {deleteFolder.isPending ? "Deleting…" : "Delete"}
+              {deleteFolder.isPending ? 'Deleting…' : 'Delete'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -281,7 +259,7 @@ function EditFolderDialog({
               })
             }
           >
-            {isPending ? "Saving…" : "Save"}
+            {isPending ? 'Saving…' : 'Save'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -336,8 +314,7 @@ function AddSetsDialog({
             <p className="p-4 text-sm text-gray-500">Loading…</p>
           ) : addableSets.length === 0 ? (
             <p className="p-4 text-sm text-gray-500">
-              Nothing left to add — every module in your library is already
-              here.
+              Nothing left to add — every module in your library is already here.
             </p>
           ) : (
             <ul className="space-y-1">
@@ -353,13 +330,9 @@ function AddSetsDialog({
                         className="h-4 w-4"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-gray-800">
-                          {s.title}
-                        </p>
+                        <p className="truncate font-medium text-gray-800">{s.title}</p>
                         {s.description && (
-                          <p className="truncate text-xs text-gray-500">
-                            {s.description}
-                          </p>
+                          <p className="truncate text-xs text-gray-500">{s.description}</p>
                         )}
                       </div>
                     </label>
@@ -377,10 +350,8 @@ function AddSetsDialog({
             disabled={selected.size === 0 || submitting}
             onClick={() => onAdd(Array.from(selected))}
           >
-            {submitting ? (
-              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-            ) : null}
-            Add {selected.size > 0 ? `(${selected.size})` : ""}
+            {submitting ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
+            Add {selected.size > 0 ? `(${selected.size})` : ''}
           </Button>
         </DialogFooter>
       </DialogContent>

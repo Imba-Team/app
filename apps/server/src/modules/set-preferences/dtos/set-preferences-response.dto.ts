@@ -59,6 +59,14 @@ export class SetPreferencesResponseDto {
 
   @ApiProperty({
     description:
+      'Whether UI sound effects are enabled (correct/incorrect tones, session-end jingle). Placeholder for now.',
+    example: false,
+  })
+  @Expose()
+  soundEffectsEnabled!: boolean;
+
+  @ApiProperty({
+    description:
       'Restrict the batch to cards the learner has starred. Empty starred pool triggers a UI empty state.',
     example: false,
   })

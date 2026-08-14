@@ -5880,6 +5880,14 @@
             "description": "Client-measured milliseconds from card render to submit. Logged on the CardAttempt audit row for analytics and adaptive difficulty.",
             "example": 4200,
             "minimum": 0
+          },
+          "answerDirection": {
+            "type": "string",
+            "enum": [
+              "TERM_TO_DEFINITION",
+              "DEFINITION_TO_TERM"
+            ],
+            "description": "Which side of the card the learner produced — echoed from LearnBatchCardDto.answerDirection. Needed when the pref is MIXED (each card has its own direction). Omitted for legacy clients; the server falls back to the preference-level direction."
           }
         },
         "required": [
@@ -6037,6 +6045,14 @@
             "description": "Client-measured milliseconds from card render to submit. Logged on the CardAttempt audit row for analytics and adaptive difficulty.",
             "example": 6800,
             "minimum": 0
+          },
+          "answerDirection": {
+            "type": "string",
+            "enum": [
+              "TERM_TO_DEFINITION",
+              "DEFINITION_TO_TERM"
+            ],
+            "description": "Which side of the card the learner produced — echoed from LearnBatchCardDto.answerDirection. Needed when the pref is MIXED (each card has its own direction). Omitted for legacy clients; the server falls back to the preference-level direction."
           }
         },
         "required": [
@@ -6062,7 +6078,8 @@
             "type": "string",
             "enum": [
               "TERM_TO_DEFINITION",
-              "DEFINITION_TO_TERM"
+              "DEFINITION_TO_TERM",
+              "MIXED"
             ],
             "description": "Which side of the card the learner is being asked to produce. Determined server-side from UserSetPreferences.answerDirection and echoed here so the client renders the right labels."
           },
@@ -6309,6 +6326,11 @@
             "description": "Whether card audio (TTS) is enabled. Placeholder for now.",
             "example": false
           },
+          "soundEffectsEnabled": {
+            "type": "boolean",
+            "description": "Whether UI sound effects are enabled (correct/incorrect tones, session-end jingle). Placeholder for now.",
+            "example": false
+          },
           "starredOnly": {
             "type": "boolean",
             "description": "Restrict the batch to cards the learner has starred. Empty starred pool triggers a UI empty state.",
@@ -6332,7 +6354,8 @@
             "type": "string",
             "enum": [
               "TERM_TO_DEFINITION",
-              "DEFINITION_TO_TERM"
+              "DEFINITION_TO_TERM",
+              "MIXED"
             ],
             "description": "Which side the learner types. TERM_TO_DEFINITION: prompt = term, expected = definition (default). DEFINITION_TO_TERM: prompt = definition, expected = term (alternates ignored)."
           }
@@ -6345,6 +6368,7 @@
           "autoAdvance",
           "autoAdvanceMs",
           "audioEnabled",
+          "soundEffectsEnabled",
           "starredOnly",
           "shuffleEnabled",
           "strictness",
@@ -6392,6 +6416,10 @@
             "type": "boolean",
             "example": false
           },
+          "soundEffectsEnabled": {
+            "type": "boolean",
+            "example": false
+          },
           "starredOnly": {
             "type": "boolean",
             "example": false
@@ -6413,7 +6441,8 @@
             "type": "string",
             "enum": [
               "TERM_TO_DEFINITION",
-              "DEFINITION_TO_TERM"
+              "DEFINITION_TO_TERM",
+              "MIXED"
             ],
             "example": "TERM_TO_DEFINITION"
           }

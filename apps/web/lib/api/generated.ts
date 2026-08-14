@@ -1658,7 +1658,7 @@ export interface components {
              * @description Which side of the card the learner is being asked to produce. Determined server-side from UserSetPreferences.answerDirection and echoed here so the client renders the right labels.
              * @enum {string}
              */
-            answerDirection: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM";
+            answerDirection: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM" | "MIXED";
             /** Format: uuid */
             cardId: string;
             /** @description Four shuffled options for LEARN_MC prompts. Undefined for LEARN_WRITTEN. */
@@ -1939,7 +1939,7 @@ export interface components {
              * @description Which side the learner types. TERM_TO_DEFINITION: prompt = term, expected = definition (default). DEFINITION_TO_TERM: prompt = definition, expected = term (alternates ignored).
              * @enum {string}
              */
-            answerDirection: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM";
+            answerDirection: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM" | "MIXED";
             /**
              * @description Whether card audio (TTS) is enabled. Placeholder for now.
              * @example false
@@ -1980,6 +1980,11 @@ export interface components {
              * @example true
              */
             shuffleEnabled: boolean;
+            /**
+             * @description Whether UI sound effects are enabled (correct/incorrect tones, session-end jingle). Placeholder for now.
+             * @example false
+             */
+            soundEffectsEnabled: boolean;
             /**
              * @description Restrict the batch to cards the learner has starred. Empty starred pool triggers a UI empty state.
              * @example false
@@ -2088,6 +2093,11 @@ export interface components {
         };
         SubmitAnswerDto: {
             /**
+             * @description Which side of the card the learner produced — echoed from LearnBatchCardDto.answerDirection. Needed when the pref is MIXED (each card has its own direction). Omitted for legacy clients; the server falls back to the preference-level direction.
+             * @enum {string}
+             */
+            answerDirection?: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM";
+            /**
              * Format: uuid
              * @description Client-generated UUID used to make retries idempotent. Second submit with the same attemptId returns the first result without re-applying it.
              */
@@ -2109,6 +2119,11 @@ export interface components {
             studyMode: "FLASHCARD" | "LEARN_MC" | "LEARN_WRITTEN" | "WRITE" | "SPELL" | "TEST_WRITTEN" | "TEST_MC" | "TEST_TF" | "AI_FILL_BLANK" | "AI_GUESS_WORD" | "MATCH";
         };
         SubmitWrittenAnswerDto: {
+            /**
+             * @description Which side of the card the learner produced — echoed from LearnBatchCardDto.answerDirection. Needed when the pref is MIXED (each card has its own direction). Omitted for legacy clients; the server falls back to the preference-level direction.
+             * @enum {string}
+             */
+            answerDirection?: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM";
             /**
              * Format: uuid
              * @description Client-generated UUID used to make retries idempotent. Second submit with the same attemptId returns the first result without re-applying it.
@@ -2194,7 +2209,7 @@ export interface components {
              * @example TERM_TO_DEFINITION
              * @enum {string}
              */
-            answerDirection?: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM";
+            answerDirection?: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM" | "MIXED";
             /** @example false */
             audioEnabled?: boolean;
             /** @example true */
@@ -2211,6 +2226,8 @@ export interface components {
             mcWrittenBias?: number;
             /** @example true */
             shuffleEnabled?: boolean;
+            /** @example false */
+            soundEffectsEnabled?: boolean;
             /** @example false */
             starredOnly?: boolean;
             /**

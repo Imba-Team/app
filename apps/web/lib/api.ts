@@ -507,6 +507,10 @@ export async function startSession(
   }
 }
 
+/** Resolved directions a per-card submission can carry — MIXED is a
+ *  preference, not a per-card value, so it doesn't appear here. */
+export type ResolvedAnswerDirection = 'TERM_TO_DEFINITION' | 'DEFINITION_TO_TERM';
+
 export interface SubmitAnswerPayload {
   attemptId: string;
   cardId: string;
@@ -515,6 +519,9 @@ export interface SubmitAnswerPayload {
   hintUsed: boolean;
   /** Milliseconds from card render to submit. Logged on the CardAttempt row. */
   responseMs?: number;
+  /** Resolved direction from LearnBatchCard.answerDirection — echoed
+   *  so the server knows which side was expected under the MIXED pref. */
+  answerDirection?: ResolvedAnswerDirection;
 }
 
 export async function submitSessionAnswer(
@@ -600,6 +607,9 @@ export interface SubmitWrittenAnswerPayload {
   hintUsed: boolean;
   /** Milliseconds from card render to submit. Logged on the CardAttempt row. */
   responseMs?: number;
+  /** Resolved direction from LearnBatchCard.answerDirection — echoed
+   *  so the server evaluates against the right side under the MIXED pref. */
+  answerDirection?: ResolvedAnswerDirection;
 }
 
 export async function submitWrittenAnswer(

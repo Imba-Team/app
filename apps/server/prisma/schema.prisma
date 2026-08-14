@@ -57,6 +57,11 @@ enum StudyStrictness {
 enum LearnAnswerDirection {
   TERM_TO_DEFINITION
   DEFINITION_TO_TERM
+  /// MIXED as a preference means "roll a direction per card at batch
+  /// time" — the batch algorithm picks one of the two concrete
+  /// directions for each card, so LearnBatchCardDto.answerDirection
+  /// on the wire is always TERM_TO_DEFINITION or DEFINITION_TO_TERM.
+  MIXED
 }
 
 enum CollaboratorRole {
@@ -233,6 +238,10 @@ model UserSetPreferences {
   /// Enable card audio (TTS). Kept as a preference now so the settings
   /// panel is complete; audio playback ships later.
   audioEnabled     Boolean  @default(false)
+  /// Enable UI sound effects (correct/incorrect tones, session-end
+  /// jingle). Placeholder like audioEnabled — the toggle persists but
+  /// no player is wired yet.
+  soundEffectsEnabled Boolean  @default(false)
   /// Restrict the batch to cards the learner has starred. Empty
   /// starred pool triggers a UI empty state (frontend gates the
   /// session start on this).

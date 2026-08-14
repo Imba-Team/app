@@ -225,6 +225,7 @@ export class LearningService {
       outcome: dto.outcome,
       hintUsed: dto.hintUsed,
       responseMs: dto.responseMs,
+      answerDirection: dto.answerDirection,
     });
 
     const response = plainToInstance(
@@ -269,12 +270,23 @@ export class LearningService {
     // term and alternateAnswers are ignored — those synonyms belong
     // to the definition and don't apply when the learner types the
     // term instead.
+    //
+    // Under the MIXED preference each card in the batch was assigned
+    // its own resolved direction at fetch time — the client echoes it
+    // back on `dto.answerDirection`. Fall back to the preference for
+    // legacy clients that omit the field (they'll only be right when
+    // the pref is fixed, which is fine).
     const preferences = await this.setPreferencesService.getForCaller(
       userId,
       card.studySetId,
     );
+    const effectiveDirection: LearnAnswerDirection =
+      dto.answerDirection ??
+      (preferences.answerDirection === LearnAnswerDirection.MIXED
+        ? LearnAnswerDirection.TERM_TO_DEFINITION
+        : preferences.answerDirection);
     const isReverse =
-      preferences.answerDirection === LearnAnswerDirection.DEFINITION_TO_TERM;
+      effectiveDirection === LearnAnswerDirection.DEFINITION_TO_TERM;
     const expected = isReverse ? card.term : card.definition;
     const alternates = isReverse ? [] : card.alternateAnswers;
 
@@ -293,6 +305,7 @@ export class LearningService {
       responseMs: dto.responseMs,
       similarity: evaluation.similarity,
       editDistance: evaluation.editDistance,
+      answerDirection: effectiveDirection,
     });
 
     const response = plainToInstance(
@@ -404,6 +417,11 @@ export class LearningService {
       responseMs?: number;
       similarity?: number;
       editDistance?: number;
+      /** Resolved direction the client echoed for this specific card.
+       *  Only meaningful under a MIXED preference where the batch
+       *  assigns a direction per card; under a fixed preference the
+       *  preference itself is authoritative. */
+      answerDirection?: LearnAnswerDirection;
     },
   ): Promise<AnswerRawResult> {
     const attemptedAt = new Date();
@@ -412,10 +430,18 @@ export class LearningService {
       card.studySetId,
     );
     // Direction-aware "correct answer" text — reverse mode wants the
-    // term, forward mode wants the definition. Falls back to definition
-    // when the caller didn't project the term (older code paths).
+    // term, forward mode wants the definition. Prefer the per-attempt
+    // direction the client echoed (needed for MIXED); fall back to
+    // the preference for legacy clients / non-MIXED prefs. Falls back
+    // to the definition when the caller didn't project the term
+    // (older code paths).
+    const effectiveDirection =
+      event.answerDirection ??
+      (preferences.answerDirection === LearnAnswerDirection.MIXED
+        ? LearnAnswerDirection.TERM_TO_DEFINITION
+        : preferences.answerDirection);
     const correctAnswerText =
-      preferences.answerDirection === LearnAnswerDirection.DEFINITION_TO_TERM
+      effectiveDirection === LearnAnswerDirection.DEFINITION_TO_TERM
         ? (card.term ?? card.definition)
         : card.definition;
     const masteryConfig = {
@@ -767,15 +793,39 @@ export class LearningService {
         ? 1.0 / preferences.mcWrittenBias
         : Number.POSITIVE_INFINITY;
 
-    // Direction-aware helpers — the "prompt" side is what the learner
-    // sees, the "answer" side is what they must produce. In reverse
-    // mode they swap; the MC distractor pool follows the answer side.
-    const isReverse =
-      preferences.answerDirection === LearnAnswerDirection.DEFINITION_TO_TERM;
-    const promptOf = (c: { term: string; definition: string }) =>
-      isReverse ? c.definition : c.term;
-    const answerOf = (c: { term: string; definition: string }) =>
-      isReverse ? c.term : c.definition;
+    // Direction-aware helpers. Under a fixed direction preference the
+    // whole batch flips together; under MIXED we roll a direction per
+    // card so each row's `answerDirection` on the wire is one of the
+    // two concrete values (never MIXED). `resolvedDirectionFor` is the
+    // single source of truth for a given card in this batch.
+    //
+    // Prisma exports the enum as a string union — using
+    // `LearnAnswerDirection.X` in type position doesn't work (it isn't
+    // a namespace at the type level), so we narrow with literal strings.
+    type ResolvedDirection = 'TERM_TO_DEFINITION' | 'DEFINITION_TO_TERM';
+    const resolvedDirectionFor = (): ResolvedDirection => {
+      if (preferences.answerDirection === LearnAnswerDirection.MIXED) {
+        return Math.random() < 0.5
+          ? 'TERM_TO_DEFINITION'
+          : 'DEFINITION_TO_TERM';
+      }
+      // Fixed preference — either TERM_TO_DEFINITION or DEFINITION_TO_TERM.
+      return preferences.answerDirection;
+    };
+    // Under a fixed pref we can compute the two helpers once. Under
+    // MIXED we resolve per-card, inside the batch loop below.
+    const isFixedDirection =
+      preferences.answerDirection !== LearnAnswerDirection.MIXED;
+    const promptOf = (
+      c: { term: string; definition: string },
+      dir: LearnAnswerDirection,
+    ) =>
+      dir === LearnAnswerDirection.DEFINITION_TO_TERM ? c.definition : c.term;
+    const answerOf = (
+      c: { term: string; definition: string },
+      dir: LearnAnswerDirection,
+    ) =>
+      dir === LearnAnswerDirection.DEFINITION_TO_TERM ? c.term : c.definition;
 
     const cards = await this.prisma.flashcard.findMany({
       where: { studySetId: session.studySetId },
@@ -885,25 +935,30 @@ export class LearningService {
       selected.map((c) => c.id),
     );
 
-    // Distractor pool is direction-aware: forward mode picks
-    // definitions, reverse mode picks terms. Same length-bucket logic
-    // regardless.
-    const distractorPool = cards.map((c) => ({
+    // Distractor pool caches — under a fixed direction we can build
+    // one pool once, but under MIXED each card's distractors come from
+    // the same side it was rolled for. Compute both once, pick per
+    // card at render time.
+    const definitionPool = cards.map((c) => ({
       id: c.id,
-      answerText: answerOf(c),
+      answerText: c.definition,
     }));
+    const termPool = cards.map((c) => ({ id: c.id, answerText: c.term }));
 
     const batchCards: LearnBatchCardDto[] = selected.map((card) => {
       const progress = progressByCardId.get(card.id);
       const streak = progress ? Number(progress.weightedStreak) : 0;
-      const answerText = answerOf(card);
-      const promptText = promptOf(card);
+      const direction: ResolvedDirection = isFixedDirection
+        ? (preferences.answerDirection as ResolvedDirection)
+        : resolvedDirectionFor();
+      const answerText = answerOf(card, direction);
+      const promptText = promptOf(card, direction);
+      const pool =
+        direction === LearnAnswerDirection.DEFINITION_TO_TERM
+          ? termPool
+          : definitionPool;
 
-      const distractors = pickDistractors(
-        { id: card.id, answerText },
-        distractorPool,
-        3,
-      );
+      const distractors = pickDistractors({ id: card.id, answerText }, pool, 3);
       const canRenderMC = distractors.length >= 3;
 
       const promptType = selectPromptType({
@@ -919,7 +974,7 @@ export class LearningService {
           cardId: card.id,
           term: promptText,
           hint: card.hint,
-          answerDirection: preferences.answerDirection,
+          answerDirection: direction,
           promptType: 'LEARN_WRITTEN' as LearnPromptType,
         };
       }
@@ -929,7 +984,7 @@ export class LearningService {
         cardId: card.id,
         term: promptText,
         hint: card.hint,
-        answerDirection: preferences.answerDirection,
+        answerDirection: direction,
         promptType,
         choices,
         correctChoiceIndex: choices.indexOf(answerText),

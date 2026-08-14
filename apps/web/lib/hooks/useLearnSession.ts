@@ -25,9 +25,27 @@ import {
   type AnswerResponse,
   type LearnBatchCard,
   type LearnResumeState,
+  type ResolvedAnswerDirection,
   type SessionSummary,
   type WrittenAnswerResponse,
 } from "@/lib/api";
+
+/**
+ * LearnBatchCard.answerDirection is typed as the full Prisma enum
+ * (TERM_TO_DEFINITION | DEFINITION_TO_TERM | MIXED) because that's
+ * what the schema exposes. At runtime the server only ever sends the
+ * two concrete values — MIXED is a preference, not a per-card value.
+ * This helper narrows for the submit DTOs; anything unexpected just
+ * degrades to undefined and the server falls back to the preference.
+ */
+function resolvedDirectionOf(
+  card: LearnBatchCard,
+): ResolvedAnswerDirection | undefined {
+  return card.answerDirection === "TERM_TO_DEFINITION" ||
+    card.answerDirection === "DEFINITION_TO_TERM"
+    ? card.answerDirection
+    : undefined;
+}
 
 export type LearnMcResult = {
   kind: "mc";
@@ -401,6 +419,7 @@ export function useLearnSession({
           outcome,
           hintUsed,
           responseMs,
+          answerDirection: resolvedDirectionOf(currentCard),
         });
         setLatestProgress(res.setProgress);
         setAnswers((prev) => [
@@ -456,6 +475,7 @@ export function useLearnSession({
           userAnswer,
           hintUsed,
           responseMs,
+          answerDirection: resolvedDirectionOf(currentCard),
         });
         setLatestProgress(res.setProgress);
         setAnswers((prev) => [
@@ -521,6 +541,7 @@ export function useLearnSession({
         outcome: "SKIPPED",
         hintUsed: false,
         responseMs,
+        answerDirection: resolvedDirectionOf(currentCard),
       });
       setAnswers((prev) => [
         ...prev,

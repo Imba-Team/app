@@ -23,6 +23,7 @@ export const DEFAULT_SET_PREFERENCES: SetPreferencesResponseDto = {
   autoAdvance: false,
   autoAdvanceMs: 1400,
   audioEnabled: false,
+  soundEffectsEnabled: false,
   starredOnly: false,
   shuffleEnabled: true,
   strictness: StudyStrictness.NORMAL,
@@ -124,6 +125,8 @@ export class SetPreferencesService {
       data.autoAdvanceMs = patch.autoAdvanceMs;
     if (patch.audioEnabled !== undefined)
       data.audioEnabled = patch.audioEnabled;
+    if (patch.soundEffectsEnabled !== undefined)
+      data.soundEffectsEnabled = patch.soundEffectsEnabled;
     if (patch.starredOnly !== undefined) data.starredOnly = patch.starredOnly;
     if (patch.shuffleEnabled !== undefined)
       data.shuffleEnabled = patch.shuffleEnabled;
@@ -159,6 +162,9 @@ export class SetPreferencesService {
           patch.autoAdvanceMs ?? DEFAULT_SET_PREFERENCES.autoAdvanceMs,
         audioEnabled:
           patch.audioEnabled ?? DEFAULT_SET_PREFERENCES.audioEnabled,
+        soundEffectsEnabled:
+          patch.soundEffectsEnabled ??
+          DEFAULT_SET_PREFERENCES.soundEffectsEnabled,
         starredOnly: patch.starredOnly ?? DEFAULT_SET_PREFERENCES.starredOnly,
         shuffleEnabled:
           patch.shuffleEnabled ?? DEFAULT_SET_PREFERENCES.shuffleEnabled,
@@ -184,6 +190,7 @@ export class SetPreferencesService {
     autoAdvance: boolean;
     autoAdvanceMs: number;
     audioEnabled: boolean;
+    soundEffectsEnabled: boolean;
     starredOnly: boolean;
     shuffleEnabled: boolean;
     strictness: StudyStrictness;
@@ -199,6 +206,7 @@ export class SetPreferencesService {
         autoAdvance: row.autoAdvance,
         autoAdvanceMs: row.autoAdvanceMs,
         audioEnabled: row.audioEnabled,
+        soundEffectsEnabled: row.soundEffectsEnabled,
         starredOnly: row.starredOnly,
         shuffleEnabled: row.shuffleEnabled,
         strictness: row.strictness,
