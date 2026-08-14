@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { RecentStudySet } from '@/lib/api';
 import { useRecentStudiedSets } from '@/lib/hooks/useModules';
+import { Button } from '@/components/ui/button';
 
 export function ContinueStudying() {
   const recent = useRecentStudiedSets(3);
@@ -59,7 +60,7 @@ function RecentSetCard({ set }: { set: RecentStudySet }) {
       <Card>
         <CardContent className="flex items-center gap-">
           <div className="min-w-0 flex-1">
-            <p className="truncate font-semibold text-gray-900">{set.title}</p>
+            <p className="truncate font-semibold text-neutral-700">{set.title}</p>
             {set.lastStudiedAt && (
               <p className="mt-0.5 inline-flex items-center gap-1 text-[11px] text-gray-500">
                 <Clock className="h-3 w-3" /> {formatRelative(set.lastStudiedAt)}
@@ -81,9 +82,9 @@ function RecentSetCard({ set }: { set: RecentStudySet }) {
             </div>
           </div>
 
-          <span className="inline-flex shrink-0 items-center gap-1 ml-5 text-xs font-medium text-brand-500 transition opacity-100 hover:bg-neutral-400 rounded-full p-2 px-5">
+          <Button variant="outline" size="sm" className="ml-6">
             Resume <ArrowRight className="h-3 w-3" />
-          </span>
+          </Button>
         </CardContent>
       </Card>
     </Link>

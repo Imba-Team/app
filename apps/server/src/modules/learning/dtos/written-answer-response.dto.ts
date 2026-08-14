@@ -7,11 +7,28 @@ import {
   SetProgressSummaryDto,
 } from './answer-response.dto';
 
+export class DiffSegmentDto {
+  @ApiProperty({
+    enum: ['match', 'wrong', 'missing', 'extra'],
+    description:
+      'match: identical in both. wrong: the input character(s) at this position differ from expected (rendered highlighted). missing: expected character(s) the learner omitted. extra: characters the learner added.',
+  })
+  @Expose()
+  type!: 'match' | 'wrong' | 'missing' | 'extra';
+
+  @ApiProperty({
+    description:
+      'Verbatim run of characters for this segment. Segments always come from the normalized forms, not the raw input.',
+  })
+  @Expose()
+  text!: string;
+}
+
 export class WriteEvaluationDto {
   @ApiProperty({
     enum: ['EXACT', 'TYPO_ACCEPTED', 'WRONG'],
     description:
-      'EXACT = normalized strings match. TYPO_ACCEPTED = Levenshtein distance ≤ 1 in a 6+ character answer (still scored CORRECT). WRONG = anything else.',
+      'EXACT = normalized strings match (or token-set match for multi-word answers). TYPO_ACCEPTED = Levenshtein distance ≤ 1 in a 6+ character answer (still scored CORRECT). WRONG = anything else.',
   })
   @Expose()
   matchType!: 'EXACT' | 'TYPO_ACCEPTED' | 'WRONG';
@@ -40,6 +57,22 @@ export class WriteEvaluationDto {
   @ApiProperty({ description: 'The canonical answer after normalization.' })
   @Expose()
   normalizedExpected!: string;
+
+  @ApiProperty({
+    description:
+      'Raw text of the candidate that produced the best score — either the primary card definition or one of the author-provided alternate answers.',
+  })
+  @Expose()
+  matchedAgainst!: string;
+
+  @ApiProperty({
+    type: [DiffSegmentDto],
+    description:
+      'Character-level diff of the normalized input against the matched candidate. Rendered directly by the UI feedback panel.',
+  })
+  @Expose()
+  @Type(() => DiffSegmentDto)
+  diff!: DiffSegmentDto[];
 }
 
 export class WrittenAnswerResponseDto {

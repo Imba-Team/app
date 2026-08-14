@@ -507,12 +507,21 @@ export async function startSession(
   }
 }
 
+/** Resolved directions a per-card submission can carry — MIXED is a
+ *  preference, not a per-card value, so it doesn't appear here. */
+export type ResolvedAnswerDirection = 'TERM_TO_DEFINITION' | 'DEFINITION_TO_TERM';
+
 export interface SubmitAnswerPayload {
   attemptId: string;
   cardId: string;
   studyMode: StudyMode;
   outcome: AttemptOutcome;
   hintUsed: boolean;
+  /** Milliseconds from card render to submit. Logged on the CardAttempt row. */
+  responseMs?: number;
+  /** Resolved direction from LearnBatchCard.answerDirection — echoed
+   *  so the server knows which side was expected under the MIXED pref. */
+  answerDirection?: ResolvedAnswerDirection;
 }
 
 export async function submitSessionAnswer(
@@ -527,6 +536,27 @@ export async function submitSessionAnswer(
     return unwrap(res, 'Failed to submit answer');
   } catch (error) {
     throw extractError(error, 'Failed to submit answer');
+  }
+}
+
+/**
+ * Learner-facing override for a false-negative wrong answer. Flips
+ * the most recent CardAttempt for `(session, cardId)` to CORRECT and
+ * updates counters / SRS. Returns the same shape as `submitAnswer`
+ * so callers can reuse the progress-refresh path.
+ */
+export async function markAnswerCorrect(
+  sessionId: string,
+  cardId: string,
+): Promise<AnswerResponse> {
+  try {
+    const res = await apiFetch('post', '/sessions/{id}/mark-correct', {
+      path: { id: sessionId },
+      body: { cardId },
+    });
+    return unwrap(res, 'Failed to mark answer correct');
+  } catch (error) {
+    throw extractError(error, 'Failed to mark answer correct');
   }
 }
 
@@ -556,11 +586,12 @@ export type WrittenStudyMode = Schemas['SubmitWrittenAnswerDto']['studyMode'];
 export async function getNextLearnBatch(
   sessionId: string,
   size = 10,
+  opts: { dueFirst?: boolean } = {},
 ): Promise<LearnBatchResponse> {
   try {
     const res = await apiFetch('get', '/sessions/{id}/next-batch', {
       path: { id: sessionId },
-      query: { size },
+      query: opts.dueFirst ? { size, dueFirst: true } : { size },
     });
     return unwrap(res, 'Failed to fetch next batch');
   } catch (error) {
@@ -574,6 +605,11 @@ export interface SubmitWrittenAnswerPayload {
   studyMode: WrittenStudyMode;
   userAnswer: string;
   hintUsed: boolean;
+  /** Milliseconds from card render to submit. Logged on the CardAttempt row. */
+  responseMs?: number;
+  /** Resolved direction from LearnBatchCard.answerDirection — echoed
+   *  so the server evaluates against the right side under the MIXED pref. */
+  answerDirection?: ResolvedAnswerDirection;
 }
 
 export async function submitWrittenAnswer(
@@ -592,6 +628,119 @@ export async function submitWrittenAnswer(
 }
 
 export type SessionHistoryItem = Schemas['SessionHistoryItemDto'];
+export type SessionStatus = SessionHistoryItem['status'];
+export type InflightSession = Schemas['InflightSessionResponseDto'];
+
+/**
+ * Client-owned in-flight resume state. The server round-trips this as
+ * an opaque JSON blob via `resumeState`; the shape is a client contract
+ * declared here so both `useLearnSession` (writer) and the resume
+ * dialog (reader) stay in sync.
+ */
+export interface LearnResumeState {
+  batch: LearnBatchCard[];
+  batchIndex: number;
+  hasMoreCards: boolean;
+  savedAt: string;
+}
+
+export async function getInflightLearnSession(
+  studySetId: string,
+): Promise<InflightSession | null> {
+  try {
+    const res = await apiFetch('get', '/sessions/inflight', {
+      query: { setId: studySetId, mode: 'LEARN' },
+    });
+    // A null `data` means nothing is in flight — return null instead of
+    // throwing so callers can render "start fresh" cleanly.
+    if (!res?.ok) throw new Error(res?.message || 'Failed to look up session');
+    return (res.data as InflightSession | undefined) ?? null;
+  } catch (error) {
+    throw extractError(error, 'Failed to look up session');
+  }
+}
+
+export async function pauseSession(
+  sessionId: string,
+  resumeState?: LearnResumeState,
+): Promise<void> {
+  try {
+    // resumeState is emitted as `Record<string, never>` in the spec —
+    // OpenAPI can't describe the client-owned shape. Cast at the call
+    // boundary; the server just round-trips the blob.
+    const body = (resumeState ? { resumeState } : {}) as never;
+    await apiFetch('post', '/sessions/{id}/pause', {
+      path: { id: sessionId },
+      body,
+    });
+  } catch (error) {
+    throw extractError(error, 'Failed to pause session');
+  }
+}
+
+export async function abandonSession(sessionId: string): Promise<void> {
+  try {
+    await apiFetch('post', '/sessions/{id}/abandon', {
+      path: { id: sessionId },
+    });
+  } catch (error) {
+    throw extractError(error, 'Failed to abandon session');
+  }
+}
+
+// ============================================
+// SET PREFERENCES (Sprint 2 / Phase 2)
+// ============================================
+
+export type SetPreferences = Schemas['SetPreferencesResponseDto'];
+export type UpdateSetPreferencesPayload = Schemas['UpdateSetPreferencesDto'];
+export type PacePreset = Schemas['ApplyPresetDto']['preset'];
+
+export async function getSetPreferences(setId: string): Promise<SetPreferences> {
+  try {
+    const res = await apiFetch('get', '/sets/{setId}/preferences', {
+      path: { setId },
+    });
+    return unwrap(res, 'Failed to fetch preferences');
+  } catch (error) {
+    throw extractError(error, 'Failed to fetch preferences');
+  }
+}
+
+export async function updateSetPreferences(
+  setId: string,
+  patch: UpdateSetPreferencesPayload,
+): Promise<SetPreferences> {
+  try {
+    const res = await apiFetch('put', '/sets/{setId}/preferences', {
+      path: { setId },
+      body: patch,
+    });
+    return unwrap(res, 'Failed to update preferences');
+  } catch (error) {
+    throw extractError(error, 'Failed to update preferences');
+  }
+}
+
+export async function applyPacePreset(
+  setId: string,
+  preset: PacePreset,
+): Promise<SetPreferences> {
+  try {
+    const res = await apiFetch(
+      'post',
+      '/sets/{setId}/preferences/apply-preset',
+      {
+        path: { setId },
+        body: { preset },
+      },
+    );
+    return unwrap(res, 'Failed to apply preset');
+  } catch (error) {
+    throw extractError(error, 'Failed to apply preset');
+  }
+}
+
 
 export interface SessionHistoryPage {
   items: SessionHistoryItem[];
@@ -689,5 +838,27 @@ export async function getSrsForecast(days = 30): Promise<SrsForecast> {
     return unwrap(res, 'Failed to fetch SRS forecast');
   } catch (error) {
     throw extractError(error, 'Failed to fetch SRS forecast');
+  }
+}
+
+/**
+ * Cards due today (in the caller's local day) that belong to a
+ * specific set. Powers the "N due today" affordance on the module
+ * page and the "Review due" entry into Learn Mode.
+ */
+export async function getDueQueueForSet(
+  setId: string,
+  limit = 50,
+): Promise<SrsQueuePage> {
+  try {
+    const res = await apiFetch('get', '/sets/{setId}/due-queue', {
+      path: { setId },
+      query: { limit },
+    });
+    const items = unwrap(res, 'Failed to fetch due queue');
+    const meta = (res as unknown as { meta?: { total?: number } }).meta ?? {};
+    return { items, total: meta.total ?? items.length };
+  } catch (error) {
+    throw extractError(error, 'Failed to fetch due queue');
   }
 }

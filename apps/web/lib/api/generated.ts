@@ -712,6 +712,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sessions/{id}/abandon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Abandon an in-flight session
+         * @description Explicit "Start fresh" path from the Resume dialog. Marks the session ABANDONED so the concurrent-session guard on POST /sessions lets a new one through. Mastery is unaffected — CardAttempt rows and UserCardProgress persist.
+         */
+        post: operations["SessionController_abandon"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions/{id}/answer": {
         parameters: {
             query?: never;
@@ -769,6 +789,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sessions/{id}/mark-correct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Override the last answer for a card as CORRECT
+         * @description Learner-facing 'I answered correctly' override. Flips the most recent CardAttempt for (session, card) from INCORRECT to CORRECT, adjusts UserCardProgress counters, adds credit to the weighted streak, and forwards a compensating GOOD rating to SRS. Idempotent: overriding an already-CORRECT attempt returns the current progress unchanged.
+         */
+        post: operations["SessionController_markCorrect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sessions/{id}/next-batch": {
         parameters: {
             query?: never;
@@ -783,6 +823,110 @@ export interface paths {
         get: operations["SessionController_nextBatch"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/{id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pause an in-flight session and snapshot its resumeState
+         * @description Flips the session to PAUSED and stores the opaque resumeState blob. Idempotent; a pause on a completed/abandoned session is a noop.
+         */
+        post: operations["SessionController_pause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/inflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Find the caller's in-flight session for a (set, mode)
+         * @description Returns the most recent ACTIVE or PAUSED session — with resumeState — so the Learn entry page can render a Resume dialog before starting a new session. `null` when nothing is in flight. Sweeps long-idle rows to ABANDONED before responding.
+         */
+        get: operations["SessionController_inflight"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sets/{setId}/due-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Due SRS cards for the caller within a specific set
+         * @description Same "today" semantics as /srs/queue/today, filtered to a single study set. Powers the "cards due today" affordance on the module page and the due-first pull in Learn Mode.
+         */
+        get: operations["SrsController_dueQueueForSet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sets/{setId}/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my study preferences for this set
+         * @description Returns the caller’s per-set preferences, or the module-level defaults when the learner has never overridden anything.
+         */
+        get: operations["SetPreferencesController_get"];
+        /**
+         * Update my study preferences for this set
+         * @description Partial update. Only fields present in the body are written; omitted fields keep their prior value (or the module default on first write).
+         */
+        put: operations["SetPreferencesController_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sets/{setId}/preferences/apply-preset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply a pace preset
+         * @description Overwrites batchSize, mcWrittenBias, masteryThreshold, and autoAdvanceMs with the values baked into the chosen preset. Other fields (hintMultiplier, autoAdvance, audioEnabled) are left as-is so the preset does not silently rewrite unrelated toggles.
+         */
+        post: operations["SetPreferencesController_applyPreset"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1303,6 +1447,13 @@ export interface components {
             graduated: boolean;
             setProgress: components["schemas"]["SetProgressSummaryDto"];
         };
+        ApplyPresetDto: {
+            /**
+             * @description Study pace preset. Populates batchSize, mcWrittenBias, masteryThreshold, and autoAdvanceMs with the preset values, leaving other fields untouched.
+             * @enum {string}
+             */
+            preset: "chill" | "default" | "aggressive";
+        };
         CardProgressSummaryDto: {
             correctCount: number;
             incorrectCount: number;
@@ -1330,6 +1481,14 @@ export interface components {
             parentCommentId?: string;
         };
         CreateFlashcardDto: {
+            /**
+             * @description Extra accepted answers for the written evaluator (author-provided synonyms or variants). The primary `definition` is always accepted; these are additional matches that all count as CORRECT.
+             * @example [
+             *       "the powerhouse of the cell",
+             *       "cell powerhouse"
+             *     ]
+             */
+            alternateAnswers?: string[];
             /** @example The process by which green plants convert sunlight into energy. */
             definition: string;
             /** @example Photosynthesis powers most life on Earth. */
@@ -1377,7 +1536,21 @@ export interface components {
             /** @example biology */
             name: string;
         };
+        DiffSegmentDto: {
+            /** @description Verbatim run of characters for this segment. Segments always come from the normalized forms, not the raw input. */
+            text: string;
+            /**
+             * @description match: identical in both. wrong: the input character(s) at this position differ from expected (rendered highlighted). missing: expected character(s) the learner omitted. extra: characters the learner added.
+             * @enum {string}
+             */
+            type: "match" | "wrong" | "missing" | "extra";
+        };
         FlashcardResponseDto: {
+            /**
+             * @description Extra accepted answers for the written evaluator. Empty when the author has not provided synonyms/variants.
+             * @example []
+             */
+            alternateAnswers: string[];
             /** Format: date-time */
             createdAt: string;
             definition: string;
@@ -1456,7 +1629,36 @@ export interface components {
             /** @description Email address */
             email: string;
         };
+        InflightSessionResponseDto: {
+            /**
+             * @description Number of cards answered so far in this session — cardsStudied on the session row.
+             * @example 4
+             */
+            cardsStudied: number;
+            /**
+             * Format: date-time
+             * @description Wall-clock timestamp of the last mutation (answer, pause, resume). Powers the "paused N minutes ago" copy on the resume dialog.
+             */
+            lastActivityAt: string;
+            /** @enum {string} */
+            mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "MATCH" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
+            /** @description Opaque JSON blob written by the client on pause. Structure is a client-side contract (LearnResumeState in the web app); the server only round-trips it. Null when the session was never paused. */
+            resumeState?: Record<string, never> | null;
+            /** Format: uuid */
+            sessionId: string;
+            /** Format: date-time */
+            startedAt: string;
+            /** @enum {string} */
+            status: "ACTIVE" | "PAUSED" | "ABANDONED" | "COMPLETED";
+            /** Format: uuid */
+            studySetId: string;
+        };
         LearnBatchCardDto: {
+            /**
+             * @description Which side of the card the learner is being asked to produce. Determined server-side from UserSetPreferences.answerDirection and echoed here so the client renders the right labels.
+             * @enum {string}
+             */
+            answerDirection: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM" | "MIXED";
             /** Format: uuid */
             cardId: string;
             /** @description Four shuffled options for LEARN_MC prompts. Undefined for LEARN_WRITTEN. */
@@ -1470,7 +1672,7 @@ export interface components {
              * @enum {string}
              */
             promptType: "LEARN_MC" | "LEARN_WRITTEN";
-            /** @description The term shown to the learner as the prompt. */
+            /** @description The text shown as the prompt. Which side of the card this is depends on `answerDirection`: the term (TERM_TO_DEFINITION) or the definition (DEFINITION_TO_TERM). */
             term: string;
         };
         LearnBatchResponseDto: {
@@ -1503,6 +1705,17 @@ export interface components {
             email?: string;
             /** @example password123 */
             password?: string;
+        };
+        MarkCorrectDto: {
+            /**
+             * Format: uuid
+             * @description The card whose last-in-session attempt should be reclassified as CORRECT. Only the most recent CardAttempt for this (session, card) pair is affected.
+             */
+            cardId: string;
+        };
+        PauseSessionDto: {
+            /** @description Opaque JSON blob (LearnResumeState on the client) — current batch, batchIndex, hasMoreCards flag, and anything else the client wants to restore. The server only round-trips it. Omit to pause without saving state (rare). */
+            resumeState?: Record<string, never>;
         };
         PublicProfileDto: {
             bio: Record<string, never> | null;
@@ -1691,6 +1904,11 @@ export interface components {
             sessionId: string;
             /** Format: date-time */
             startedAt: string;
+            /**
+             * @description Lifecycle status. Renders in the history list as a badge — active/paused sessions show a Resume affordance; abandoned/completed sessions are read-only.
+             * @enum {string}
+             */
+            status: "ACTIVE" | "PAUSED" | "ABANDONED" | "COMPLETED";
             /** Format: uuid */
             studySetId: string;
         };
@@ -1715,6 +1933,68 @@ export interface components {
             startedAt: string;
             /** Format: uuid */
             studySetId: string;
+        };
+        SetPreferencesResponseDto: {
+            /**
+             * @description Which side the learner types. TERM_TO_DEFINITION: prompt = term, expected = definition (default). DEFINITION_TO_TERM: prompt = definition, expected = term (alternates ignored).
+             * @enum {string}
+             */
+            answerDirection: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM" | "MIXED";
+            /**
+             * @description Whether card audio (TTS) is enabled. Placeholder for now.
+             * @example false
+             */
+            audioEnabled: boolean;
+            /**
+             * @description Whether the client auto-advances past the feedback screen after an answer.
+             * @example true
+             */
+            autoAdvance: boolean;
+            /**
+             * @description Milliseconds to hold the feedback panel when auto-advancing.
+             * @example 1400
+             */
+            autoAdvanceMs: number;
+            /**
+             * @description Cards per Learn batch. Range 1–50; the batch algorithm caps at this value.
+             * @example 10
+             */
+            batchSize: number;
+            /**
+             * @description Credit multiplier applied when the learner used the hint. Range 0.0–1.0.
+             * @example 0.5
+             */
+            hintMultiplier: number;
+            /**
+             * @description Weighted-streak needed for a card to graduate to MASTERED. Range 1.0–10.0.
+             * @example 3
+             */
+            masteryThreshold: number;
+            /**
+             * @description Multiplier on the weighted-streak threshold that flips a card from LEARN_MC (recognition) to LEARN_WRITTEN (recall). Higher = written triggers sooner. 0 keeps a card on MC until mastery.
+             * @example 1
+             */
+            mcWrittenBias: number;
+            /**
+             * @description False = deterministic order by Flashcard.orderIndex. True = current behaviour (LEARNING first, shuffled within groups).
+             * @example true
+             */
+            shuffleEnabled: boolean;
+            /**
+             * @description Whether UI sound effects are enabled (correct/incorrect tones, session-end jingle). Placeholder for now.
+             * @example false
+             */
+            soundEffectsEnabled: boolean;
+            /**
+             * @description Restrict the batch to cards the learner has starred. Empty starred pool triggers a UI empty state.
+             * @example false
+             */
+            starredOnly: boolean;
+            /**
+             * @description Written-answer evaluator leniency. STRICT = literal after case-insensitive + trim. NORMAL = current defaults. LENIENT = NORMAL + wider typo tolerance.
+             * @enum {string}
+             */
+            strictness: "STRICT" | "NORMAL" | "LENIENT";
         };
         SetProgressSummaryDto: {
             learningCount: number;
@@ -1757,10 +2037,20 @@ export interface components {
         StartSessionResponseDto: {
             /** @enum {string} */
             mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "MATCH" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
+            /**
+             * @description True when the caller already had an in-flight session for this (set, mode) pair and the server returned it instead of creating a new one. The client can use this to render "resumed" UI without a separate lookup.
+             * @example false
+             */
+            resumed: boolean;
             /** Format: uuid */
             sessionId: string;
             /** Format: date-time */
             startedAt: string;
+            /**
+             * @description Session lifecycle. On a fresh start this is ACTIVE. On a resumed in-flight session it may be ACTIVE or PAUSED — the client should treat both as continuable.
+             * @enum {string}
+             */
+            status: "ACTIVE" | "PAUSED" | "ABANDONED" | "COMPLETED";
             /** Format: uuid */
             studySetId: string;
         };
@@ -1803,6 +2093,11 @@ export interface components {
         };
         SubmitAnswerDto: {
             /**
+             * @description Which side of the card the learner produced — echoed from LearnBatchCardDto.answerDirection. Needed when the pref is MIXED (each card has its own direction). Omitted for legacy clients; the server falls back to the preference-level direction.
+             * @enum {string}
+             */
+            answerDirection?: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM";
+            /**
              * Format: uuid
              * @description Client-generated UUID used to make retries idempotent. Second submit with the same attemptId returns the first result without re-applying it.
              */
@@ -1815,10 +2110,20 @@ export interface components {
             outcome: "CORRECT" | "INCORRECT" | "SKIPPED";
             /** @description The learner-typed response for written modes. Used to echo back on the client; not stored on the mastery row. */
             response?: string;
+            /**
+             * @description Client-measured milliseconds from card render to submit. Logged on the CardAttempt audit row for analytics and adaptive difficulty.
+             * @example 4200
+             */
+            responseMs?: number;
             /** @enum {string} */
             studyMode: "FLASHCARD" | "LEARN_MC" | "LEARN_WRITTEN" | "WRITE" | "SPELL" | "TEST_WRITTEN" | "TEST_MC" | "TEST_TF" | "AI_FILL_BLANK" | "AI_GUESS_WORD" | "MATCH";
         };
         SubmitWrittenAnswerDto: {
+            /**
+             * @description Which side of the card the learner produced — echoed from LearnBatchCardDto.answerDirection. Needed when the pref is MIXED (each card has its own direction). Omitted for legacy clients; the server falls back to the preference-level direction.
+             * @enum {string}
+             */
+            answerDirection?: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM";
             /**
              * Format: uuid
              * @description Client-generated UUID used to make retries idempotent. Second submit with the same attemptId returns the first result without re-applying it.
@@ -1828,6 +2133,11 @@ export interface components {
             cardId: string;
             /** @example false */
             hintUsed: boolean;
+            /**
+             * @description Client-measured milliseconds from card render to submit. Logged on the CardAttempt audit row for analytics and adaptive difficulty.
+             * @example 6800
+             */
+            responseMs?: number;
             /**
              * @description Which written mode produced this answer. Must be one of the recall-oriented modes; the multiple-choice / self-report modes go through POST /sessions/:id/answer directly.
              * @enum {string}
@@ -1845,6 +2155,14 @@ export interface components {
             content: string;
         };
         UpdateFlashcardDto: {
+            /**
+             * @description Extra accepted answers for the written evaluator (author-provided synonyms or variants). The primary `definition` is always accepted; these are additional matches that all count as CORRECT.
+             * @example [
+             *       "the powerhouse of the cell",
+             *       "cell powerhouse"
+             *     ]
+             */
+            alternateAnswers?: string[];
             /** @example The process by which green plants convert sunlight into energy. */
             definition?: string;
             /** @example Photosynthesis powers most life on Earth. */
@@ -1885,6 +2203,38 @@ export interface components {
              * @example Europe/Berlin
              */
             timezone?: string;
+        };
+        UpdateSetPreferencesDto: {
+            /**
+             * @example TERM_TO_DEFINITION
+             * @enum {string}
+             */
+            answerDirection?: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM" | "MIXED";
+            /** @example false */
+            audioEnabled?: boolean;
+            /** @example true */
+            autoAdvance?: boolean;
+            /** @example 1400 */
+            autoAdvanceMs?: number;
+            /** @example 10 */
+            batchSize?: number;
+            /** @example 0.5 */
+            hintMultiplier?: number;
+            /** @example 3 */
+            masteryThreshold?: number;
+            /** @example 1 */
+            mcWrittenBias?: number;
+            /** @example true */
+            shuffleEnabled?: boolean;
+            /** @example false */
+            soundEffectsEnabled?: boolean;
+            /** @example false */
+            starredOnly?: boolean;
+            /**
+             * @example NORMAL
+             * @enum {string}
+             */
+            strictness?: "STRICT" | "NORMAL" | "LENIENT";
         };
         UpdateStudySetDto: {
             /** @example Notes and flashcards for bio exams */
@@ -1947,10 +2297,14 @@ export interface components {
             token: string;
         };
         WriteEvaluationDto: {
+            /** @description Character-level diff of the normalized input against the matched candidate. Rendered directly by the UI feedback panel. */
+            diff: components["schemas"]["DiffSegmentDto"][];
             /** @description Levenshtein distance between the normalized strings. */
             editDistance: number;
+            /** @description Raw text of the candidate that produced the best score — either the primary card definition or one of the author-provided alternate answers. */
+            matchedAgainst: string;
             /**
-             * @description EXACT = normalized strings match. TYPO_ACCEPTED = Levenshtein distance ≤ 1 in a 6+ character answer (still scored CORRECT). WRONG = anything else.
+             * @description EXACT = normalized strings match (or token-set match for multi-word answers). TYPO_ACCEPTED = Levenshtein distance ≤ 1 in a 6+ character answer (still scored CORRECT). WRONG = anything else.
              * @enum {string}
              */
             matchType: "EXACT" | "TYPO_ACCEPTED" | "WRONG";
@@ -1983,6 +2337,7 @@ export interface components {
 }
 export type SchemaAddFolderStudySetsDto = components['schemas']['AddFolderStudySetsDto'];
 export type SchemaAnswerResponseDto = components['schemas']['AnswerResponseDto'];
+export type SchemaApplyPresetDto = components['schemas']['ApplyPresetDto'];
 export type SchemaCardProgressSummaryDto = components['schemas']['CardProgressSummaryDto'];
 export type SchemaChangePasswordDto = components['schemas']['ChangePasswordDto'];
 export type SchemaCreateCommentDto = components['schemas']['CreateCommentDto'];
@@ -1991,6 +2346,7 @@ export type SchemaCreateFolderDto = components['schemas']['CreateFolderDto'];
 export type SchemaCreateStudySetDto = components['schemas']['CreateStudySetDto'];
 export type SchemaCreateStudySetTagDto = components['schemas']['CreateStudySetTagDto'];
 export type SchemaCreateTagDto = components['schemas']['CreateTagDto'];
+export type SchemaDiffSegmentDto = components['schemas']['DiffSegmentDto'];
 export type SchemaFlashcardResponseDto = components['schemas']['FlashcardResponseDto'];
 export type SchemaFlashcardSearchHitDto = components['schemas']['FlashcardSearchHitDto'];
 export type SchemaFlashcardSearchResponseDto = components['schemas']['FlashcardSearchResponseDto'];
@@ -2000,10 +2356,13 @@ export type SchemaFolderStudySetItemDto = components['schemas']['FolderStudySetI
 export type SchemaForecastBucketDto = components['schemas']['ForecastBucketDto'];
 export type SchemaForecastResponseDto = components['schemas']['ForecastResponseDto'];
 export type SchemaForgotPasswordRequestDto = components['schemas']['ForgotPasswordRequestDto'];
+export type SchemaInflightSessionResponseDto = components['schemas']['InflightSessionResponseDto'];
 export type SchemaLearnBatchCardDto = components['schemas']['LearnBatchCardDto'];
 export type SchemaLearnBatchResponseDto = components['schemas']['LearnBatchResponseDto'];
 export type SchemaLibraryItemDto = components['schemas']['LibraryItemDto'];
 export type SchemaLoginRequestDto = components['schemas']['LoginRequestDto'];
+export type SchemaMarkCorrectDto = components['schemas']['MarkCorrectDto'];
+export type SchemaPauseSessionDto = components['schemas']['PauseSessionDto'];
 export type SchemaPublicProfileDto = components['schemas']['PublicProfileDto'];
 export type SchemaRecentStudySetDto = components['schemas']['RecentStudySetDto'];
 export type SchemaRegisterRequestDto = components['schemas']['RegisterRequestDto'];
@@ -2018,6 +2377,7 @@ export type SchemaServiceHealthResponseDto = components['schemas']['ServiceHealt
 export type SchemaSessionDto = components['schemas']['SessionDto'];
 export type SchemaSessionHistoryItemDto = components['schemas']['SessionHistoryItemDto'];
 export type SchemaSessionSummaryDto = components['schemas']['SessionSummaryDto'];
+export type SchemaSetPreferencesResponseDto = components['schemas']['SetPreferencesResponseDto'];
 export type SchemaSetProgressSummaryDto = components['schemas']['SetProgressSummaryDto'];
 export type SchemaSrsCardDto = components['schemas']['SrsCardDto'];
 export type SchemaSrsReviewResponseDto = components['schemas']['SrsReviewResponseDto'];
@@ -2032,6 +2392,7 @@ export type SchemaUpdateCommentDto = components['schemas']['UpdateCommentDto'];
 export type SchemaUpdateFlashcardDto = components['schemas']['UpdateFlashcardDto'];
 export type SchemaUpdateFolderDto = components['schemas']['UpdateFolderDto'];
 export type SchemaUpdateMyProfileDto = components['schemas']['UpdateMyProfileDto'];
+export type SchemaUpdateSetPreferencesDto = components['schemas']['UpdateSetPreferencesDto'];
 export type SchemaUpdateStudySetDto = components['schemas']['UpdateStudySetDto'];
 export type SchemaUpdateTagDto = components['schemas']['UpdateTagDto'];
 export type SchemaUpdateVisibilityDto = components['schemas']['UpdateVisibilityDto'];
@@ -3218,6 +3579,25 @@ export interface operations {
             };
         };
     };
+    SessionController_abandon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     SessionController_answer: {
         parameters: {
             query?: never;
@@ -3298,9 +3678,39 @@ export interface operations {
             };
         };
     };
+    SessionController_markCorrect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarkCorrectDto"];
+            };
+        };
+        responses: {
+            /** @description Answer overridden */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["AnswerResponseDto"];
+                    };
+                };
+            };
+        };
+    };
     SessionController_nextBatch: {
         parameters: {
             query?: {
+                /** @description When true, prioritize cards that are due today per SRS. Falls back to the standard learning/new mix when no due cards remain. Powers the "review due" entry from the module page. */
+                dueFirst?: boolean;
                 /** @description Target number of cards to include in the batch. */
                 size?: number;
             };
@@ -3320,6 +3730,162 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ResponseDto"] & {
                         data?: components["schemas"]["LearnBatchResponseDto"];
+                    };
+                };
+            };
+        };
+    };
+    SessionController_pause: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PauseSessionDto"];
+            };
+        };
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SessionController_inflight: {
+        parameters: {
+            query: {
+                /** @description Only the mode you plan to enter is looked up. */
+                mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "MATCH" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
+                setId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inflight lookup (data is null when nothing is in flight) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["InflightSessionResponseDto"];
+                    };
+                };
+            };
+        };
+    };
+    SrsController_dueQueueForSet: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                setId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Set due queue retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["SrsCardDto"][];
+                    };
+                };
+            };
+        };
+    };
+    SetPreferencesController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Preferences read */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["SetPreferencesResponseDto"];
+                    };
+                };
+            };
+        };
+    };
+    SetPreferencesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSetPreferencesDto"];
+            };
+        };
+        responses: {
+            /** @description Preferences updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["SetPreferencesResponseDto"];
+                    };
+                };
+            };
+        };
+    };
+    SetPreferencesController_applyPreset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyPresetDto"];
+            };
+        };
+        responses: {
+            /** @description Preset applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["SetPreferencesResponseDto"];
                     };
                 };
             };

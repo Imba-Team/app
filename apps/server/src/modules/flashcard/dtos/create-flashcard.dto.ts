@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreateFlashcardDto {
   @ApiProperty({ example: 'Photosynthesis' })
@@ -46,4 +55,18 @@ export class CreateFlashcardDto {
   @Min(0)
   @IsOptional()
   orderIndex?: number;
+
+  @ApiPropertyOptional({
+    type: [String],
+    description:
+      'Extra accepted answers for the written evaluator (author-provided synonyms or variants). The primary `definition` is always accepted; these are additional matches that all count as CORRECT.',
+    example: ['the powerhouse of the cell', 'cell powerhouse'],
+    maxItems: 25,
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(500, { each: true })
+  @ArrayMaxSize(25)
+  @IsOptional()
+  alternateAnswers?: string[];
 }

@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { LearnAnswerDirection } from '@prisma/client';
 import { Expose, Type } from 'class-transformer';
 
 export type LearnPromptType = 'LEARN_MC' | 'LEARN_WRITTEN';
@@ -8,9 +9,20 @@ export class LearnBatchCardDto {
   @Expose()
   cardId!: string;
 
-  @ApiProperty({ description: 'The term shown to the learner as the prompt.' })
+  @ApiProperty({
+    description:
+      'The text shown as the prompt. Which side of the card this is depends on `answerDirection`: the term (TERM_TO_DEFINITION) or the definition (DEFINITION_TO_TERM).',
+  })
   @Expose()
   term!: string;
+
+  @ApiProperty({
+    enum: LearnAnswerDirection,
+    description:
+      'Which side of the card the learner is being asked to produce. Determined server-side from UserSetPreferences.answerDirection and echoed here so the client renders the right labels.',
+  })
+  @Expose()
+  answerDirection!: LearnAnswerDirection;
 
   @ApiPropertyOptional({
     type: String,

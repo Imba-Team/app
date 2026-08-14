@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { StudySessionMode } from '@prisma/client';
+import { StudySessionMode, StudySessionStatus } from '@prisma/client';
 import { Expose } from 'class-transformer';
 
 export class SessionHistoryItemDto {
@@ -14,6 +14,14 @@ export class SessionHistoryItemDto {
   @ApiProperty({ enum: StudySessionMode })
   @Expose()
   mode!: StudySessionMode;
+
+  @ApiProperty({
+    enum: StudySessionStatus,
+    description:
+      'Lifecycle status. Renders in the history list as a badge — active/paused sessions show a Resume affordance; abandoned/completed sessions are read-only.',
+  })
+  @Expose()
+  status!: StudySessionStatus;
 
   @ApiProperty()
   @Expose()
