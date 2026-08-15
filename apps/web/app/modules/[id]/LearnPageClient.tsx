@@ -21,6 +21,7 @@ import AddTerm from './_components/AddTerm';
 import { Button } from '@/components/ui/button';
 import { ImportFlashcardsDialog, type ImportedCard } from '@/components/import-flashcards-dialog';
 import { StudyPreferencesDialog } from '@/components/study-preferences-dialog';
+import { TestPreferencesDialog } from '@/components/test-preferences-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -108,6 +109,7 @@ export default function LearnPageClient({ id }: { id: string }) {
   const [importOpen, setImportOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
+  const [testPreferencesOpen, setTestPreferencesOpen] = useState(false);
 
   const loading = moduleLoading || termsLoading;
   const moduleInfo = moduleData?.data;
@@ -321,6 +323,14 @@ export default function LearnPageClient({ id }: { id: string }) {
                         Study preferences…
                       </DropdownMenuItem>
                     )}
+                    {isCollected && (
+                      <DropdownMenuItem
+                        onClick={() => setTestPreferencesOpen(true)}
+                      >
+                        <SlidersHorizontal className="mr-2 h-4 w-4" />
+                        Test preferences…
+                      </DropdownMenuItem>
+                    )}
                     {isOwner && (
                       <DropdownMenuItem onClick={() => setImportOpen(true)}>
                         <Upload className="mr-2 h-4 w-4" />
@@ -331,6 +341,12 @@ export default function LearnPageClient({ id }: { id: string }) {
                       <Link href={`/modules/${id}/sessions`}>
                         <History className="mr-2 h-4 w-4" />
                         Session history
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href={`/modules/${id}/test-history`}>
+                        <History className="mr-2 h-4 w-4" />
+                        Test history
                       </Link>
                     </DropdownMenuItem>
                     {isCollected && allTerms.length > 0 && (
@@ -461,6 +477,14 @@ export default function LearnPageClient({ id }: { id: string }) {
         <StudyPreferencesDialog
           open={preferencesOpen}
           onOpenChange={setPreferencesOpen}
+          setId={id}
+        />
+      )}
+
+      {isCollected && (
+        <TestPreferencesDialog
+          open={testPreferencesOpen}
+          onOpenChange={setTestPreferencesOpen}
           setId={id}
         />
       )}

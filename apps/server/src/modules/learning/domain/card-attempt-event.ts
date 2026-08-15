@@ -7,6 +7,10 @@ export type StudyMode =
   | 'TEST_WRITTEN'
   | 'TEST_MC'
   | 'TEST_TF'
+  /** Matching-question pair inside a Test attempt — one CardAttempt-
+   *  equivalent per pair. Recognition-difficulty (learner drags a
+   *  definition onto a term), so mode-weight matches TEST_MC. */
+  | 'TEST_MATCH'
   | 'AI_FILL_BLANK'
   | 'AI_GUESS_WORD'
   | 'MATCH';

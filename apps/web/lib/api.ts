@@ -862,3 +862,149 @@ export async function getDueQueueForSet(
     throw extractError(error, 'Failed to fetch due queue');
   }
 }
+
+// ============================================
+// TEST MODE
+// ============================================
+
+export type TestPreferences = Schemas['TestPreferencesResponseDto'];
+export type UpdateTestPreferencesPayload =
+  Schemas['UpdateTestPreferencesDto'];
+export type TestQuestionType = TestPreferences['allowedTypes'][number];
+export type TestQuestion = Schemas['TestQuestionDto'];
+export type TestMatchingPair = Schemas['TestMatchingPairDto'];
+export type StartTestAttemptResponse = Schemas['StartTestAttemptResponseDto'];
+export type TestAttemptResult = Schemas['TestAttemptResultDto'];
+export type TestQuestionResult = Schemas['TestQuestionResultDto'];
+export type TestHistoryItem = Schemas['TestHistoryItemDto'];
+
+export interface TestHistoryPage {
+  items: TestHistoryItem[];
+  total: number;
+  limit: number;
+  page: number;
+  totalPages: number;
+}
+
+// ---------- Preferences ----------
+
+export async function getTestPreferences(
+  setId: string,
+): Promise<TestPreferences> {
+  try {
+    const res = await apiFetch('get', '/sets/{setId}/test-preferences', {
+      path: { setId },
+    });
+    return unwrap(res, 'Failed to fetch test preferences');
+  } catch (error) {
+    throw extractError(error, 'Failed to fetch test preferences');
+  }
+}
+
+export async function updateTestPreferences(
+  setId: string,
+  patch: UpdateTestPreferencesPayload,
+): Promise<TestPreferences> {
+  try {
+    const res = await apiFetch('put', '/sets/{setId}/test-preferences', {
+      path: { setId },
+      body: patch,
+    });
+    return unwrap(res, 'Failed to update test preferences');
+  } catch (error) {
+    throw extractError(error, 'Failed to update test preferences');
+  }
+}
+
+// ---------- Attempts ----------
+
+export async function startTestAttempt(
+  studySetId: string,
+): Promise<StartTestAttemptResponse> {
+  try {
+    const res = await apiFetch('post', '/test-attempts', {
+      body: { studySetId },
+    });
+    return unwrap(res, 'Failed to start test attempt');
+  } catch (error) {
+    throw extractError(error, 'Failed to start test attempt');
+  }
+}
+
+/**
+ * Payload sent on POST /test-attempts/:id/submit — one entry per
+ * question, keyed by `questionAttemptId`. Fields are per-question-type:
+ * MC uses `selectedChoiceIndex`, WRITTEN uses `userAnswer`, TF uses
+ * `userIsTrue`, MATCH uses `matchingPicks`.
+ */
+export type SubmitTestAnswerPayload = NonNullable<
+  Schemas['SubmitTestAttemptDto']['answers']
+>[number];
+
+export async function submitTestAttempt(
+  attemptId: string,
+  answers: SubmitTestAnswerPayload[],
+): Promise<TestAttemptResult> {
+  try {
+    const res = await apiFetch('post', '/test-attempts/{id}/submit', {
+      path: { id: attemptId },
+      body: { answers },
+    });
+    return unwrap(res, 'Failed to submit test attempt');
+  } catch (error) {
+    throw extractError(error, 'Failed to submit test attempt');
+  }
+}
+
+export async function abandonTestAttempt(attemptId: string): Promise<void> {
+  try {
+    await apiFetch('post', '/test-attempts/{id}/abandon', {
+      path: { id: attemptId },
+    });
+  } catch (error) {
+    throw extractError(error, 'Failed to abandon test attempt');
+  }
+}
+
+export async function getTestAttempt(
+  attemptId: string,
+): Promise<TestAttemptResult> {
+  try {
+    const res = await apiFetch('get', '/test-attempts/{id}', {
+      path: { id: attemptId },
+    });
+    return unwrap(res, 'Failed to fetch test attempt');
+  } catch (error) {
+    throw extractError(error, 'Failed to fetch test attempt');
+  }
+}
+
+export async function getTestHistory(
+  params: { studySetId?: string; limit?: number; offset?: number } = {},
+): Promise<TestHistoryPage> {
+  try {
+    const query: { studySetId?: string; limit?: number; offset?: number } = {};
+    if (params.studySetId) query.studySetId = params.studySetId;
+    if (params.limit !== undefined) query.limit = params.limit;
+    if (params.offset !== undefined) query.offset = params.offset;
+
+    const res = await apiFetch('get', '/test-attempts', { query });
+    const items = unwrap(res, 'Failed to fetch test history');
+    const meta = (res as unknown as { meta?: {
+      total?: number;
+      limit?: number;
+      page?: number;
+      totalPages?: number;
+    } }).meta ?? {};
+    return {
+      items,
+      total: meta.total ?? items.length,
+      limit: meta.limit ?? items.length,
+      page: meta.page ?? 1,
+      totalPages: meta.totalPages ?? 1,
+    };
+  } catch (error) {
+    throw extractError(error, 'Failed to fetch test history');
+  }
+}
+

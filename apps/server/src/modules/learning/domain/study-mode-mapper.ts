@@ -9,6 +9,7 @@ export function granularToCoarse(mode: StudyMode): StudySessionMode {
     case 'TEST_WRITTEN':
     case 'TEST_MC':
     case 'TEST_TF':
+    case 'TEST_MATCH':
       return StudySessionMode.TEST;
     case 'FLASHCARD':
       return StudySessionMode.FLASHCARD;

@@ -69,6 +69,25 @@ enum CollaboratorRole {
   VIEWER
 }
 
+enum TestAttemptStatus {
+  /// Created via POST /test-attempts but not yet submitted. A sweep
+  /// flips long-idle IN_PROGRESS attempts to ABANDONED.
+  IN_PROGRESS
+  /// Submitted and graded. Score + counters are final.
+  COMPLETED
+  /// Never submitted; retired by the sweep or by an explicit abandon
+  /// call. Preserved in history so the learner can see they started
+  /// but didn't finish.
+  ABANDONED
+}
+
+enum TestQuestionType {
+  TEST_MC
+  TEST_WRITTEN
+  TEST_TF
+  TEST_MATCH
+}
+
 model User {
   id                 String                 @id(map: "PK_cace4a159ff9f2512dd42373760") @default(uuid()) @db.Uuid
   email              String                 @unique(map: "UQ_e12875dfb3b1d92d7d7c5377e22") @db.VarChar
@@ -100,6 +119,7 @@ model User {
   cardProgress       UserCardProgress[]
   setProgress        UserSetProgress[]
   setPreferences     UserSetPreferences[]
+  testPreferences    UserTestPreferences[]
   srsCards           SrsCard[]
   cardAttempts       CardAttempt[]
   magicLinks         MagicLink[]
@@ -131,6 +151,7 @@ model StudySet {
   cardProgress    UserCardProgress[]
   setProgress     UserSetProgress[]
   setPreferences  UserSetPreferences[]
+  testPreferences UserTestPreferences[]
 
   @@map("study_set")
 }
@@ -156,6 +177,8 @@ model Flashcard {
   srsCards             SrsCard[]
   cardAttempts         CardAttempt[]
   testQuestionAttempts TestQuestionAttempt[]
+  matchingPairAnchors  TestMatchingPair[]    @relation("MatchingPairAnchor")
+  matchingPairUserPicks TestMatchingPair[]   @relation("MatchingPairUserPick")
 
   @@map("flashcard")
 }
@@ -273,6 +296,51 @@ model UserSetPreferences {
 
   @@id([userId, setId])
   @@map("user_set_preferences")
+}
+
+/// Per-(user, set) Test Mode preferences. Kept in a separate table
+/// from UserSetPreferences because Test Mode's knobs are structurally
+/// different (question count vs batch size, allowed types vs mastery
+/// tuning) and mixing them muddies the schema. Row is created lazily
+/// on first write — reads fall back to defaults.
+model UserTestPreferences {
+  userId              String               @db.Uuid
+  setId               String               @db.Uuid
+  /// Target number of scoring slots per attempt. 5–50. When a
+  /// matching question is included it consumes matchingPairCount
+  /// slots; the remainder are single-card questions.
+  questionCount       Int                  @default(20)
+  /// Which question types the generator may pick from. Values are
+  /// TestQuestionType strings (TEST_MC / TEST_WRITTEN / TEST_TF /
+  /// TEST_MATCH). Stored as a string[] because Prisma doesn't
+  /// support enum arrays cleanly on the client side.
+  allowedTypes        String[]             @default(["TEST_MC", "TEST_WRITTEN", "TEST_TF", "TEST_MATCH"])
+  /// Which side the learner produces. MIXED rolls per card at
+  /// generation time (never appears on a question row itself).
+  answerDirection     LearnAnswerDirection @default(TERM_TO_DEFINITION)
+  /// Written-answer evaluator leniency. Defaults to NORMAL to match
+  /// Learn; STRICT is worth surfacing as an easy toggle for tests.
+  strictness          StudyStrictness      @default(NORMAL)
+  /// Restrict the pool to starred cards only.
+  starredOnly         Boolean              @default(false)
+  /// Whether to shuffle the card pool before question generation.
+  /// False = follow orderIndex; true = randomize.
+  shuffleEnabled      Boolean              @default(true)
+  /// Reveal correctness after each question (true) or only at the
+  /// end on the results screen (false — closer to a real test).
+  showResultsPerQuestion Boolean           @default(false)
+  /// Pair count for a matching question, when TEST_MATCH is in
+  /// allowedTypes. 4–8. Also the number of scoring slots the
+  /// matching question consumes.
+  matchingPairCount   Int                  @default(5)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  set  StudySet @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@id([userId, setId])
+  @@map("user_test_preferences")
 }
 
 model SrsCard {
@@ -454,26 +522,101 @@ model TestAttempt {
   id                   String                @id(map: "PK_e9fb46f732ef63877b65484637a") @default(uuid()) @db.Uuid
   userId               String                @db.Uuid
   studySetId           String                @db.Uuid
+  /// Lifecycle. IN_PROGRESS on create, flipped to COMPLETED on
+  /// submit or ABANDONED by the sweep / explicit abandon.
+  status               TestAttemptStatus     @default(IN_PROGRESS)
+  /// Percentage score 0.00–100.00, computed on submit as
+  /// correctCount / totalQuestions * 100. Zero until grading.
   score                Float                 @default(0)
+  /// Sum of all scoring slots. A matching question with N pairs
+  /// contributes N to this count so score math stays uniform.
   totalQuestions       Int
+  /// Cached counts so the history list doesn't have to aggregate
+  /// question rows to render a score.
+  correctCount         Int                   @default(0)
+  incorrectCount       Int                   @default(0)
+  /// Learner-configured target from UserTestPreferences at start
+  /// time. Diverges from totalQuestions when the pool couldn't fill
+  /// (e.g. 20 requested, 12-card set).
+  questionCount        Int
+  /// Wall-clock seconds between create and submit; only meaningful
+  /// on COMPLETED attempts.
+  durationSeconds      Int?
   createdAt            DateTime              @default(now())
+  submittedAt          DateTime?
   user                 User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
   studySet             StudySet              @relation(fields: [studySetId], references: [id], onDelete: Restrict)
   testQuestionAttempts TestQuestionAttempt[]
 
+  @@index([userId, createdAt])
+  @@index([userId, studySetId, createdAt])
+  @@index([userId, status])
   @@map("test_attempt")
 }
 
 model TestQuestionAttempt {
-  id            String      @id(map: "PK_4b0beed24cd6196f6c6905183e2") @default(uuid()) @db.Uuid
-  testAttemptId String      @db.Uuid
-  flashcardId   String      @db.Uuid
-  userAnswer    String?
-  isCorrect     Boolean     @default(false)
-  testAttempt   TestAttempt @relation(fields: [testAttemptId], references: [id], onDelete: Restrict)
-  flashcard     Flashcard   @relation(fields: [flashcardId], references: [id], onDelete: Restrict)
+  id                 String              @id(map: "PK_4b0beed24cd6196f6c6905183e2") @default(uuid()) @db.Uuid
+  testAttemptId      String              @db.Uuid
+  flashcardId        String              @db.Uuid
+  /// Which shape of question was asked. Drives how the review page
+  /// renders the row and how the grader interpreted the answer.
+  questionType       TestQuestionType
+  /// Verbatim text the learner saw as the prompt (post-direction
+  /// resolution). Stored so the review page can replay the exact
+  /// question even if the underlying card has since been edited.
+  promptText         String
+  /// Canonical expected answer at grading time. For matching, this
+  /// is unused (per-pair correctness lives on TestMatchingPair).
+  expectedAnswer     String
+  /// MC choices — empty for non-MC types.
+  choices            String[]            @default([])
+  /// MC only — index into `choices` for the correct option.
+  correctChoiceIndex Int?
+  /// Direction the question was asked in. MIXED is a preference,
+  /// not a per-question value, so this is always a concrete value.
+  answerDirection    LearnAnswerDirection
+  /// Position within the test (1-indexed). Drives review order.
+  orderIndex         Int
+  /// Learner's raw input. For MC this is the selected choice's
+  /// text (also captured via selectedChoiceIndex); for TF it's
+  /// "true" / "false"; for written it's what they typed; for
+  /// matching it's null (see TestMatchingPair).
+  userAnswer         String?
+  /// MC only — which choice they picked.
+  selectedChoiceIndex Int?
+  /// Written-mode similarity from the evaluator (0.000–1.000).
+  /// Kept for the review UI's "you were close" affordance.
+  similarity         Decimal?            @db.Decimal(4, 3)
+  isCorrect          Boolean             @default(false)
+  testAttempt        TestAttempt         @relation(fields: [testAttemptId], references: [id], onDelete: Cascade)
+  flashcard          Flashcard           @relation(fields: [flashcardId], references: [id], onDelete: Restrict)
+  matchingPairs      TestMatchingPair[]
 
+  @@index([testAttemptId, orderIndex])
   @@map("test_question_attempt")
+}
+
+/// One matching question holds N pairs. Each pair is graded
+/// independently; the pair rows are the source of truth for the
+/// question's contribution to the score. `userMatchedFlashcardId`
+/// is what the learner dropped onto this pair's term — null if they
+/// left it blank; wrong if it points to a different flashcard.
+model TestMatchingPair {
+  id                     String              @id @default(uuid()) @db.Uuid
+  testQuestionAttemptId  String              @db.Uuid
+  /// The card whose term is the anchor for this pair.
+  flashcardId            String              @db.Uuid
+  /// The card whose definition the learner dropped on the anchor.
+  /// Null when they left it blank; different from flashcardId when
+  /// they picked wrong.
+  userMatchedFlashcardId String?             @db.Uuid
+  isCorrect              Boolean             @default(false)
+  testQuestionAttempt    TestQuestionAttempt @relation(fields: [testQuestionAttemptId], references: [id], onDelete: Cascade)
+  flashcard              Flashcard           @relation("MatchingPairAnchor", fields: [flashcardId], references: [id], onDelete: Restrict)
+  userMatched            Flashcard?          @relation("MatchingPairUserPick", fields: [userMatchedFlashcardId], references: [id], onDelete: SetNull)
+
+  @@index([testQuestionAttemptId])
+  @@map("test_matching_pair")
 }
 
 model RefreshToken {
