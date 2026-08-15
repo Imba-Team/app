@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { AlertCircle, CheckCircle2, Sparkles, Zap } from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle2, Sparkles, Zap } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -58,7 +58,10 @@ export function SrsHero() {
             </div>
           </div>
           <Button asChild size="sm" variant="outline" className="shrink-0">
-            <Link href="/library">Study a module</Link>
+            <Link href="/library">
+              Go to library
+              <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
           </Button>
         </CardContent>
       </Card>

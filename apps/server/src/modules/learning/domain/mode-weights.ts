@@ -35,6 +35,9 @@ export const MODE_WEIGHT: Record<StudyMode, number> = {
   TEST_WRITTEN: 1.0,
   TEST_MC: 0.5,
   TEST_TF: 0.3,
+  // Matching pairs read like MC (recognition, pick from a shuffled
+  // set of candidates), so their weight mirrors TEST_MC.
+  TEST_MATCH: 0.5,
   AI_FILL_BLANK: 1.0,
   AI_GUESS_WORD: 1.0,
   MATCH: 0,

@@ -83,7 +83,7 @@ export default function Navbar({ variant }: { variant: NavbarVariant }) {
             <Button
               type="button"
               aria-label="Create module"
-              className={iconPillClass}
+              className="inline-flex size-9 items-center justify-center rounded-full"
               variant="navbar"
               onClick={() => createModule.open()}
             >
@@ -279,8 +279,8 @@ function ProfileMenu({
   );
 }
 
-const iconPillClass =
-  'inline-flex size-9 items-center justify-center rounded-full bg-white text-neutral-800 transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20';
+// const iconPillClass =
+// 'inline-flex size-9 items-center justify-center rounded-full bg-white text-neutral-800 transition-colors hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20';
 
 type AvatarProps = {
   isLoading?: boolean;
@@ -331,7 +331,12 @@ function AppActions({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <Button type="button" aria-label="Notifications" className={iconPillClass} variant="navbar">
+      <Button
+        type="button"
+        aria-label="Notifications"
+        className="inline-flex size-9 items-center justify-center rounded-full"
+        variant="navbar"
+      >
         <Bell className="size-4" />
       </Button>
 

@@ -27,6 +27,8 @@ import { StorageModule } from './common/storage/storage.module';
 import { MediaModule } from './common/media/media.module';
 import { LearningModule } from './modules/learning/learning.module';
 import { SetPreferencesModule } from './modules/set-preferences/set-preferences.module';
+import { TestPreferencesModule } from './modules/test-preferences/test-preferences.module';
+import { TestModule } from './modules/test/test.module';
 import { SrsModule } from './modules/srs/srs.module';
 import { AiModule } from './modules/ai/ai.module';
 import { ClassroomModule } from './modules/classroom/classroom.module';
@@ -80,6 +82,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     CommentModule,
     LearningModule,
     SetPreferencesModule,
+    TestPreferencesModule,
+    TestModule,
     SrsModule,
     AiModule,
     ClassroomModule,

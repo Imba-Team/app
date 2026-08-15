@@ -933,6 +933,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sets/{setId}/test-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my Test Mode preferences for this set
+         * @description Returns the caller’s per-set Test preferences, or the module-level defaults when the learner has never overridden anything.
+         */
+        get: operations["TestPreferencesController_get"];
+        /**
+         * Update my Test Mode preferences for this set
+         * @description Partial update. Only fields present in the body are written; omitted fields keep their prior value (or the module default on first write).
+         */
+        put: operations["TestPreferencesController_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/srs/cards/{id}/review": {
         parameters: {
             query?: never;
@@ -1355,6 +1379,90 @@ export interface paths {
         head?: never;
         /** Update a tag by ID */
         patch: operations["TagController_update"];
+        trace?: never;
+    };
+    "/test-attempts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my test attempts
+         * @description Paginated, newest-first. Optionally filter by studySetId to power the set-page history.
+         */
+        get: operations["TestController_list"];
+        put?: never;
+        /**
+         * Start a test attempt
+         * @description Generates questions server-side per the caller's TestPreferences and persists the attempt in IN_PROGRESS status. If the caller already has an IN_PROGRESS attempt for this set, returns that one with resumed=true instead of creating a duplicate. Question responses omit correct answers — the server grades on submit.
+         */
+        post: operations["TestController_start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/test-attempts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a single test attempt with per-question review
+         * @description Returns everything the review page needs: score, counters, per-question graded rows including correct answers, and matching pair judgments.
+         */
+        get: operations["TestController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/test-attempts/{id}/abandon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Abandon an in-progress test attempt
+         * @description Flips an IN_PROGRESS attempt to ABANDONED so the concurrent-attempt guard on POST /test-attempts lets a new one through. Noop on COMPLETED / ABANDONED attempts.
+         */
+        post: operations["TestController_abandon"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/test-attempts/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit answers and grade a test attempt
+         * @description Grades every question using the caller's strictness preference, updates SRS per card touch, and returns the full graded result (per-question review + score). Idempotent guard: submitting an already-COMPLETED attempt returns 409.
+         */
+        post: operations["TestController_submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/users/{username}": {
@@ -2054,6 +2162,38 @@ export interface components {
             /** Format: uuid */
             studySetId: string;
         };
+        StartTestAttemptDto: {
+            /**
+             * Format: uuid
+             * @description The study set to generate a test from.
+             */
+            studySetId: string;
+        };
+        StartTestAttemptResponseDto: {
+            /** Format: uuid */
+            attemptId: string;
+            /** Format: date-time */
+            createdAt: string;
+            /**
+             * @description The learner-configured target from UserTestPreferences at start time. Diverges from totalQuestions when the pool couldn't fill.
+             * @example 20
+             */
+            questionCount: number;
+            /** @description Server-generated questions in order. Correct answers are NOT included; the server grades on submit. */
+            questions: components["schemas"]["TestQuestionDto"][];
+            /**
+             * @description True when the caller already had an IN_PROGRESS attempt for this set and the server returned it instead of creating a new one.
+             * @example false
+             */
+            resumed: boolean;
+            /** Format: uuid */
+            studySetId: string;
+            /**
+             * @description Sum of scoring slots — matching contributes matchingPairCount, others 1. What the score math uses as the denominator.
+             * @example 12
+             */
+            totalQuestions: number;
+        };
         StudySetProgressDto: {
             /** @example 7 */
             learningCount: number;
@@ -2118,6 +2258,31 @@ export interface components {
             /** @enum {string} */
             studyMode: "FLASHCARD" | "LEARN_MC" | "LEARN_WRITTEN" | "WRITE" | "SPELL" | "TEST_WRITTEN" | "TEST_MC" | "TEST_TF" | "AI_FILL_BLANK" | "AI_GUESS_WORD" | "MATCH";
         };
+        SubmitTestAttemptDto: {
+            /** @description One entry per question in the attempt. Missing entries count as unanswered (incorrect). Order does not matter — questions are matched by questionAttemptId. */
+            answers: components["schemas"]["SubmitTestQuestionAnswerDto"][];
+        };
+        SubmitTestMatchingPickDto: {
+            /** Format: uuid */
+            pairId: string;
+            /**
+             * Format: uuid
+             * @description Which flashcard the learner dropped on this pair. Null when they left it blank.
+             */
+            userMatchedFlashcardId?: Record<string, never> | null;
+        };
+        SubmitTestQuestionAnswerDto: {
+            /** @description MATCH — one entry per pair. Missing entries count as unanswered (incorrect). */
+            matchingPicks?: components["schemas"]["SubmitTestMatchingPickDto"][];
+            /** Format: uuid */
+            questionAttemptId: string;
+            /** @description MC — index into the question's choices. */
+            selectedChoiceIndex?: number;
+            /** @description WRITTEN — verbatim learner input. */
+            userAnswer?: string;
+            /** @description TF — true if the learner said the presented pairing is correct. */
+            userIsTrue?: boolean;
+        };
         SubmitWrittenAnswerDto: {
             /**
              * @description Which side of the card the learner produced — echoed from LearnBatchCardDto.answerDirection. Needed when the pref is MIXED (each card has its own direction). Omitted for legacy clients; the server falls back to the preference-level direction.
@@ -2145,6 +2310,165 @@ export interface components {
             studyMode: "WRITE" | "LEARN_WRITTEN" | "TEST_WRITTEN" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
             /** @description The learner-typed answer, exactly as entered. */
             userAnswer: string;
+        };
+        TestAttemptResultDto: {
+            /** Format: uuid */
+            attemptId: string;
+            correctCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            durationSeconds?: number | null;
+            incorrectCount: number;
+            questionCount: number;
+            questions: components["schemas"]["TestQuestionResultDto"][];
+            /**
+             * @description Percentage score (0.00–100.00).
+             * @example 85
+             */
+            score: number;
+            /** @enum {string} */
+            status: "IN_PROGRESS" | "COMPLETED" | "ABANDONED";
+            /** Format: uuid */
+            studySetId: string;
+            /** Format: date-time */
+            submittedAt?: string | null;
+            /** @description Sum of scoring slots. */
+            totalQuestions: number;
+        };
+        TestHistoryItemDto: {
+            /** Format: uuid */
+            attemptId: string;
+            correctCount: number;
+            /** Format: date-time */
+            createdAt: string;
+            durationSeconds?: number | null;
+            incorrectCount: number;
+            score: number;
+            /** @enum {string} */
+            status: "IN_PROGRESS" | "COMPLETED" | "ABANDONED";
+            /** Format: uuid */
+            studySetId: string;
+            /** Format: date-time */
+            submittedAt?: string | null;
+            totalQuestions: number;
+        };
+        TestMatchingPairDto: {
+            /** @description Anchor text — the term (or definition, under reverse direction) shown on the left column. */
+            anchorText: string;
+            /** @description Candidate text — the definition (or term) that should be dragged onto the anchor. Server shuffles the candidate order independently so the correct match is not always at the same row as its anchor. */
+            candidateText: string;
+            /**
+             * Format: uuid
+             * @description The card whose term is the anchor for this pair. Clients use this to score matching client-side for preview but the server is the source of truth.
+             */
+            flashcardId: string;
+            /** Format: uuid */
+            pairId: string;
+        };
+        TestPairResultDto: {
+            /** Format: uuid */
+            flashcardId: string;
+            isCorrect: boolean;
+            /** Format: uuid */
+            pairId: string;
+            /** Format: uuid */
+            userMatchedFlashcardId?: string | null;
+        };
+        TestPreferencesResponseDto: {
+            /**
+             * @description Question types the generator may pick from. Empty is not allowed — the frontend forces at least one selection.
+             * @example [
+             *       "TEST_MC",
+             *       "TEST_WRITTEN",
+             *       "TEST_TF",
+             *       "TEST_MATCH"
+             *     ]
+             */
+            allowedTypes: ("TEST_MC" | "TEST_WRITTEN" | "TEST_TF" | "TEST_MATCH")[];
+            /**
+             * @description Which side the learner produces. MIXED rolls a direction per card at generation time.
+             * @enum {string}
+             */
+            answerDirection: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM" | "MIXED";
+            /**
+             * @description Pair count for a matching question. Only meaningful when TEST_MATCH is in allowedTypes; also the number of scoring slots the matching question consumes.
+             * @example 5
+             */
+            matchingPairCount: number;
+            /**
+             * @description Target scoring slots per attempt. 5–50. A matching question consumes `matchingPairCount` of these; the rest are single-card questions.
+             * @example 20
+             */
+            questionCount: number;
+            /**
+             * @description Reveal correctness after each question (true) or only on the results screen (false — closer to a real test).
+             * @example false
+             */
+            showResultsPerQuestion: boolean;
+            /**
+             * @description When true, shuffle the pool before generating questions. When false, follow Flashcard.orderIndex.
+             * @example true
+             */
+            shuffleEnabled: boolean;
+            /**
+             * @description Restrict the pool to starred cards only.
+             * @example false
+             */
+            starredOnly: boolean;
+            /**
+             * @description Written-answer evaluator leniency, same tiers as Learn Mode. STRICT is a natural default for tests but NORMAL matches Learn for parity.
+             * @enum {string}
+             */
+            strictness: "STRICT" | "NORMAL" | "LENIENT";
+        };
+        TestQuestionDto: {
+            /**
+             * @description Resolved direction for this specific question. Always TERM_TO_DEFINITION or DEFINITION_TO_TERM — MIXED is a preference, not a per-question value.
+             * @enum {string}
+             */
+            answerDirection: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM" | "MIXED";
+            /** @description MC only — 4 shuffled options. Empty for other types. Never includes the correct index (client must submit its selection). */
+            choices?: string[];
+            /** Format: uuid */
+            flashcardId: string;
+            /** @description MATCH only — one entry per pair. anchorText + candidateText are shuffled independently so pairing is meaningful. */
+            matchingPairs?: components["schemas"]["TestMatchingPairDto"][];
+            /** @description 1-indexed position within the test. */
+            orderIndex: number;
+            /** @description The prompt text — the term (or definition, under reverse) for MC/WRITTEN, the term for TF, and a header string for MATCH. */
+            promptText: string;
+            /**
+             * Format: uuid
+             * @description ID of the persisted TestQuestionAttempt row. Clients echo this back on submit to identify which answer maps to which question.
+             */
+            questionAttemptId: string;
+            /** @enum {string} */
+            questionType: "TEST_MC" | "TEST_WRITTEN" | "TEST_TF" | "TEST_MATCH";
+            /** @description TF only — the candidate definition (or term) presented alongside the prompt. Learner presses True/False. */
+            tfPresentedAnswer?: string;
+        };
+        TestQuestionResultDto: {
+            /** @enum {string} */
+            answerDirection: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM" | "MIXED";
+            choices?: string[];
+            correctChoiceIndex?: number | null;
+            expectedAnswer: string;
+            /** Format: uuid */
+            flashcardId: string;
+            isCorrect: boolean;
+            /** @description 1-indexed position within the test. */
+            orderIndex: number;
+            /** @description MATCH only — per-pair judgments. */
+            pairs?: components["schemas"]["TestPairResultDto"][];
+            promptText: string;
+            /** Format: uuid */
+            questionAttemptId: string;
+            /** @enum {string} */
+            questionType: "TEST_MC" | "TEST_WRITTEN" | "TEST_TF" | "TEST_MATCH";
+            selectedChoiceIndex?: number | null;
+            /** @description Written-mode similarity (0.000–1.000). Null for other types. */
+            similarity?: number | null;
+            userAnswer?: string | null;
         };
         ToggleStarDto: {
             /** @example true */
@@ -2252,6 +2576,36 @@ export interface components {
         UpdateTagDto: {
             /** @example biology */
             name?: string;
+        };
+        UpdateTestPreferencesDto: {
+            /**
+             * @description Must be non-empty. Duplicates are rejected — pass each type at most once.
+             * @example [
+             *       "TEST_MC",
+             *       "TEST_WRITTEN"
+             *     ]
+             */
+            allowedTypes?: ("TEST_MC" | "TEST_WRITTEN" | "TEST_TF" | "TEST_MATCH")[];
+            /**
+             * @example TERM_TO_DEFINITION
+             * @enum {string}
+             */
+            answerDirection?: "TERM_TO_DEFINITION" | "DEFINITION_TO_TERM" | "MIXED";
+            /** @example 5 */
+            matchingPairCount?: number;
+            /** @example 20 */
+            questionCount?: number;
+            /** @example false */
+            showResultsPerQuestion?: boolean;
+            /** @example true */
+            shuffleEnabled?: boolean;
+            /** @example false */
+            starredOnly?: boolean;
+            /**
+             * @example NORMAL
+             * @enum {string}
+             */
+            strictness?: "STRICT" | "NORMAL" | "LENIENT";
         };
         UpdateVisibilityDto: {
             /**
@@ -2383,10 +2737,22 @@ export type SchemaSrsCardDto = components['schemas']['SrsCardDto'];
 export type SchemaSrsReviewResponseDto = components['schemas']['SrsReviewResponseDto'];
 export type SchemaStartSessionDto = components['schemas']['StartSessionDto'];
 export type SchemaStartSessionResponseDto = components['schemas']['StartSessionResponseDto'];
+export type SchemaStartTestAttemptDto = components['schemas']['StartTestAttemptDto'];
+export type SchemaStartTestAttemptResponseDto = components['schemas']['StartTestAttemptResponseDto'];
 export type SchemaStudySetProgressDto = components['schemas']['StudySetProgressDto'];
 export type SchemaStudySetResponseDto = components['schemas']['StudySetResponseDto'];
 export type SchemaSubmitAnswerDto = components['schemas']['SubmitAnswerDto'];
+export type SchemaSubmitTestAttemptDto = components['schemas']['SubmitTestAttemptDto'];
+export type SchemaSubmitTestMatchingPickDto = components['schemas']['SubmitTestMatchingPickDto'];
+export type SchemaSubmitTestQuestionAnswerDto = components['schemas']['SubmitTestQuestionAnswerDto'];
 export type SchemaSubmitWrittenAnswerDto = components['schemas']['SubmitWrittenAnswerDto'];
+export type SchemaTestAttemptResultDto = components['schemas']['TestAttemptResultDto'];
+export type SchemaTestHistoryItemDto = components['schemas']['TestHistoryItemDto'];
+export type SchemaTestMatchingPairDto = components['schemas']['TestMatchingPairDto'];
+export type SchemaTestPairResultDto = components['schemas']['TestPairResultDto'];
+export type SchemaTestPreferencesResponseDto = components['schemas']['TestPreferencesResponseDto'];
+export type SchemaTestQuestionDto = components['schemas']['TestQuestionDto'];
+export type SchemaTestQuestionResultDto = components['schemas']['TestQuestionResultDto'];
 export type SchemaToggleStarDto = components['schemas']['ToggleStarDto'];
 export type SchemaUpdateCommentDto = components['schemas']['UpdateCommentDto'];
 export type SchemaUpdateFlashcardDto = components['schemas']['UpdateFlashcardDto'];
@@ -2395,6 +2761,7 @@ export type SchemaUpdateMyProfileDto = components['schemas']['UpdateMyProfileDto
 export type SchemaUpdateSetPreferencesDto = components['schemas']['UpdateSetPreferencesDto'];
 export type SchemaUpdateStudySetDto = components['schemas']['UpdateStudySetDto'];
 export type SchemaUpdateTagDto = components['schemas']['UpdateTagDto'];
+export type SchemaUpdateTestPreferencesDto = components['schemas']['UpdateTestPreferencesDto'];
 export type SchemaUpdateVisibilityDto = components['schemas']['UpdateVisibilityDto'];
 export type SchemaUserResponseDto = components['schemas']['UserResponseDto'];
 export type SchemaVerifyEmailRequestDto = components['schemas']['VerifyEmailRequestDto'];
@@ -3891,6 +4258,58 @@ export interface operations {
             };
         };
     };
+    TestPreferencesController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Test preferences read */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["TestPreferencesResponseDto"];
+                    };
+                };
+            };
+        };
+    };
+    TestPreferencesController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                setId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTestPreferencesDto"];
+            };
+        };
+        responses: {
+            /** @description Test preferences updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["TestPreferencesResponseDto"];
+                    };
+                };
+            };
+        };
+    };
     SrsController_review: {
         parameters: {
             query?: never;
@@ -4653,6 +5072,130 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    TestController_list: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                /** @description Filter to attempts for a single set. */
+                studySetId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Test history retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["TestHistoryItemDto"][];
+                    };
+                };
+            };
+        };
+    };
+    TestController_start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartTestAttemptDto"];
+            };
+        };
+        responses: {
+            /** @description Test attempt started */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["StartTestAttemptResponseDto"];
+                    };
+                };
+            };
+        };
+    };
+    TestController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Test attempt retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["TestAttemptResultDto"];
+                    };
+                };
+            };
+        };
+    };
+    TestController_abandon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    TestController_submit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitTestAttemptDto"];
+            };
+        };
+        responses: {
+            /** @description Test attempt graded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["TestAttemptResultDto"];
+                    };
+                };
             };
         };
     };

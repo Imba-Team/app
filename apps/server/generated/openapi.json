@@ -4261,6 +4261,367 @@
         ]
       }
     },
+    "/sets/{setId}/test-preferences": {
+      "get": {
+        "description": "Returns the caller’s per-set Test preferences, or the module-level defaults when the learner has never overridden anything.",
+        "operationId": "TestPreferencesController_get",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Test preferences read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/TestPreferencesResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get my Test Mode preferences for this set",
+        "tags": [
+          "Test"
+        ]
+      },
+      "put": {
+        "description": "Partial update. Only fields present in the body are written; omitted fields keep their prior value (or the module default on first write).",
+        "operationId": "TestPreferencesController_update",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTestPreferencesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Test preferences updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/TestPreferencesResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update my Test Mode preferences for this set",
+        "tags": [
+          "Test"
+        ]
+      }
+    },
+    "/test-attempts": {
+      "post": {
+        "description": "Generates questions server-side per the caller's TestPreferences and persists the attempt in IN_PROGRESS status. If the caller already has an IN_PROGRESS attempt for this set, returns that one with resumed=true instead of creating a duplicate. Question responses omit correct answers — the server grades on submit.",
+        "operationId": "TestController_start",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartTestAttemptDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Test attempt started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/StartTestAttemptResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Start a test attempt",
+        "tags": [
+          "Test"
+        ]
+      },
+      "get": {
+        "description": "Paginated, newest-first. Optionally filter by studySetId to power the set-page history.",
+        "operationId": "TestController_list",
+        "parameters": [
+          {
+            "name": "studySetId",
+            "required": false,
+            "in": "query",
+            "description": "Filter to attempts for a single set.",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 0,
+              "default": 0,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Test history retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TestHistoryItemDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List my test attempts",
+        "tags": [
+          "Test"
+        ]
+      }
+    },
+    "/test-attempts/{id}/submit": {
+      "post": {
+        "description": "Grades every question using the caller's strictness preference, updates SRS per card touch, and returns the full graded result (per-question review + score). Idempotent guard: submitting an already-COMPLETED attempt returns 409.",
+        "operationId": "TestController_submit",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitTestAttemptDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Test attempt graded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/TestAttemptResultDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Submit answers and grade a test attempt",
+        "tags": [
+          "Test"
+        ]
+      }
+    },
+    "/test-attempts/{id}/abandon": {
+      "post": {
+        "description": "Flips an IN_PROGRESS attempt to ABANDONED so the concurrent-attempt guard on POST /test-attempts lets a new one through. Noop on COMPLETED / ABANDONED attempts.",
+        "operationId": "TestController_abandon",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Abandon an in-progress test attempt",
+        "tags": [
+          "Test"
+        ]
+      }
+    },
+    "/test-attempts/{id}": {
+      "get": {
+        "description": "Returns everything the review page needs: score, counters, per-question graded rows including correct answers, and matching pair judgments.",
+        "operationId": "TestController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Test attempt retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/TestAttemptResultDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a single test attempt with per-question review",
+        "tags": [
+          "Test"
+        ]
+      }
+    },
     "/services/ai/health": {
       "get": {
         "operationId": "AiController_health",
@@ -6602,6 +6963,603 @@
         "required": [
           "days",
           "buckets"
+        ]
+      },
+      "TestPreferencesResponseDto": {
+        "type": "object",
+        "properties": {
+          "questionCount": {
+            "type": "number",
+            "description": "Target scoring slots per attempt. 5–50. A matching question consumes `matchingPairCount` of these; the rest are single-card questions.",
+            "example": 20
+          },
+          "allowedTypes": {
+            "type": "array",
+            "description": "Question types the generator may pick from. Empty is not allowed — the frontend forces at least one selection.",
+            "example": [
+              "TEST_MC",
+              "TEST_WRITTEN",
+              "TEST_TF",
+              "TEST_MATCH"
+            ],
+            "items": {
+              "type": "string",
+              "enum": [
+                "TEST_MC",
+                "TEST_WRITTEN",
+                "TEST_TF",
+                "TEST_MATCH"
+              ]
+            }
+          },
+          "answerDirection": {
+            "type": "string",
+            "enum": [
+              "TERM_TO_DEFINITION",
+              "DEFINITION_TO_TERM",
+              "MIXED"
+            ],
+            "description": "Which side the learner produces. MIXED rolls a direction per card at generation time."
+          },
+          "strictness": {
+            "type": "string",
+            "enum": [
+              "STRICT",
+              "NORMAL",
+              "LENIENT"
+            ],
+            "description": "Written-answer evaluator leniency, same tiers as Learn Mode. STRICT is a natural default for tests but NORMAL matches Learn for parity."
+          },
+          "starredOnly": {
+            "type": "boolean",
+            "description": "Restrict the pool to starred cards only.",
+            "example": false
+          },
+          "shuffleEnabled": {
+            "type": "boolean",
+            "description": "When true, shuffle the pool before generating questions. When false, follow Flashcard.orderIndex.",
+            "example": true
+          },
+          "showResultsPerQuestion": {
+            "type": "boolean",
+            "description": "Reveal correctness after each question (true) or only on the results screen (false — closer to a real test).",
+            "example": false
+          },
+          "matchingPairCount": {
+            "type": "number",
+            "description": "Pair count for a matching question. Only meaningful when TEST_MATCH is in allowedTypes; also the number of scoring slots the matching question consumes.",
+            "example": 5
+          }
+        },
+        "required": [
+          "questionCount",
+          "allowedTypes",
+          "answerDirection",
+          "strictness",
+          "starredOnly",
+          "shuffleEnabled",
+          "showResultsPerQuestion",
+          "matchingPairCount"
+        ]
+      },
+      "UpdateTestPreferencesDto": {
+        "type": "object",
+        "properties": {
+          "questionCount": {
+            "type": "number",
+            "minimum": 5,
+            "maximum": 50,
+            "example": 20
+          },
+          "allowedTypes": {
+            "type": "array",
+            "description": "Must be non-empty. Duplicates are rejected — pass each type at most once.",
+            "example": [
+              "TEST_MC",
+              "TEST_WRITTEN"
+            ],
+            "items": {
+              "type": "string",
+              "enum": [
+                "TEST_MC",
+                "TEST_WRITTEN",
+                "TEST_TF",
+                "TEST_MATCH"
+              ]
+            }
+          },
+          "answerDirection": {
+            "type": "string",
+            "enum": [
+              "TERM_TO_DEFINITION",
+              "DEFINITION_TO_TERM",
+              "MIXED"
+            ],
+            "example": "TERM_TO_DEFINITION"
+          },
+          "strictness": {
+            "type": "string",
+            "enum": [
+              "STRICT",
+              "NORMAL",
+              "LENIENT"
+            ],
+            "example": "NORMAL"
+          },
+          "starredOnly": {
+            "type": "boolean",
+            "example": false
+          },
+          "shuffleEnabled": {
+            "type": "boolean",
+            "example": true
+          },
+          "showResultsPerQuestion": {
+            "type": "boolean",
+            "example": false
+          },
+          "matchingPairCount": {
+            "type": "number",
+            "minimum": 4,
+            "maximum": 8,
+            "example": 5
+          }
+        }
+      },
+      "TestMatchingPairDto": {
+        "type": "object",
+        "properties": {
+          "pairId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "flashcardId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The card whose term is the anchor for this pair. Clients use this to score matching client-side for preview but the server is the source of truth."
+          },
+          "anchorText": {
+            "type": "string",
+            "description": "Anchor text — the term (or definition, under reverse direction) shown on the left column."
+          },
+          "candidateText": {
+            "type": "string",
+            "description": "Candidate text — the definition (or term) that should be dragged onto the anchor. Server shuffles the candidate order independently so the correct match is not always at the same row as its anchor."
+          }
+        },
+        "required": [
+          "pairId",
+          "flashcardId",
+          "anchorText",
+          "candidateText"
+        ]
+      },
+      "TestQuestionDto": {
+        "type": "object",
+        "properties": {
+          "questionAttemptId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the persisted TestQuestionAttempt row. Clients echo this back on submit to identify which answer maps to which question."
+          },
+          "flashcardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "questionType": {
+            "type": "string",
+            "enum": [
+              "TEST_MC",
+              "TEST_WRITTEN",
+              "TEST_TF",
+              "TEST_MATCH"
+            ]
+          },
+          "answerDirection": {
+            "type": "string",
+            "enum": [
+              "TERM_TO_DEFINITION",
+              "DEFINITION_TO_TERM",
+              "MIXED"
+            ],
+            "description": "Resolved direction for this specific question. Always TERM_TO_DEFINITION or DEFINITION_TO_TERM — MIXED is a preference, not a per-question value."
+          },
+          "promptText": {
+            "type": "string",
+            "description": "The prompt text — the term (or definition, under reverse) for MC/WRITTEN, the term for TF, and a header string for MATCH."
+          },
+          "orderIndex": {
+            "type": "number",
+            "description": "1-indexed position within the test."
+          },
+          "choices": {
+            "description": "MC only — 4 shuffled options. Empty for other types. Never includes the correct index (client must submit its selection).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tfPresentedAnswer": {
+            "type": "string",
+            "description": "TF only — the candidate definition (or term) presented alongside the prompt. Learner presses True/False."
+          },
+          "matchingPairs": {
+            "description": "MATCH only — one entry per pair. anchorText + candidateText are shuffled independently so pairing is meaningful.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestMatchingPairDto"
+            }
+          }
+        },
+        "required": [
+          "questionAttemptId",
+          "flashcardId",
+          "questionType",
+          "answerDirection",
+          "promptText",
+          "orderIndex"
+        ]
+      },
+      "StartTestAttemptResponseDto": {
+        "type": "object",
+        "properties": {
+          "attemptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studySetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "questionCount": {
+            "type": "number",
+            "description": "The learner-configured target from UserTestPreferences at start time. Diverges from totalQuestions when the pool couldn't fill.",
+            "example": 20
+          },
+          "totalQuestions": {
+            "type": "number",
+            "description": "Sum of scoring slots — matching contributes matchingPairCount, others 1. What the score math uses as the denominator.",
+            "example": 12
+          },
+          "questions": {
+            "description": "Server-generated questions in order. Correct answers are NOT included; the server grades on submit.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestQuestionDto"
+            }
+          },
+          "resumed": {
+            "type": "boolean",
+            "description": "True when the caller already had an IN_PROGRESS attempt for this set and the server returned it instead of creating a new one.",
+            "example": false
+          }
+        },
+        "required": [
+          "attemptId",
+          "studySetId",
+          "createdAt",
+          "questionCount",
+          "totalQuestions",
+          "questions",
+          "resumed"
+        ]
+      },
+      "StartTestAttemptDto": {
+        "type": "object",
+        "properties": {
+          "studySetId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The study set to generate a test from."
+          }
+        },
+        "required": [
+          "studySetId"
+        ]
+      },
+      "TestPairResultDto": {
+        "type": "object",
+        "properties": {
+          "pairId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "flashcardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userMatchedFlashcardId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "isCorrect": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pairId",
+          "flashcardId",
+          "isCorrect"
+        ]
+      },
+      "TestQuestionResultDto": {
+        "type": "object",
+        "properties": {
+          "questionAttemptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "flashcardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "questionType": {
+            "type": "string",
+            "enum": [
+              "TEST_MC",
+              "TEST_WRITTEN",
+              "TEST_TF",
+              "TEST_MATCH"
+            ]
+          },
+          "answerDirection": {
+            "type": "string",
+            "enum": [
+              "TERM_TO_DEFINITION",
+              "DEFINITION_TO_TERM",
+              "MIXED"
+            ]
+          },
+          "promptText": {
+            "type": "string"
+          },
+          "expectedAnswer": {
+            "type": "string"
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correctChoiceIndex": {
+            "type": "number",
+            "nullable": true
+          },
+          "userAnswer": {
+            "type": "string",
+            "nullable": true
+          },
+          "selectedChoiceIndex": {
+            "type": "number",
+            "nullable": true
+          },
+          "similarity": {
+            "type": "number",
+            "nullable": true,
+            "description": "Written-mode similarity (0.000–1.000). Null for other types."
+          },
+          "isCorrect": {
+            "type": "boolean"
+          },
+          "orderIndex": {
+            "type": "number",
+            "description": "1-indexed position within the test."
+          },
+          "pairs": {
+            "description": "MATCH only — per-pair judgments.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestPairResultDto"
+            }
+          }
+        },
+        "required": [
+          "questionAttemptId",
+          "flashcardId",
+          "questionType",
+          "answerDirection",
+          "promptText",
+          "expectedAnswer",
+          "isCorrect",
+          "orderIndex"
+        ]
+      },
+      "TestAttemptResultDto": {
+        "type": "object",
+        "properties": {
+          "attemptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studySetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "IN_PROGRESS",
+              "COMPLETED",
+              "ABANDONED"
+            ]
+          },
+          "score": {
+            "type": "number",
+            "description": "Percentage score (0.00–100.00).",
+            "example": 85
+          },
+          "totalQuestions": {
+            "type": "number",
+            "description": "Sum of scoring slots."
+          },
+          "correctCount": {
+            "type": "number"
+          },
+          "incorrectCount": {
+            "type": "number"
+          },
+          "questionCount": {
+            "type": "number"
+          },
+          "durationSeconds": {
+            "type": "number",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TestQuestionResultDto"
+            }
+          }
+        },
+        "required": [
+          "attemptId",
+          "studySetId",
+          "status",
+          "score",
+          "totalQuestions",
+          "correctCount",
+          "incorrectCount",
+          "questionCount",
+          "createdAt",
+          "questions"
+        ]
+      },
+      "SubmitTestMatchingPickDto": {
+        "type": "object",
+        "properties": {
+          "pairId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userMatchedFlashcardId": {
+            "type": "object",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Which flashcard the learner dropped on this pair. Null when they left it blank."
+          }
+        },
+        "required": [
+          "pairId"
+        ]
+      },
+      "SubmitTestQuestionAnswerDto": {
+        "type": "object",
+        "properties": {
+          "questionAttemptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userAnswer": {
+            "type": "string",
+            "description": "WRITTEN — verbatim learner input.",
+            "maxLength": 500
+          },
+          "selectedChoiceIndex": {
+            "type": "number",
+            "description": "MC — index into the question's choices.",
+            "minimum": 0
+          },
+          "userIsTrue": {
+            "type": "boolean",
+            "description": "TF — true if the learner said the presented pairing is correct."
+          },
+          "matchingPicks": {
+            "description": "MATCH — one entry per pair. Missing entries count as unanswered (incorrect).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubmitTestMatchingPickDto"
+            }
+          }
+        },
+        "required": [
+          "questionAttemptId"
+        ]
+      },
+      "SubmitTestAttemptDto": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "description": "One entry per question in the attempt. Missing entries count as unanswered (incorrect). Order does not matter — questions are matched by questionAttemptId.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubmitTestQuestionAnswerDto"
+            }
+          }
+        },
+        "required": [
+          "answers"
+        ]
+      },
+      "TestHistoryItemDto": {
+        "type": "object",
+        "properties": {
+          "attemptId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studySetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "IN_PROGRESS",
+              "COMPLETED",
+              "ABANDONED"
+            ]
+          },
+          "score": {
+            "type": "number"
+          },
+          "totalQuestions": {
+            "type": "number"
+          },
+          "correctCount": {
+            "type": "number"
+          },
+          "incorrectCount": {
+            "type": "number"
+          },
+          "durationSeconds": {
+            "type": "number",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "attemptId",
+          "studySetId",
+          "status",
+          "score",
+          "totalQuestions",
+          "correctCount",
+          "incorrectCount",
+          "createdAt"
         ]
       }
     }
