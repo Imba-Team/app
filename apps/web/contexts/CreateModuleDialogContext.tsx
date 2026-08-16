@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 
-import { CreateModuleDialog } from '@/components/create-module-dialog';
+import { CreateModuleDialog } from '@/components/CreateModuleDialog';
 
 interface OpenOptions {
   /** Pre-select this folder in the "Folder" dropdown. */
@@ -14,15 +14,12 @@ interface CreateModuleDialogContextValue {
   close: () => void;
 }
 
-const CreateModuleDialogContext =
-  createContext<CreateModuleDialogContextValue | null>(null);
+const CreateModuleDialogContext = createContext<CreateModuleDialogContextValue | null>(null);
 
 export function useCreateModuleDialog() {
   const ctx = useContext(CreateModuleDialogContext);
   if (!ctx) {
-    throw new Error(
-      'useCreateModuleDialog must be used inside <CreateModuleDialogProvider>',
-    );
+    throw new Error('useCreateModuleDialog must be used inside <CreateModuleDialogProvider>');
   }
   return ctx;
 }
@@ -38,11 +35,7 @@ interface DialogState {
   defaultFolderId?: string;
 }
 
-export function CreateModuleDialogProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function CreateModuleDialogProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<DialogState>({
     open: false,
     instanceId: 0,

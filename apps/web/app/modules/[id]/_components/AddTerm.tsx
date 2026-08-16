@@ -1,18 +1,17 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { Plus, Loader2 } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useEffect, useRef, useState } from 'react';
+import { Plus, Loader2 } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 // Shared field styles so the Term and Definition inputs render at
 // identical size/typography — asymmetry between them makes the form
 // feel visually off-balance for a symmetric concept.
-const FIELD_CLASS =
-  "w-full min-h-28 resize-y rounded-2xl border border-black/10 bg-white px-4 py-3 text-base leading-relaxed text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/20 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40 disabled:bg-neutral-50";
+const FieldClass =
+  'w-full min-h-28 resize-y rounded-2xl border border-black/10 bg-white px-4 py-3 text-base leading-relaxed text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/20 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40 disabled:bg-neutral-50';
 
-const KBD_CLASS =
-  "font-mono rounded border border-black/10 bg-white px-1 text-neutral-700";
+const KbdClass = 'font-mono rounded border border-black/10 bg-white px-1 text-neutral-700';
 
 interface AddTermProps {
   onSubmit: (term: string, definition: string) => void;
@@ -40,8 +39,8 @@ interface AddTermProps {
  */
 export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps) {
   const [isAdding, setIsAdding] = useState(false);
-  const [newTerm, setNewTerm] = useState("");
-  const [newDef, setNewDef] = useState("");
+  const [newTerm, setNewTerm] = useState('');
+  const [newDef, setNewDef] = useState('');
   const termRef = useRef<HTMLTextAreaElement>(null);
   const defRef = useRef<HTMLTextAreaElement>(null);
   const wasSubmittingRef = useRef(false);
@@ -49,22 +48,17 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
   // Global shortcut to open the panel.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
         const t = e.target as HTMLElement | null;
-        if (
-          t &&
-          (t.tagName === "INPUT" ||
-            t.tagName === "TEXTAREA" ||
-            t.isContentEditable)
-        ) {
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) {
           return;
         }
         e.preventDefault();
         setIsAdding(true);
       }
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, []);
 
   useEffect(() => {
@@ -77,8 +71,8 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
   // After a successful submit, clear + refocus so the user can keep going.
   useEffect(() => {
     if (wasSubmittingRef.current && !isSubmitting) {
-      setNewTerm("");
-      setNewDef("");
+      setNewTerm('');
+      setNewDef('');
       requestAnimationFrame(() => termRef.current?.focus());
     }
     wasSubmittingRef.current = isSubmitting;
@@ -94,10 +88,10 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
   const cancel = () => {
     // Guard against accidental Escape when the user has half-typed a term.
     if (newTerm.trim() || newDef.trim()) {
-      if (!window.confirm("Discard this term?")) return;
+      if (!window.confirm('Discard this term?')) return;
     }
-    setNewTerm("");
-    setNewDef("");
+    setNewTerm('');
+    setNewDef('');
     setIsAdding(false);
   };
 
@@ -108,7 +102,7 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
         tabIndex={0}
         onClick={() => setIsAdding(true)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
+          if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             setIsAdding(true);
           }
@@ -129,7 +123,10 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
     <Card className="mt-4 w-full gap-4 px-5 py-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <label htmlFor="new-term" className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+          <label
+            htmlFor="new-term"
+            className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500"
+          >
             Term
           </label>
           <textarea
@@ -141,11 +138,11 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
               // Term is typically short, so Enter should advance to
               // the Definition field like a single-line input. Users
               // who want a multi-line term can still use Shift+Enter.
-              if (e.key === "Enter" && !e.shiftKey) {
+              if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 if (e.ctrlKey || e.metaKey) submit();
                 else defRef.current?.focus();
-              } else if (e.key === "Escape") {
+              } else if (e.key === 'Escape') {
                 e.preventDefault();
                 cancel();
               }
@@ -153,12 +150,15 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
             placeholder="e.g. photosynthesis"
             rows={3}
             disabled={isSubmitting}
-            className={FIELD_CLASS}
+            className={FieldClass}
           />
         </div>
 
         <div className="space-y-1">
-          <label htmlFor="new-def" className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+          <label
+            htmlFor="new-def"
+            className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500"
+          >
             Definition
           </label>
           <textarea
@@ -167,10 +167,10 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
             value={newDef}
             onChange={(e) => setNewDef(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
+              if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 submit();
-              } else if (e.key === "Escape") {
+              } else if (e.key === 'Escape') {
                 e.preventDefault();
                 cancel();
               }
@@ -178,7 +178,7 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
             placeholder="Explanation (Shift+Enter for a new line)"
             rows={3}
             disabled={isSubmitting}
-            className={FIELD_CLASS}
+            className={FieldClass}
           />
         </div>
       </div>
@@ -186,23 +186,17 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-black/5 pt-4">
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500">
           <span>
-            <kbd className={KBD_CLASS}>Enter</kbd> to add
+            <kbd className={KbdClass}>Enter</kbd> to add
           </span>
           <span>
-            <kbd className={KBD_CLASS}>Shift+Enter</kbd> new line
+            <kbd className={KbdClass}>Shift+Enter</kbd> new line
           </span>
           <span>
-            <kbd className={KBD_CLASS}>Esc</kbd> cancel
+            <kbd className={KbdClass}>Esc</kbd> cancel
           </span>
         </div>
         <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={cancel}
-            disabled={isSubmitting}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={cancel} disabled={isSubmitting}>
             Cancel
           </Button>
           <Button

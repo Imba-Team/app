@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bell, LogIn, LogOut, Moon, Plus, Settings, Sun, User2 } from 'lucide-react';
 
-import { GlobalSearch } from '@/components/global-search';
+import { GlobalSearch } from '@/components/GlobalSearch';
 
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
@@ -26,13 +26,13 @@ import { Button } from './ui/button';
 
 type NavLink = { label: string; href: string };
 
-const APP_LINKS: NavLink[] = [
+const AppLinks: NavLink[] = [
   { label: 'Library', href: '/library' },
   { label: 'Discover', href: '/discover' },
   { label: 'Review', href: '/srs' },
 ];
 
-const LANDING_LINKS: NavLink[] = [
+const LandingLinks: NavLink[] = [
   { label: 'How it works', href: '#how-it-works' },
   { label: 'Features', href: '#features' },
   { label: 'FAQ', href: '#faq' },
@@ -53,7 +53,7 @@ export default function Navbar({ variant }: { variant: NavbarVariant }) {
   const scrolled = useHasScrolled();
   const createModule = useCreateModuleDialog();
 
-  const links = variant === 'app' ? APP_LINKS : LANDING_LINKS;
+  const links = variant === 'app' ? AppLinks : LandingLinks;
   const profilePictureUrl = buildAssetUrl(me?.profilePicture) || '';
   const hasProfilePicture = Boolean(me?.profilePicture);
 
@@ -123,7 +123,7 @@ export default function Navbar({ variant }: { variant: NavbarVariant }) {
   );
 }
 
-// ---------- Slide-tabs animated navigation ----------
+// Slide-tabs animated navigation
 
 type CursorPos = { left: number; width: number; opacity: number };
 const HIDDEN_CURSOR: CursorPos = { left: 0, width: 0, opacity: 0 };
@@ -194,7 +194,7 @@ function SlideCursor({ position }: { position: CursorPos }) {
   );
 }
 
-// ---------- Scroll shadow ----------
+// Scroll shadow
 
 function useHasScrolled(threshold = 8) {
   const [scrolled, setScrolled] = useState(false);
@@ -207,7 +207,7 @@ function useHasScrolled(threshold = 8) {
   return scrolled;
 }
 
-// ---------- Profile menu ----------
+// Profile menu
 
 type ProfileMenuProps = {
   displayName?: string;
@@ -395,33 +395,24 @@ function LandingActions({
 
   if (isAuthenticated) {
     return (
-      <ProfileMenu
-        displayName={displayName}
-        username={username}
-        email={email}
-        avatarSrc={avatarSrc}
-        avatarAlt={avatarAlt}
-        hasProfilePicture={hasProfilePicture}
-        onLogout={onLogout}
-        trigger={
-          <Button
-            type="button"
-            aria-label={`Continue as ${displayName ?? 'signed-in user'}`}
-            className="h-9 flex px-1.5"
-            variant="navbar"
-          >
-            <ProfileAvatar
-              hasProfilePicture={hasProfilePicture}
-              avatarSrc={avatarSrc}
-              avatarAlt={avatarAlt}
-            />
-            <span className="text-sm font-medium">
-              <span className="text-neutral-500">Continue as</span>{' '}
-              <span className="text-neutral-900">{displayName || 'you'}</span>
-            </span>
-          </Button>
-        }
-      />
+      <Link href="/dashboard">
+        <Button
+          type="button"
+          aria-label={`Continue as ${displayName ?? 'signed-in user'}`}
+          className="h-9 flex px-1.5"
+          variant="navbar"
+        >
+          <ProfileAvatar
+            hasProfilePicture={hasProfilePicture}
+            avatarSrc={avatarSrc}
+            avatarAlt={avatarAlt}
+          />
+          <span className="text-sm font-medium">
+            <span className="text-neutral-500">Continue as</span>{' '}
+            <span className="text-neutral-900">{displayName || 'you'}</span>
+          </span>
+        </Button>
+      </Link>
     );
   }
 

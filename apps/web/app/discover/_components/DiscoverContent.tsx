@@ -20,12 +20,12 @@ import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 import { toast } from 'sonner';
 import { DiscoverLoading } from './DiscoverSkeleton';
 
-const PAGE_SIZE = 20;
+const PageSize = 20;
 
 // A small fixed list of common languages. The API accepts any string,
 // so we could later replace this with a tags-style endpoint that
 // returns the languages actually present in the corpus.
-const LANGUAGE_OPTIONS: { value: string; label: string }[] = [
+const LanguageOptions: { value: string; label: string }[] = [
   { value: 'English', label: 'English' },
   { value: 'Spanish', label: 'Spanish' },
   { value: 'French', label: 'French' },
@@ -43,7 +43,7 @@ const LANGUAGE_OPTIONS: { value: string; label: string }[] = [
 
 // Radix Select doesn't allow "" as an item value, so we use a
 // sentinel and translate at query-build time.
-const ALL_LANGUAGES = '__all__';
+const allLanguages = '__all__';
 
 export default function DiscoverContent() {
   const router = useRouter();
@@ -57,24 +57,27 @@ export default function DiscoverContent() {
   const urlLanguage = searchParams.get('language') ?? '';
 
   const [searchInput, setSearchInput] = useState(urlQ);
-  const [language, setLanguage] = useState<string>(
-    urlLanguage || ALL_LANGUAGES,
-  );
+  const [language, setLanguage] = useState<string>(urlLanguage || allLanguages);
   const [tag, setTag] = useState<string>(urlTag);
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(searchInput);
 
   // Keep input state in sync when the URL changes externally
   // (e.g. navbar submit, back button, a clicked tag chip).
-  useEffect(() => {
+  // We need to track previous URL values to detect changes
+  const [prevUrlQ, setPrevUrlQ] = useState(urlQ);
+  const [prevUrlTag, setPrevUrlTag] = useState(urlTag);
+  const [prevUrlLanguage, setPrevUrlLanguage] = useState(urlLanguage);
+
+  if (urlQ !== prevUrlQ || urlTag !== prevUrlTag || urlLanguage !== prevUrlLanguage) {
     setSearchInput(urlQ);
-  }, [urlQ]);
-  useEffect(() => {
     setTag(urlTag);
-  }, [urlTag]);
-  useEffect(() => {
-    setLanguage(urlLanguage || ALL_LANGUAGES);
-  }, [urlLanguage]);
+    setLanguage(urlLanguage || allLanguages);
+    setPage(1);
+    setPrevUrlQ(urlQ);
+    setPrevUrlTag(urlTag);
+    setPrevUrlLanguage(urlLanguage);
+  }
 
   // Mirror the debounced draft state back into the URL so the current
   // filters can be shared or bookmarked. `router.replace` avoids
@@ -83,7 +86,7 @@ export default function DiscoverContent() {
     const params = new URLSearchParams();
     if (debouncedSearch.trim()) params.set('q', debouncedSearch.trim());
     if (tag) params.set('tag', tag);
-    if (language !== ALL_LANGUAGES) params.set('language', language);
+    if (language !== allLanguages) params.set('language', language);
     const qs = params.toString();
     const target = qs ? `/discover?${qs}` : '/discover';
     const current = searchParams.toString();
@@ -95,10 +98,10 @@ export default function DiscoverContent() {
 
   const query = {
     q: debouncedSearch,
-    language: language === ALL_LANGUAGES ? undefined : language,
+    language: language === allLanguages ? undefined : language,
     tag: tag || undefined,
     page,
-    limit: PAGE_SIZE,
+    limit: PageSize,
   };
 
   const { data, isLoading, isError, isFetching } = useCommunityModules(query);
@@ -113,7 +116,7 @@ export default function DiscoverContent() {
 
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(total / PageSize));
 
   const handleSearchChange = (value: string) => {
     setSearchInput(value);
@@ -176,8 +179,8 @@ export default function DiscoverContent() {
               <SelectValue placeholder="Language" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL_LANGUAGES}>All languages</SelectItem>
-              {LANGUAGE_OPTIONS.map((opt) => (
+              <SelectItem value={allLanguages}>All languages</SelectItem>
+              {LanguageOptions.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
                 </SelectItem>
@@ -206,7 +209,7 @@ export default function DiscoverContent() {
             {total.toLocaleString()} {total === 1 ? 'result' : 'results'}
             {debouncedSearch && ` for “${debouncedSearch}”`}
             {tag && ` tagged #${tag}`}
-            {language !== ALL_LANGUAGES && ` in ${language}`}
+            {language !== allLanguages && ` in ${language}`}
           </p>
         )}
       </div>
@@ -231,9 +234,7 @@ export default function DiscoverContent() {
         <div className="text-center py-12 md:py-16 max-w-lg mx-auto">
           <SearchX className="mx-auto text-gray-400 mb-3" size={36} />
           <p className="text-gray-800 font-semibold mb-1">
-            {debouncedSearch || tag
-              ? `No modules match your filters`
-              : 'No community modules yet'}
+            {debouncedSearch || tag ? `No modules match your filters` : 'No community modules yet'}
           </p>
           <p className="text-sm text-gray-500">
             {debouncedSearch || tag

@@ -10,7 +10,7 @@ import { useCreateModuleDialog } from '@/contexts/CreateModuleDialogContext';
 import type { Folder, LibraryItem } from '@/lib/api';
 import { useFolders, useLibrarySets } from '@/lib/hooks/useLibrary';
 
-const PREVIEW_LIMIT = 6;
+const PreviewLimit = 6;
 
 type Row = { kind: 'folder'; folder: Folder } | { kind: 'set'; set: LibraryItem };
 
@@ -23,11 +23,11 @@ export function LibraryPreview() {
 
   // Merge both into one interleaved list, folders first (they're the
   // organizing structure, so users look for them ahead of loose sets).
-  // Cap at PREVIEW_LIMIT — the full library lives one click away.
+  // Cap at PreviewLimit — the full library lives one click away.
   const rows: Row[] = [
     ...(folders.data ?? []).map((f) => ({ kind: 'folder' as const, folder: f })),
     ...(sets.data ?? []).map((s) => ({ kind: 'set' as const, set: s })),
-  ].slice(0, PREVIEW_LIMIT);
+  ].slice(0, PreviewLimit);
 
   const totalFolders = folders.data?.length ?? 0;
   const totalSets = sets.data?.length ?? 0;

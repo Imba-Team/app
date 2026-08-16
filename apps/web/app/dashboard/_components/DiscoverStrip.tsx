@@ -11,18 +11,18 @@ import { Button } from '@/components/ui/button';
 
 // 3×2 grid = 6 cells. The last cell is always the "Discover more" CTA,
 // so we render at most 5 popular sets in the leading positions.
-const GRID_CELLS = 6;
-const SET_SLOTS = GRID_CELLS - 1;
+const GridCells = 6;
+const SetSlots = GridCells - 1;
 
 export function DiscoverStrip() {
-  const popular = usePopularPublicSets(SET_SLOTS);
+  const popular = usePopularPublicSets(SetSlots);
   const items = popular.data ?? [];
 
   if (popular.isLoading) {
     return (
       <SectionShell>
         <Grid>
-          {Array.from({ length: GRID_CELLS }).map((_, i) => (
+          {Array.from({ length: GridCells }).map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-lg bg-gray-100" />
           ))}
         </Grid>
@@ -35,7 +35,7 @@ export function DiscoverStrip() {
   return (
     <SectionShell>
       <Grid>
-        {items.slice(0, SET_SLOTS).map((m) => (
+        {items.slice(0, SetSlots).map((m) => (
           <DiscoverCard key={m.id} set={m} />
         ))}
         <DiscoverCTA />

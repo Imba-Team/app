@@ -44,32 +44,25 @@ import SessionResults, {
 } from '../_components/SessionResults';
 import { useModule } from '@/lib/hooks/useModules';
 import { useTerms, useToggleTermStar } from '@/lib/hooks/useTerms';
-import {
-  useLearnSession,
-  type LearnCardResult,
-} from '@/lib/hooks/useLearnSession';
+import { useLearnSession, type LearnCardResult } from '@/lib/hooks/useLearnSession';
 import type { LearnBatchCard, LearnResumeState } from '@/lib/api';
 import { abandonSession } from '@/lib/api';
 import {
   useInflightLearnSession,
   useInvalidateInflightLearnSession,
 } from '@/lib/hooks/useInflightLearnSession';
-import {
-  useSetPreferences,
-  useUpdateSetPreferences,
-} from '@/lib/hooks/useSetPreferences';
-import { ResumeSessionDialog } from '@/components/resume-session-dialog';
-import { StudyPreferencesDialog } from '@/components/study-preferences-dialog';
+import { useSetPreferences, useUpdateSetPreferences } from '@/lib/hooks/useSetPreferences';
+import { ResumeSessionDialog } from '@/components/ResumeSessionDialog';
+import { StudyPreferencesDialog } from '@/components/StudyPreferencesDialog';
 
 // Fallback hold before auto-advancing past a correct answer, used
 // only when the learner has no saved per-set preference. Wrong
 // answers never auto-advance; the learner clicks Next.
-const FEEDBACK_HOLD_MS = 1400;
+const feedbackHoldMs = 1400;
 
-const KBD_CLASS =
-  'font-mono rounded border border-black/10 bg-white px-1 text-neutral-700';
+const kbdClass = 'font-mono rounded border border-black/10 bg-white px-1 text-neutral-700';
 
-const WRITTEN_FIELD_CLASS =
+const writtenFieldClass =
   'w-full min-h-28 resize-y rounded-2xl border border-black/10 bg-white px-4 py-3 text-base leading-relaxed text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/20 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40 disabled:bg-neutral-50';
 
 // After a session with no non-mastered cards the server returns an
@@ -91,10 +84,7 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
   // Map cardId → term for the round-up per-card list. The terms query
   // is cheap (already loaded above for the batch flow) and re-renders
   // when a star toggle mutates the cache.
-  const termsByCardId = useMemo(
-    () => new Map(allTerms.map((t) => [t.id, t])),
-    [allTerms],
-  );
+  const termsByCardId = useMemo(() => new Map(allTerms.map((t) => [t.id, t])), [allTerms]);
 
   // Resume-dialog gating. `startChoice` is:
   //  - 'unresolved' → still deciding (or waiting for the learner)
@@ -108,33 +98,26 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
   );
   const invalidateInflight = useInvalidateInflightLearnSession();
 
-  const [startChoice, setStartChoice] = useState<
-    'unresolved' | 'fresh' | 'resume'
-  >(urlSessionId ? 'resume' : 'unresolved');
+  const [startChoice, setStartChoice] = useState<'unresolved' | 'fresh' | 'resume'>(
+    urlSessionId ? 'resume' : 'unresolved',
+  );
   const [choiceBusy, setChoiceBusy] = useState(false);
 
-  // Auto-resolve to 'fresh' when the inflight lookup returns nothing.
+  // Auto-resolve to 'fresh' when we know there's no inflight session.
   // The dialog only shows when we have a real in-flight row to offer.
-  useEffect(() => {
-    if (startChoice !== 'unresolved') return;
-    if (inflightLoading) return;
-    if (!inflight) setStartChoice('fresh');
-  }, [inflight, inflightLoading, startChoice]);
+  if (startChoice === 'unresolved' && !inflightLoading && !inflight && !urlSessionId) {
+    setStartChoice('fresh');
+  }
 
   const initialResumeState =
     startChoice === 'resume' && inflight?.resumeState
       ? (inflight.resumeState as unknown as LearnResumeState)
       : null;
   const resumeSessionId =
-    startChoice === 'resume'
-      ? urlSessionId ?? inflight?.sessionId
-      : undefined;
+    startChoice === 'resume' ? (urlSessionId ?? inflight?.sessionId) : undefined;
 
   const enabled =
-    !moduleLoading &&
-    !termsLoading &&
-    allTerms.length > 0 &&
-    startChoice !== 'unresolved';
+    !moduleLoading && !termsLoading && allTerms.length > 0 && startChoice !== 'unresolved';
 
   const {
     sessionId,
@@ -196,7 +179,7 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
   // moment to read the diff, decide to override, or re-queue. The
   // `preferences.autoAdvance` toggle is no longer surfaced; behaviour
   // is fixed to "auto on correct, manual on wrong".
-  const holdMs = preferences?.autoAdvanceMs ?? FEEDBACK_HOLD_MS;
+  const holdMs = preferences?.autoAdvanceMs ?? feedbackHoldMs;
   const lastWasCorrect = !!lastResult?.correct;
 
   // Round-up screen state — shown between batches. No auto-close: the
@@ -261,14 +244,10 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
     }
   }, [sessionId, hasMoreCards, currentCard, status, answers.length, finish]);
 
-  const [hintUsedByCard, setHintUsedByCard] = useState<Record<string, boolean>>(
-    {},
-  );
+  const [hintUsedByCard, setHintUsedByCard] = useState<Record<string, boolean>>({});
   const markHintUsed = useCallback(
     (cardId: string) => {
-      setHintUsedByCard((prev) =>
-        prev[cardId] ? prev : { ...prev, [cardId]: true },
-      );
+      setHintUsedByCard((prev) => (prev[cardId] ? prev : { ...prev, [cardId]: true }));
     },
     [setHintUsedByCard],
   );
@@ -317,11 +296,7 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
       // hold timer. Wrong feedback stays put so the learner reaches
       // for the "I answered correctly" / "Show me again" / Next
       // buttons instead of accidentally advancing past them.
-      if (
-        status === 'showing-feedback' &&
-        lastResult?.correct &&
-        !isTyping(e.target)
-      ) {
+      if (status === 'showing-feedback' && lastResult?.correct && !isTyping(e.target)) {
         e.preventDefault();
         if (holdRef.current) clearTimeout(holdRef.current);
         void advance();
@@ -411,10 +386,7 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
             <p className="text-sm text-neutral-600">{error}</p>
             <div className="flex flex-wrap gap-2">
               <Button onClick={retry}>Try again</Button>
-              <Button
-                variant="outline"
-                onClick={() => router.push(`/modules/${moduleId}`)}
-              >
+              <Button variant="outline" onClick={() => router.push(`/modules/${moduleId}`)}>
                 Back to module
               </Button>
             </div>
@@ -468,19 +440,10 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
   }
 
   const isSessionEnd =
-    sessionId !== null &&
-    !hasMoreCards &&
-    currentCard === null &&
-    answers.length > 0;
+    sessionId !== null && !hasMoreCards && currentCard === null && answers.length > 0;
   if (isSessionEnd) {
     if (status === 'error' && error) {
-      return (
-        <SessionResultsError
-          error={error}
-          onRetry={finish}
-          moduleId={moduleId}
-        />
-      );
+      return <SessionResultsError error={error} onRetry={finish} moduleId={moduleId} />;
     }
     return <SessionResultsLoading />;
   }
@@ -531,10 +494,7 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
       {/* Progress breakdown: NEW / LEARNING / MASTERED. Replaces the
           old single mastery bar so learners can see all three cohorts
           shrink and grow through the session. */}
-      <ProgressBreakdown
-        progress={latestProgress}
-        answeredThisSession={answers.length}
-      />
+      <ProgressBreakdown progress={latestProgress} answeredThisSession={answers.length} />
 
       {roundupOpen ? (
         <BatchRoundup
@@ -553,12 +513,8 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
             onHint={() => markHintUsed(currentCard.cardId)}
             lastResult={lastResult}
             isSubmitting={status === 'showing-feedback'}
-            onSubmitMc={(selectedChoiceIndex) =>
-              submitMc({ selectedChoiceIndex, hintUsed })
-            }
-            onSubmitWritten={(userAnswer) =>
-              submitWritten({ userAnswer, hintUsed })
-            }
+            onSubmitMc={(selectedChoiceIndex) => submitMc({ selectedChoiceIndex, hintUsed })}
+            onSubmitWritten={(userAnswer) => submitWritten({ userAnswer, hintUsed })}
           />
 
           {/* Action row: skip + review-again + next. Kept below the
@@ -617,11 +573,7 @@ function ProgressBreakdown({
   answeredThisSession: number;
 }) {
   if (!progress || progress.totalCards === 0) {
-    return (
-      <p className="text-sm text-neutral-500">
-        Answered {answeredThisSession} this session.
-      </p>
-    );
+    return <p className="text-sm text-neutral-500">Answered {answeredThisSession} this session.</p>;
   }
   const { totalCards, newCount, learningCount, masteredCount } = progress;
   const remaining = newCount + learningCount;
@@ -735,8 +687,7 @@ function CardActions({
             onClick={onMarkCorrect}
             className="border-emerald-300 text-emerald-800 hover:bg-emerald-50"
           >
-            <ThumbsUp className="h-4 w-4" />
-            I answered correctly
+            <ThumbsUp className="h-4 w-4" />I answered correctly
           </Button>
           <Button variant="outline" size="sm" onClick={onReviewAgain}>
             <RotateCw className="h-4 w-4" />
@@ -759,13 +710,13 @@ function CardActions({
 function ShortcutLegend({ hasHint }: { hasHint: boolean }) {
   return (
     <p className="text-center text-xs text-neutral-500">
-      <kbd className={KBD_CLASS}>1</kbd>–<kbd className={KBD_CLASS}>4</kbd> choose ·{' '}
-      <kbd className={KBD_CLASS}>any key</kbd> next after correct ·{' '}
-      <kbd className={KBD_CLASS}>S</kbd> skip
+      <kbd className={kbdClass}>1</kbd>–<kbd className={kbdClass}>4</kbd> choose ·{' '}
+      <kbd className={kbdClass}>any key</kbd> next after correct · <kbd className={kbdClass}>S</kbd>{' '}
+      skip
       {hasHint && (
         <>
           {' '}
-          · <kbd className={KBD_CLASS}>H</kbd> hint
+          · <kbd className={kbdClass}>H</kbd> hint
         </>
       )}
     </p>
@@ -879,9 +830,7 @@ function BatchRoundup({
                 <RoundupCardRow
                   key={item.cardId}
                   item={item}
-                  onToggleStar={() =>
-                    onToggleStar(item.cardId, !item.isStarred)
-                  }
+                  onToggleStar={() => onToggleStar(item.cardId, !item.isStarred)}
                 />
               ))}
             </ul>
@@ -890,7 +839,7 @@ function BatchRoundup({
 
         <div className="flex items-center justify-between gap-2 pt-1">
           <p className="text-xs text-neutral-500">
-            Press <kbd className={KBD_CLASS}>any key</kbd> to continue.
+            Press <kbd className={kbdClass}>any key</kbd> to continue.
           </p>
           <Button size="sm" onClick={onContinue}>
             Continue
@@ -908,14 +857,8 @@ function BatchRoundup({
  * uses optimistic-cached mutation from useToggleTermStar so the fill
  * flips instantly.
  */
-function RoundupCardRow({
-  item,
-  onToggleStar,
-}: {
-  item: RoundupItem;
-  onToggleStar: () => void;
-}) {
-  const badge = STATUS_BADGES[item.status];
+function RoundupCardRow({ item, onToggleStar }: { item: RoundupItem; onToggleStar: () => void }) {
+  const badge = statusBadges[item.status];
   return (
     <li className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white p-3">
       <button
@@ -930,15 +873,11 @@ function RoundupCardRow({
             : 'text-neutral-300 hover:text-amber-400',
         )}
       >
-        <Star
-          className={cn('h-5 w-5', item.isStarred && 'fill-current')}
-        />
+        <Star className={cn('h-5 w-5', item.isStarred && 'fill-current')} />
       </button>
       <div className="min-w-0 flex-1">
         <p className="truncate font-semibold text-neutral-900">{item.term}</p>
-        {item.definition && (
-          <p className="truncate text-sm text-neutral-500">{item.definition}</p>
-        )}
+        {item.definition && <p className="truncate text-sm text-neutral-500">{item.definition}</p>}
       </div>
       <span
         className={cn(
@@ -953,7 +892,7 @@ function RoundupCardRow({
   );
 }
 
-const STATUS_BADGES: Record<
+const statusBadges: Record<
   RoundupItem['status'],
   { label: string; icon: typeof CheckCircle2; cls: string }
 > = {
@@ -1025,9 +964,7 @@ function PromptCard({
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-              {card.promptType === 'LEARN_MC'
-                ? 'Choose the definition'
-                : 'Type the definition'}
+              {card.promptType === 'LEARN_MC' ? 'Choose the definition' : 'Type the definition'}
             </p>
             <p className="wrap-break-word text-2xl font-semibold text-neutral-900 sm:text-3xl">
               {card.term}
@@ -1101,8 +1038,7 @@ function McChoices({
   const choiceState = (idx: number): 'idle' | 'correct' | 'wrong' | 'muted' => {
     if (!showingFeedback) return 'idle';
     if (idx === lastResult.correctChoiceIndex) return 'correct';
-    if (idx === lastResult.selectedChoiceIndex && !lastResult.correct)
-      return 'wrong';
+    if (idx === lastResult.selectedChoiceIndex && !lastResult.correct) return 'wrong';
     return 'muted';
   };
 
@@ -1139,15 +1075,11 @@ function McChoices({
               >
                 {idx + 1}
               </span>
-              <span className="flex-1 text-base leading-relaxed text-neutral-800">
-                {choice}
-              </span>
+              <span className="flex-1 text-base leading-relaxed text-neutral-800">{choice}</span>
               {state === 'correct' && (
                 <CheckCircle2 className="ml-auto h-5 w-5 shrink-0 text-emerald-600" />
               )}
-              {state === 'wrong' && (
-                <XCircle className="ml-auto h-5 w-5 shrink-0 text-rose-600" />
-              )}
+              {state === 'wrong' && <XCircle className="ml-auto h-5 w-5 shrink-0 text-rose-600" />}
             </div>
           </button>
         );
@@ -1205,12 +1137,12 @@ function WrittenPrompt({
         placeholder="Type your answer…"
         rows={3}
         disabled={disabled}
-        className={WRITTEN_FIELD_CLASS}
+        className={writtenFieldClass}
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="text-xs text-neutral-500">
-          <kbd className={KBD_CLASS}>Enter</kbd> submit ·{' '}
-          <kbd className={KBD_CLASS}>Shift+Enter</kbd> newline
+          <kbd className={kbdClass}>Enter</kbd> submit · <kbd className={kbdClass}>Shift+Enter</kbd>{' '}
+          newline
         </span>
         <Button onClick={handleSubmit} disabled={disabled || !value.trim()}>
           Submit
@@ -1231,16 +1163,13 @@ function WrittenFeedback({
   const isExact = result.matchType === 'EXACT';
   const isWrong = result.matchType === 'WRONG';
   const matchedAlternate =
-    result.matchedAgainst.trim().toLowerCase() !==
-    result.correctAnswer.trim().toLowerCase();
+    result.matchedAgainst.trim().toLowerCase() !== result.correctAnswer.trim().toLowerCase();
 
   return (
     <div
       className={cn(
         'space-y-3 rounded-2xl border p-4',
-        result.correct
-          ? 'border-emerald-200 bg-emerald-50'
-          : 'border-rose-200 bg-rose-50',
+        result.correct ? 'border-emerald-200 bg-emerald-50' : 'border-rose-200 bg-rose-50',
       )}
     >
       <div className="flex items-center gap-2">
@@ -1271,9 +1200,7 @@ function WrittenFeedback({
       {!isExact && (
         <div className="space-y-2 text-sm text-neutral-700">
           <div className="flex flex-wrap items-baseline gap-2">
-            <span className="text-xs uppercase tracking-wide text-neutral-500">
-              You typed
-            </span>
+            <span className="text-xs uppercase tracking-wide text-neutral-500">You typed</span>
             <DiffText diff={result.diff} />
           </div>
           <div className="flex flex-wrap items-baseline gap-2">
@@ -1317,10 +1244,7 @@ function DiffText({ diff }: { diff: WrittenResult['diff'] }) {
             );
           case 'wrong':
             return (
-              <span
-                key={key}
-                className="rounded-sm bg-rose-200/70 px-0.5 text-rose-900"
-              >
+              <span key={key} className="rounded-sm bg-rose-200/70 px-0.5 text-rose-900">
                 {seg.text}
               </span>
             );
@@ -1335,10 +1259,7 @@ function DiffText({ diff }: { diff: WrittenResult['diff'] }) {
             );
           case 'missing':
             return (
-              <span
-                key={key}
-                className="rounded-sm bg-emerald-200/70 px-0.5 text-emerald-900"
-              >
+              <span key={key} className="rounded-sm bg-emerald-200/70 px-0.5 text-emerald-900">
                 {seg.text}
               </span>
             );
@@ -1363,14 +1284,7 @@ function InlineChip({
     rose: 'bg-rose-100/70 text-rose-800',
   }[tone];
   return (
-    <span
-      className={cn(
-        'rounded-md px-1.5 py-0.5 font-mono text-[13px]',
-        cls,
-      )}
-    >
-      {children}
-    </span>
+    <span className={cn('rounded-md px-1.5 py-0.5 font-mono text-[13px]', cls)}>{children}</span>
   );
 }
 
@@ -1409,15 +1323,9 @@ function EmptyPanel({
           <p className="text-lg font-semibold text-neutral-900">{title}</p>
           <p className="text-sm text-neutral-600">{body}</p>
           <div className="flex flex-wrap gap-2 pt-1">
-            <Button onClick={() => router.push(`/modules/${moduleId}`)}>
-              Back to module
-            </Button>
+            <Button onClick={() => router.push(`/modules/${moduleId}`)}>Back to module</Button>
             {reason === 'no-starred' && onClearStarredFilter && (
-              <Button
-                variant="outline"
-                onClick={onClearStarredFilter}
-                disabled={clearing}
-              >
+              <Button variant="outline" onClick={onClearStarredFilter} disabled={clearing}>
                 {clearing ? 'Clearing…' : 'Clear starred filter'}
               </Button>
             )}

@@ -1,34 +1,35 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function GoogleCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { checkAuthentication } = useAuth();
-  const [error, setError] = useState<string | null>(null);
+  const ok = searchParams.get('ok');
+  const [error, setError] = useState<string | null>(
+    ok !== '1' ? 'Google sign-in was cancelled or failed. Please try again.' : null,
+  );
 
   useEffect(() => {
-    const ok = searchParams.get("ok");
+    let cancelled = false;
 
-    if (ok !== "1") {
-      setError("Google sign-in was cancelled or failed. Please try again.");
-      return;
+    if (ok !== '1') {
+      return () => {
+        cancelled = true;
+      };
     }
 
-    let cancelled = false;
     (async () => {
       try {
         await checkAuthentication();
-        if (!cancelled) router.replace("/dashboard");
+        if (!cancelled) router.replace('/dashboard');
       } catch {
         if (!cancelled) {
-          setError(
-            "We couldn't complete your Google sign-in. Please try again.",
-          );
+          setError("We couldn't complete your Google sign-in. Please try again.");
         }
       }
     })();
@@ -36,16 +37,14 @@ export default function GoogleCallbackPage() {
     return () => {
       cancelled = true;
     };
-  }, [checkAuthentication, router, searchParams]);
+  }, [checkAuthentication, router, ok]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-white px-6">
       <div className="max-w-md w-full text-center">
         {error ? (
           <>
-            <h1 className="text-2xl font-bold text-brand-500 mb-3">
-              Sign-in failed
-            </h1>
+            <h1 className="text-2xl font-bold text-brand-500 mb-3">Sign-in failed</h1>
             <p className="text-gray-600 mb-6">{error}</p>
             <Link
               href="/login"

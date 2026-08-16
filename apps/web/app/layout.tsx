@@ -1,6 +1,6 @@
 import { Montserrat, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import AppShell from '@/components/app-shell';
+import AppShell from '@/components/AppShell';
 
 const montserrat = Montserrat({
   variable: '--font-montserrat',

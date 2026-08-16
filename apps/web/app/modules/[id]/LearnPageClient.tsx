@@ -20,8 +20,8 @@ import TermItem from './_components/TermItem';
 import AddTerm from './_components/AddTerm';
 import { Button } from '@/components/ui/button';
 import { ImportFlashcardsDialog, type ImportedCard } from '@/components/import-flashcards-dialog';
-import { StudyPreferencesDialog } from '@/components/study-preferences-dialog';
-import { TestPreferencesDialog } from '@/components/test-preferences-dialog';
+import { StudyPreferencesDialog } from '@/components/StudyPreferencesDialog';
+import { TestPreferencesDialog } from '@/components/TestPreferencesDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -324,9 +324,7 @@ export default function LearnPageClient({ id }: { id: string }) {
                       </DropdownMenuItem>
                     )}
                     {isCollected && (
-                      <DropdownMenuItem
-                        onClick={() => setTestPreferencesOpen(true)}
-                      >
+                      <DropdownMenuItem onClick={() => setTestPreferencesOpen(true)}>
                         <SlidersHorizontal className="mr-2 h-4 w-4" />
                         Test preferences…
                       </DropdownMenuItem>

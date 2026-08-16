@@ -46,19 +46,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type {
-  TestAttemptResult,
-  TestQuestion,
-  TestQuestionResult,
-} from '@/lib/api';
-import {
-  useTestAttempt,
-  type AnswerState,
-} from '@/lib/hooks/useTestAttempt';
+import type { TestAttemptResult, TestQuestion, TestQuestionResult } from '@/lib/api';
+import { useTestAttempt, type AnswerState } from '@/lib/hooks/useTestAttempt';
 import { useModule } from '@/lib/hooks/useModules';
 import { useTerms } from '@/lib/hooks/useTerms';
 import { useTestPreferences } from '@/lib/hooks/useTestPreferences';
-import { TestPreferencesDialog } from '@/components/test-preferences-dialog';
+import { TestPreferencesDialog } from '@/components/TestPreferencesDialog';
 
 export default function TestModeClient({ moduleId }: { moduleId: string }) {
   const searchParams = useSearchParams();
@@ -74,10 +67,7 @@ export default function TestModeClient({ moduleId }: { moduleId: string }) {
   // The gate is bypassed when we're hydrating a review deep-link.
   const [hasStarted, setHasStarted] = useState(!!reviewAttemptId);
   const enabled =
-    !moduleLoading &&
-    !termsLoading &&
-    allTerms.length > 0 &&
-    (hasStarted || !!reviewAttemptId);
+    !moduleLoading && !termsLoading && allTerms.length > 0 && (hasStarted || !!reviewAttemptId);
 
   // Settings dialog — used from both the pre-test screen and the
   // in-test header. Changes apply to the *next* attempt.
@@ -146,17 +136,13 @@ export default function TestModeClient({ moduleId }: { moduleId: string }) {
   }
 
   if (status === 'error' && error) {
-    return (
-      <ErrorPanel moduleId={moduleId} error={error} onRetry={retry} />
-    );
+    return <ErrorPanel moduleId={moduleId} error={error} onRetry={retry} />;
   }
 
   // Review of a completed attempt (either just-submitted or opened
   // via ?review=<attemptId>).
   if (status === 'complete' && result) {
-    return (
-      <ResultsScreen moduleId={moduleId} result={result} onRetake={retry} />
-    );
+    return <ResultsScreen moduleId={moduleId} result={result} onRetake={retry} />;
   }
 
   if (!attempt || questions.length === 0) {
@@ -173,8 +159,7 @@ export default function TestModeClient({ moduleId }: { moduleId: string }) {
       (a.userAnswer && a.userAnswer.length > 0) ||
       a.selectedChoiceIndex !== undefined ||
       a.userIsTrue !== undefined ||
-      (a.matchingPicks &&
-        Object.values(a.matchingPicks).some((v) => v !== null))
+      (a.matchingPicks && Object.values(a.matchingPicks).some((v) => v !== null))
     );
   }).length;
 
@@ -239,21 +224,15 @@ export default function TestModeClient({ moduleId }: { moduleId: string }) {
       <div className="sticky bottom-4 z-10 rounded-2xl border border-black/10 bg-white/95 p-3 shadow-lg backdrop-blur">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-neutral-600">
-            <span className="font-semibold text-neutral-900">
-              {answeredCount}
-            </span>{' '}
-            of {questions.length} answered
+            <span className="font-semibold text-neutral-900">{answeredCount}</span> of{' '}
+            {questions.length} answered
             {answeredCount < questions.length && (
               <span className="ml-1 text-neutral-500">
                 · unanswered questions count as incorrect
               </span>
             )}
           </p>
-          <Button
-            size="sm"
-            onClick={() => void submit()}
-            disabled={status === 'submitting'}
-          >
+          <Button size="sm" onClick={() => void submit()} disabled={status === 'submitting'}>
             {status === 'submitting' ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -321,11 +300,7 @@ function QuestionCard({
           <TfQuestion question={question} answer={answer} onAnswer={onAnswer} />
         )}
         {question.questionType === 'TEST_MATCH' && (
-          <MatchingQuestion
-            question={question}
-            answer={answer}
-            onAnswer={onAnswer}
-          />
+          <MatchingQuestion question={question} answer={answer} onAnswer={onAnswer} />
         )}
       </CardContent>
     </Card>
@@ -368,16 +343,12 @@ function McQuestion({
               <span
                 className={cn(
                   'mt-0.5 inline-flex size-6 shrink-0 items-center justify-center rounded-full font-mono text-xs',
-                  isSelected
-                    ? 'bg-brand-500 text-white'
-                    : 'bg-neutral-100 text-neutral-600',
+                  isSelected ? 'bg-brand-500 text-white' : 'bg-neutral-100 text-neutral-600',
                 )}
               >
                 {idx + 1}
               </span>
-              <span className="flex-1 text-base leading-relaxed text-neutral-800">
-                {choice}
-              </span>
+              <span className="flex-1 text-base leading-relaxed text-neutral-800">{choice}</span>
             </div>
           </button>
         );
@@ -408,8 +379,7 @@ function WrittenQuestion({
         className="text-base"
       />
       <p className="text-xs text-neutral-500">
-        Your answer is saved as you type. You can revisit any question before
-        submitting.
+        Your answer is saved as you type. You can revisit any question before submitting.
       </p>
     </div>
   );
@@ -436,22 +406,14 @@ function TfQuestion({
         <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
           Is this the correct pairing?
         </p>
-        <p className="mt-1 text-base leading-relaxed text-neutral-800">
-          {presented}
-        </p>
+        <p className="mt-1 text-base leading-relaxed text-neutral-800">{presented}</p>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <TfPill
-          active={userIsTrue === true}
-          onClick={() => onAnswer({ userIsTrue: true })}
-        >
+        <TfPill active={userIsTrue === true} onClick={() => onAnswer({ userIsTrue: true })}>
           <CheckCircle2 className="h-5 w-5" />
           True
         </TfPill>
-        <TfPill
-          active={userIsTrue === false}
-          onClick={() => onAnswer({ userIsTrue: false })}
-        >
+        <TfPill active={userIsTrue === false} onClick={() => onAnswer({ userIsTrue: false })}>
           <XCircle className="h-5 w-5" />
           False
         </TfPill>
@@ -515,9 +477,7 @@ function MatchingQuestion({
     flashcardId: p.flashcardId,
     text: p.candidateText,
   }));
-  const candidateById = new Map(
-    candidates.map((c) => [c.flashcardId, c] as const),
-  );
+  const candidateById = new Map(candidates.map((c) => [c.flashcardId, c] as const));
   const usedIds = new Set(Object.values(picks).filter(Boolean) as string[]);
   const poolCandidates = candidates.filter((c) => !usedIds.has(c.flashcardId));
 
@@ -525,9 +485,7 @@ function MatchingQuestion({
 
   // A small pointer delta before dnd activates prevents clicks
   // (e.g. on the pill's X button) from being swallowed as drags.
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const setPick = (pairId: string, flashcardId: string | null) => {
     onAnswer({ matchingPicks: { ...picks, [pairId]: flashcardId } });
@@ -583,9 +541,7 @@ function MatchingQuestion({
                 pickedFlashcardId={pickedId}
                 pickedText={picked?.text}
                 onRemove={() => setPick(pair.pairId, null)}
-                isDragging={
-                  !!dragId && !!pickedId && dragId === `cand:${pickedId}`
-                }
+                isDragging={!!dragId && !!pickedId && dragId === `cand:${pickedId}`}
               />
             );
           })}
@@ -618,9 +574,7 @@ function CandidatePool({
       ref={setNodeRef}
       className={cn(
         'min-h-16 rounded-2xl border border-dashed p-3 transition-colors',
-        isOver
-          ? 'border-brand-400 bg-brand-300/10'
-          : 'border-black/15 bg-neutral-50',
+        isOver ? 'border-brand-400 bg-brand-300/10' : 'border-black/15 bg-neutral-50',
       )}
     >
       {candidates.length === 0 ? (
@@ -660,23 +614,14 @@ function DraggableCandidate({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={cn(
-        'touch-none',
-        (hidden || isDragging) && 'invisible',
-      )}
+      className={cn('touch-none', (hidden || isDragging) && 'invisible')}
     >
       <CandidatePill text={text} />
     </div>
   );
 }
 
-function CandidatePill({
-  text,
-  dragging,
-}: {
-  text: string;
-  dragging?: boolean;
-}) {
+function CandidatePill({ text, dragging }: { text: string; dragging?: boolean }) {
   return (
     <div
       className={cn(
@@ -731,10 +676,7 @@ function AnchorRow({
               isDragging && 'opacity-30',
             )}
           >
-            <PlacedCandidate
-              flashcardId={pickedFlashcardId}
-              text={pickedText}
-            />
+            <PlacedCandidate flashcardId={pickedFlashcardId} text={pickedText} />
             <button
               type="button"
               onClick={onRemove}
@@ -745,22 +687,14 @@ function AnchorRow({
             </button>
           </div>
         ) : (
-          <span className="px-1 text-xs text-neutral-400">
-            Drop a match here
-          </span>
+          <span className="px-1 text-xs text-neutral-400">Drop a match here</span>
         )}
       </div>
     </div>
   );
 }
 
-function PlacedCandidate({
-  flashcardId,
-  text,
-}: {
-  flashcardId: string;
-  text: string;
-}) {
+function PlacedCandidate({ flashcardId, text }: { flashcardId: string; text: string }) {
   const { attributes, listeners, setNodeRef } = useDraggable({
     id: `cand:${flashcardId}`,
   });
@@ -834,9 +768,7 @@ function PreTestSetupScreen({
               <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
                 Test setup
               </p>
-              <p className="mt-1 font-semibold text-neutral-900">
-                Review your preferences
-              </p>
+              <p className="mt-1 font-semibold text-neutral-900">Review your preferences</p>
             </div>
             <Button variant="outline" size="sm" onClick={onOpenPreferences}>
               <SlidersHorizontal className="h-4 w-4" />
@@ -851,42 +783,25 @@ function PreTestSetupScreen({
             </div>
           ) : (
             <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <SummaryItem
-                label="Questions"
-                value={String(prefs.questionCount)}
-              />
+              <SummaryItem label="Questions" value={String(prefs.questionCount)} />
               <SummaryItem
                 label="Question types"
                 value={
                   prefs.allowedTypes.length === 0
                     ? '—'
-                    : prefs.allowedTypes
-                        .map((t) => questionTypeLabel(t))
-                        .join(', ')
+                    : prefs.allowedTypes.map((t) => questionTypeLabel(t)).join(', ')
                 }
               />
               {prefs.allowedTypes.includes('TEST_MATCH') && (
-                <SummaryItem
-                  label="Pairs per matching"
-                  value={String(prefs.matchingPairCount)}
-                />
+                <SummaryItem label="Pairs per matching" value={String(prefs.matchingPairCount)} />
               )}
               <SummaryItem
                 label="Answer direction"
                 value={answerDirectionLabel(prefs.answerDirection)}
               />
-              <SummaryItem
-                label="Strictness"
-                value={strictnessLabel(prefs.strictness)}
-              />
-              <SummaryItem
-                label="Starred only"
-                value={prefs.starredOnly ? 'On' : 'Off'}
-              />
-              <SummaryItem
-                label="Shuffle"
-                value={prefs.shuffleEnabled ? 'On' : 'Off'}
-              />
+              <SummaryItem label="Strictness" value={strictnessLabel(prefs.strictness)} />
+              <SummaryItem label="Starred only" value={prefs.starredOnly ? 'On' : 'Off'} />
+              <SummaryItem label="Shuffle" value={prefs.shuffleEnabled ? 'On' : 'Off'} />
               <SummaryItem
                 label="Per-question feedback"
                 value={prefs.showResultsPerQuestion ? 'On' : 'Off'}
@@ -900,9 +815,7 @@ function PreTestSetupScreen({
             </p>
             <Button
               onClick={onStart}
-              disabled={
-                isLoading || !prefs || prefs.allowedTypes.length === 0
-              }
+              disabled={isLoading || !prefs || prefs.allowedTypes.length === 0}
             >
               <Play className="h-4 w-4" />
               Start test
@@ -966,12 +879,7 @@ function ResultsScreen({
 }) {
   const router = useRouter();
   const pct = Math.round(result.score);
-  const scoreTone =
-    result.score >= 80
-      ? 'emerald'
-      : result.score >= 60
-        ? 'amber'
-        : 'rose';
+  const scoreTone = result.score >= 80 ? 'emerald' : result.score >= 60 ? 'amber' : 'rose';
   const toneClasses = {
     emerald: 'bg-emerald-50 border-emerald-200 text-emerald-800',
     amber: 'bg-amber-50 border-amber-200 text-amber-800',
@@ -1011,10 +919,7 @@ function ResultsScreen({
               <RotateCw className="h-4 w-4" />
               Take another test
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => router.push(`/modules/${moduleId}`)}
-            >
+            <Button variant="outline" onClick={() => router.push(`/modules/${moduleId}`)}>
               Back to module
             </Button>
           </div>
@@ -1032,13 +937,7 @@ function ResultsScreen({
   );
 }
 
-function ReviewCard({
-  question,
-  index,
-}: {
-  question: TestQuestionResult;
-  index: number;
-}) {
+function ReviewCard({ question, index }: { question: TestQuestionResult; index: number }) {
   return (
     <Card>
       <CardContent className="space-y-3">
@@ -1052,9 +951,7 @@ function ReviewCard({
         <p className="font-semibold text-neutral-900">{question.promptText}</p>
 
         {question.questionType === 'TEST_MATCH' && question.pairs ? (
-          <MatchingReview
-            pairs={question.pairs}
-          />
+          <MatchingReview pairs={question.pairs} />
         ) : (
           <SingleAnswerReview question={question} />
         )}
@@ -1068,9 +965,7 @@ function SingleAnswerReview({ question }: { question: TestQuestionResult }) {
   return (
     <div className="space-y-2 text-sm">
       <div className="flex flex-wrap items-baseline gap-2">
-        <span className="text-xs uppercase tracking-wide text-neutral-500">
-          Your answer
-        </span>
+        <span className="text-xs uppercase tracking-wide text-neutral-500">Your answer</span>
         <span
           className={cn(
             'rounded-md px-2 py-0.5 font-medium',
@@ -1084,9 +979,7 @@ function SingleAnswerReview({ question }: { question: TestQuestionResult }) {
       </div>
       {!question.isCorrect && (
         <div className="flex flex-wrap items-baseline gap-2">
-          <span className="text-xs uppercase tracking-wide text-neutral-500">
-            Correct answer
-          </span>
+          <span className="text-xs uppercase tracking-wide text-neutral-500">Correct answer</span>
           <span className="rounded-md bg-emerald-100/70 px-2 py-0.5 font-medium text-emerald-800">
             {isTF
               ? question.correctChoiceIndex === 0
@@ -1100,11 +993,7 @@ function SingleAnswerReview({ question }: { question: TestQuestionResult }) {
   );
 }
 
-function MatchingReview({
-  pairs,
-}: {
-  pairs: NonNullable<TestQuestionResult['pairs']>;
-}) {
+function MatchingReview({ pairs }: { pairs: NonNullable<TestQuestionResult['pairs']> }) {
   return (
     <div className="space-y-1.5 text-sm">
       {pairs.map((pair) => (
@@ -1115,9 +1004,7 @@ function MatchingReview({
             pair.isCorrect ? 'bg-emerald-50' : 'bg-rose-50',
           )}
         >
-          <span className="font-mono text-xs text-neutral-500">
-            pair {pair.pairId.slice(0, 6)}
-          </span>
+          <span className="font-mono text-xs text-neutral-500">pair {pair.pairId.slice(0, 6)}</span>
           {pair.isCorrect ? (
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
           ) : (
@@ -1174,15 +1061,7 @@ function questionTypeLabel(type: string): string {
 // Empty + error panels
 // ============================================================
 
-function EmptyPanel({
-  moduleId,
-  title,
-  body,
-}: {
-  moduleId: string;
-  title: string;
-  body: string;
-}) {
+function EmptyPanel({ moduleId, title, body }: { moduleId: string; title: string; body: string }) {
   const router = useRouter();
   return (
     <main className="mx-auto flex min-h-[60vh] max-w-lg flex-col justify-center px-6 py-12">
@@ -1191,9 +1070,7 @@ function EmptyPanel({
           <p className="text-lg font-semibold text-neutral-900">{title}</p>
           <p className="text-sm text-neutral-600">{body}</p>
           <div className="flex flex-wrap gap-2 pt-1">
-            <Button onClick={() => router.push(`/modules/${moduleId}`)}>
-              Back to module
-            </Button>
+            <Button onClick={() => router.push(`/modules/${moduleId}`)}>Back to module</Button>
           </div>
         </CardContent>
       </Card>
@@ -1217,17 +1094,12 @@ function ErrorPanel({
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
             <XCircle className="h-5 w-5 text-rose-600" />
-            <p className="text-lg font-semibold text-neutral-900">
-              Couldn&apos;t start the test
-            </p>
+            <p className="text-lg font-semibold text-neutral-900">Couldn&apos;t start the test</p>
           </div>
           <p className="text-sm text-neutral-600">{error}</p>
           <div className="flex flex-wrap gap-2">
             <Button onClick={onRetry}>Try again</Button>
-            <Button
-              variant="outline"
-              onClick={() => router.push(`/modules/${moduleId}`)}
-            >
+            <Button variant="outline" onClick={() => router.push(`/modules/${moduleId}`)}>
               Back to module
             </Button>
           </div>
@@ -1247,4 +1119,3 @@ function formatElapsed(ms: number): string {
   const ss = total % 60;
   return `${mm}:${String(ss).padStart(2, '0')}`;
 }
-

@@ -30,21 +30,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import type { TestPreferences } from '@/lib/api';
-import {
-  useTestPreferences,
-  useUpdateTestPreferences,
-} from '@/lib/hooks/useTestPreferences';
+import { useTestPreferences, useUpdateTestPreferences } from '@/lib/hooks/useTestPreferences';
 
-const QUESTION_TYPES = ['TEST_MC', 'TEST_WRITTEN', 'TEST_TF', 'TEST_MATCH'] as const;
+const QuestionTypes = ['TEST_MC', 'TEST_WRITTEN', 'TEST_TF', 'TEST_MATCH'] as const;
 
 const preferencesSchema = z.object({
   questionCount: z.number().int().min(5).max(50),
-  allowedTypes: z.array(z.enum(QUESTION_TYPES)).min(1),
-  answerDirection: z.enum([
-    'TERM_TO_DEFINITION',
-    'DEFINITION_TO_TERM',
-    'MIXED',
-  ]),
+  allowedTypes: z.array(z.enum(QuestionTypes)).min(1),
+  answerDirection: z.enum(['TERM_TO_DEFINITION', 'DEFINITION_TO_TERM', 'MIXED']),
   strictness: z.enum(['STRICT', 'NORMAL', 'LENIENT']),
   starredOnly: z.boolean(),
   shuffleEnabled: z.boolean(),
@@ -54,7 +47,7 @@ const preferencesSchema = z.object({
 
 type PreferencesForm = z.infer<typeof preferencesSchema>;
 
-const STRICTNESS_OPTIONS: {
+const StrictnessOptions: {
   value: PreferencesForm['strictness'];
   label: string;
   blurb: string;
@@ -64,7 +57,7 @@ const STRICTNESS_OPTIONS: {
   { value: 'LENIENT', label: 'Lenient', blurb: 'Extra typo tolerance' },
 ];
 
-const DIRECTION_OPTIONS: {
+const DirectionOptions: {
   value: PreferencesForm['answerDirection'];
   label: string;
   blurb: string;
@@ -86,14 +79,14 @@ const DIRECTION_OPTIONS: {
   },
 ];
 
-const TYPE_LABELS: Record<(typeof QUESTION_TYPES)[number], string> = {
+const TypeLabels: Record<(typeof QuestionTypes)[number], string> = {
   TEST_MC: 'Multiple choice',
   TEST_WRITTEN: 'Written',
   TEST_TF: 'True / False',
   TEST_MATCH: 'Matching',
 };
 
-const TYPE_BLURBS: Record<(typeof QUESTION_TYPES)[number], string> = {
+const TypeBlurb: Record<(typeof QuestionTypes)[number], string> = {
   TEST_MC: 'Pick from 4 options',
   TEST_WRITTEN: 'Type the answer',
   TEST_TF: 'Judge a pairing',
@@ -113,19 +106,15 @@ export function TestPreferencesDialog({
   const update = useUpdateTestPreferences(setId);
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => !update.isPending && onOpenChange(next)}
-    >
+    <Dialog open={open} onOpenChange={(next) => !update.isPending && onOpenChange(next)}>
       {/* Same shape as StudyPreferencesDialog — flex column capped at
           85vh so the fields scroll and the footer sticks. */}
       <DialogContent className="w-[95vw] max-w-3xl! sm:max-w-3xl! flex! max-h-[85vh] flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>Test preferences</DialogTitle>
           <DialogDescription>
-            Configure how tests are generated for this set. Changes apply to
-            your next test — attempts already in flight keep their original
-            configuration.
+            Configure how tests are generated for this set. Changes apply to your next test —
+            attempts already in flight keep their original configuration.
           </DialogDescription>
         </DialogHeader>
 
@@ -186,7 +175,7 @@ function PreferencesForm({
 
   const matchingEnabled = allowedTypes.includes('TEST_MATCH');
 
-  const toggleType = (t: (typeof QUESTION_TYPES)[number]) => {
+  const toggleType = (t: (typeof QuestionTypes)[number]) => {
     const next = allowedTypes.includes(t)
       ? allowedTypes.filter((x) => x !== t)
       : [...allowedTypes, t];
@@ -197,10 +186,7 @@ function PreferencesForm({
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSave)}
-      className="flex min-h-0 flex-1 flex-col overflow-hidden"
-    >
+    <form onSubmit={handleSubmit(onSave)} className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="flex-1 space-y-5 overflow-y-auto pr-1">
         {/* Question count — the primary control learners think about
             when configuring a test. */}
@@ -214,13 +200,11 @@ function PreferencesForm({
             {...register('questionCount', { valueAsNumber: true })}
           />
           <p className="text-xs text-neutral-500">
-            Target scoring slots (5–50). A matching question consumes multiple
-            slots — the actual question count adjusts to fit.
+            Target scoring slots (5–50). A matching question consumes multiple slots — the actual
+            question count adjusts to fit.
           </p>
           {errors.questionCount && (
-            <p className="text-xs text-rose-600">
-              {errors.questionCount.message}
-            </p>
+            <p className="text-xs text-rose-600">{errors.questionCount.message}</p>
           )}
         </div>
 
@@ -229,19 +213,17 @@ function PreferencesForm({
         <div className="space-y-2">
           <Label>Question types</Label>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {QUESTION_TYPES.map((t) => (
+            {QuestionTypes.map((t) => (
               <TypeChip
                 key={t}
                 active={allowedTypes.includes(t)}
-                label={TYPE_LABELS[t]}
-                blurb={TYPE_BLURBS[t]}
+                label={TypeLabels[t]}
+                blurb={TypeBlurb[t]}
                 onClick={() => toggleType(t)}
               />
             ))}
           </div>
-          {errors.allowedTypes && (
-            <p className="text-xs text-rose-600">Pick at least one type.</p>
-          )}
+          {errors.allowedTypes && <p className="text-xs text-rose-600">Pick at least one type.</p>}
         </div>
 
         {matchingEnabled && (
@@ -265,7 +247,7 @@ function PreferencesForm({
         <SegmentedRow
           label="Answer direction"
           description="Which side you produce."
-          options={DIRECTION_OPTIONS}
+          options={DirectionOptions}
           value={answerDirection}
           onChange={(v) => setValue('answerDirection', v, { shouldDirty: true })}
         />
@@ -275,16 +257,14 @@ function PreferencesForm({
         <SegmentedRow
           label="Grading strictness"
           description="How lenient the written-answer check is."
-          options={STRICTNESS_OPTIONS}
+          options={StrictnessOptions}
           value={strictness}
           onChange={(v) => setValue('strictness', v, { shouldDirty: true })}
         />
 
         {/* Pool controls. */}
         <div className="space-y-3 rounded-2xl border border-black/10 p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-            Pool
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Pool</p>
           <ToggleRow
             label="Starred cards only"
             description="Only draw questions from cards you've starred. Requires enough starred cards to fill the test."
@@ -306,9 +286,7 @@ function PreferencesForm({
           label="Show results per question"
           description="Reveal correctness after each answer instead of only at the end. Coming soon — the toggle saves for when it ships."
           value={showResultsPerQuestion}
-          onChange={(v) =>
-            setValue('showResultsPerQuestion', v, { shouldDirty: true })
-          }
+          onChange={(v) => setValue('showResultsPerQuestion', v, { shouldDirty: true })}
         />
       </div>
 
@@ -352,22 +330,10 @@ function TypeChip({
           : 'border-black/10 bg-white hover:border-brand-400 hover:bg-brand-300/10',
       )}
     >
-      <span
-        className={cn(
-          'text-sm font-semibold',
-          active ? 'text-white' : 'text-neutral-900',
-        )}
-      >
+      <span className={cn('text-sm font-semibold', active ? 'text-white' : 'text-neutral-900')}>
         {label}
       </span>
-      <span
-        className={cn(
-          'text-xs',
-          active ? 'text-white/85' : 'text-neutral-500',
-        )}
-      >
-        {blurb}
-      </span>
+      <span className={cn('text-xs', active ? 'text-white/85' : 'text-neutral-500')}>{blurb}</span>
     </button>
   );
 }
@@ -416,9 +382,7 @@ function ToggleChip({
       onClick={onClick}
       className={cn(
         'rounded-full px-3 py-1 text-xs font-semibold transition-colors',
-        active
-          ? 'bg-brand-500 text-white'
-          : 'bg-white text-neutral-500 hover:bg-neutral-100',
+        active ? 'bg-brand-500 text-white' : 'bg-white text-neutral-500 hover:bg-neutral-100',
       )}
     >
       {children}
@@ -445,12 +409,7 @@ function SegmentedRow<V extends string>({
         <p className="font-semibold text-neutral-900">{label}</p>
         <p className="mt-0.5 text-xs text-neutral-500">{description}</p>
       </div>
-      <div
-        className={cn(
-          'grid gap-2',
-          options.length === 2 ? 'grid-cols-2' : 'grid-cols-3',
-        )}
-      >
+      <div className={cn('grid gap-2', options.length === 2 ? 'grid-cols-2' : 'grid-cols-3')}>
         {options.map((opt) => (
           <button
             key={opt.value}
@@ -463,9 +422,7 @@ function SegmentedRow<V extends string>({
                 : 'border-black/10 bg-white hover:border-black/20',
             )}
           >
-            <p className="text-sm font-semibold text-neutral-900">
-              {opt.label}
-            </p>
+            <p className="text-sm font-semibold text-neutral-900">{opt.label}</p>
             <p className="mt-0.5 text-xs text-neutral-500">{opt.blurb}</p>
           </button>
         ))}

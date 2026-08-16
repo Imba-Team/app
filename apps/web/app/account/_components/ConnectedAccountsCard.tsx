@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * "Connected accounts" section on the account page.
@@ -17,20 +17,20 @@
  * that fact in the confirm dialog instead.
  */
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner";
-import { Loader2, Link2, Unlink } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { API_BASE_URL } from "@/lib/env";
-import { useMe, useUnlinkGoogle } from "@/lib/hooks/useUser";
+import { useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
+import { Loader2, Link2, Unlink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { API_BASE_URL } from '@/lib/env';
+import { useMe, useUnlinkGoogle } from '@/lib/hooks/useUser';
 
-const LINK_ERROR_COPY: Record<string, string> = {
+const LinkErrorCopy: Record<string, string> = {
   GOOGLE_LINK_TAKEN:
-    "That Google account is already linked to a different user. Sign in to that account instead, or try a different Google account.",
+    'That Google account is already linked to a different user. Sign in to that account instead, or try a different Google account.',
   GOOGLE_ALREADY_LINKED:
-    "Your account is already linked to a different Google account. Disconnect it first, then try again.",
+    'Your account is already linked to a different Google account. Disconnect it first, then try again.',
   LINK_FAILED: "We couldn't connect your Google account. Please try again.",
 };
 
@@ -39,8 +39,8 @@ export default function ConnectedAccountsCard() {
   const unlink = useUnlinkGoogle();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const linkedParam = searchParams.get("linked");
-  const reasonParam = searchParams.get("reason");
+  const linkedParam = searchParams.get('linked');
+  const reasonParam = searchParams.get('reason');
   const handledResult = useRef<string | null>(null);
   const [confirming, setConfirming] = useState(false);
 
@@ -48,18 +48,18 @@ export default function ConnectedAccountsCard() {
   // then strip the query params so a page refresh doesn't re-toast.
   useEffect(() => {
     if (!linkedParam) return;
-    const key = `${linkedParam}:${reasonParam ?? ""}`;
+    const key = `${linkedParam}:${reasonParam ?? ''}`;
     if (handledResult.current === key) return;
     handledResult.current = key;
 
-    if (linkedParam === "1") {
-      toast.success("Google account connected");
+    if (linkedParam === '1') {
+      toast.success('Google account connected');
     } else {
-      const msg = LINK_ERROR_COPY[reasonParam ?? ""] ?? LINK_ERROR_COPY.LINK_FAILED;
+      const msg = LinkErrorCopy[reasonParam ?? ''] ?? LinkErrorCopy.LINK_FAILED;
       toast.error(msg);
     }
 
-    router.replace("/account");
+    router.replace('/account');
   }, [linkedParam, reasonParam, router]);
 
   const isLinked = me?.googleLinked ?? false;
@@ -103,8 +103,8 @@ export default function ConnectedAccountsCard() {
               </div>
               <p className="text-xs text-gray-500 mt-1">
                 {isLinked
-                  ? "You can sign in with either your password or Google."
-                  : "Connect Google to enable one-click sign-in."}
+                  ? 'You can sign in with either your password or Google.'
+                  : 'Connect Google to enable one-click sign-in.'}
               </p>
             </div>
           </div>
@@ -112,9 +112,9 @@ export default function ConnectedAccountsCard() {
           {isLinked ? (
             confirming ? (
               <div className="flex flex-col items-end gap-2 shrink-0">
-                <p className="text-xs text-gray-600 max-w-[220px] text-right">
-                  You&apos;ll need your password to sign in. If you don&apos;t
-                  remember it, use &quot;Forgot password&quot; to set a new one.
+                <p className="text-xs text-gray-600 max-w-55 text-right">
+                  You&apos;ll need your password to sign in. If you don&apos;t remember it, use
+                  &quot;Forgot password&quot; to set a new one.
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -179,7 +179,12 @@ export default function ConnectedAccountsCard() {
 
 function GoogleGlyph({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
       <path
         fill="#4285F4"
         d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.44a5.51 5.51 0 0 1-2.39 3.62v3h3.86c2.26-2.09 3.58-5.17 3.58-8.86z"
