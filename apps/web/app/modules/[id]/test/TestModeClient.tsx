@@ -54,6 +54,7 @@ import { useTestPreferences } from '@/lib/hooks/useTestPreferences';
 import { TestPreferencesDialog } from '@/components/TestPreferencesDialog';
 
 export default function TestModeClient({ moduleId }: { moduleId: string }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const reviewAttemptId = searchParams.get('review') ?? undefined;
 
@@ -142,7 +143,16 @@ export default function TestModeClient({ moduleId }: { moduleId: string }) {
   // Review of a completed attempt (either just-submitted or opened
   // via ?review=<attemptId>).
   if (status === 'complete' && result) {
-    return <ResultsScreen moduleId={moduleId} result={result} onRetake={retry} />;
+    const handleRetake = () => {
+      // When we're on a review deep-link, the ?review= param would
+      // re-hydrate the same completed attempt on retry — strip it so
+      // the hook can spawn a fresh one.
+      if (reviewAttemptId) {
+        router.replace(`/modules/${moduleId}/test`);
+      }
+      retry();
+    };
+    return <ResultsScreen moduleId={moduleId} result={result} onRetake={handleRetake} />;
   }
 
   if (!attempt || questions.length === 0) {
@@ -277,7 +287,7 @@ function QuestionCard({
     <Card>
       <CardContent className="space-y-5">
         <div>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+          <p className="mb-2 text-sm font-semibold tracking-wide text-neutral-500">
             <span className="text-brand-600">Question {index}</span>
             <span className="mx-2 text-neutral-300">·</span>
             {question.questionType === 'TEST_MC' && 'Choose the answer'}
@@ -285,7 +295,7 @@ function QuestionCard({
             {question.questionType === 'TEST_TF' && 'True or false?'}
             {question.questionType === 'TEST_MATCH' && 'Match the pairs'}
           </p>
-          <p className="wrap-break-word text-2xl font-semibold text-neutral-900 sm:text-3xl">
+          <p className="wrap-break-word text-2xl font-semibold text-neutral-900 sm:text-2xl">
             {question.promptText}
           </p>
         </div>
@@ -403,7 +413,7 @@ function TfQuestion({
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-black/10 bg-neutral-50 p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        <p className="text-sm font-semibold tracking-wide text-neutral-500">
           Is this the correct pairing?
         </p>
         <p className="mt-1 text-base leading-relaxed text-neutral-800">{presented}</p>
@@ -436,7 +446,7 @@ function TfPill({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex items-center justify-center gap-2 rounded-2xl border p-4 font-semibold transition-all',
+        'flex items-center justify-center gap-2 rounded-2xl border p-2 font-semibold transition-all',
         'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-300/40',
         active
           ? 'border-brand-500 bg-brand-500 text-white'
@@ -474,7 +484,7 @@ function MatchingQuestion({
   const pairs = question.matchingPairs ?? [];
   const picks = answer?.matchingPicks ?? {};
   const candidates = pairs.map((p) => ({
-    flashcardId: p.flashcardId,
+    flashcardId: p.candidateFlashcardId,
     text: p.candidateText,
   }));
   const candidateById = new Map(candidates.map((c) => [c.flashcardId, c] as const));
@@ -994,27 +1004,72 @@ function SingleAnswerReview({ question }: { question: TestQuestionResult }) {
 }
 
 function MatchingReview({ pairs }: { pairs: NonNullable<TestQuestionResult['pairs']> }) {
+  const correctCount = pairs.filter((p) => p.isCorrect).length;
   return (
-    <div className="space-y-1.5 text-sm">
-      {pairs.map((pair) => (
-        <div
-          key={pair.pairId}
-          className={cn(
-            'flex items-center justify-between gap-2 rounded-lg px-3 py-1.5',
-            pair.isCorrect ? 'bg-emerald-50' : 'bg-rose-50',
-          )}
-        >
-          <span className="font-mono text-xs text-neutral-500">pair {pair.pairId.slice(0, 6)}</span>
-          {pair.isCorrect ? (
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-          ) : (
-            <XCircle className="h-4 w-4 text-rose-600" />
-          )}
-        </div>
-      ))}
+    <div className="space-y-2">
+      <div className="space-y-2">
+        {pairs.map((pair) => (
+          <MatchingReviewRow key={pair.pairId} pair={pair} />
+        ))}
+      </div>
       <p className="text-xs text-neutral-500">
-        {pairs.filter((p) => p.isCorrect).length} of {pairs.length} pairs correct.
+        {correctCount} of {pairs.length} pairs correct.
       </p>
+    </div>
+  );
+}
+
+function MatchingReviewRow({
+  pair,
+}: {
+  pair: NonNullable<TestQuestionResult['pairs']>[number];
+}) {
+  const isCorrect = pair.isCorrect;
+  const userAnswer = pair.userAnswerText ?? '';
+  return (
+    <div
+      className={cn(
+        'rounded-xl border p-3',
+        isCorrect
+          ? 'border-emerald-200 bg-emerald-50/60'
+          : 'border-rose-200 bg-rose-50/60',
+      )}
+    >
+      <div className="grid grid-cols-1 items-center gap-2 sm:grid-cols-[1fr_auto_1fr]">
+        <div className="min-w-0 text-sm font-medium text-neutral-900">
+          {pair.anchorText}
+        </div>
+        <div className="hidden text-neutral-400 sm:block">→</div>
+        <div className="flex min-w-0 items-center gap-2">
+          {isCorrect ? (
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+          ) : (
+            <XCircle className="h-4 w-4 shrink-0 text-rose-600" />
+          )}
+          <span
+            className={cn(
+              'truncate text-sm',
+              isCorrect
+                ? 'text-emerald-800'
+                : userAnswer
+                  ? 'text-rose-800 line-through decoration-rose-400/60'
+                  : 'italic text-neutral-500',
+            )}
+          >
+            {userAnswer || 'no answer'}
+          </span>
+        </div>
+      </div>
+      {!isCorrect && (
+        <div className="mt-2 flex flex-wrap items-baseline gap-2 border-t border-rose-200/60 pt-2 text-sm">
+          <span className="text-xs uppercase tracking-wide text-neutral-500">
+            Correct match
+          </span>
+          <span className="rounded-md bg-emerald-100/70 px-2 py-0.5 font-medium text-emerald-800">
+            {pair.correctText}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

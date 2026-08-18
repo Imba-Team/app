@@ -366,7 +366,7 @@ export class TestService {
       `Test attempt submitted: id=${attempt.id}, userId=${userId}, score=${graded.score}, ${graded.correctSlots}/${graded.totalSlots}`,
     );
 
-    return this.buildResultResponse(persisted);
+    return await this.buildResultResponse(persisted);
   }
 
   async abandonAttempt(userId: string, attemptId: string): Promise<void> {
@@ -451,7 +451,7 @@ export class TestService {
     if (!attempt) throw new NotFoundException('Test attempt not found');
     if (attempt.userId !== userId)
       throw new ForbiddenException('Not your attempt');
-    return this.buildResultResponse(attempt);
+    return await this.buildResultResponse(attempt);
   }
 
   // ============================================================
@@ -591,18 +591,20 @@ export class TestService {
       }),
     );
 
-    return anchors.map((anchor, i) =>
-      plainToInstance(
+    return anchors.map((anchor, i) => {
+      const candidate = candidates[i];
+      return plainToInstance(
         TestMatchingPairDto,
         {
           pairId: anchor.pairId,
           flashcardId: anchor.flashcardId,
           anchorText: anchor.anchorText,
-          candidateText: candidates[i]?.text ?? '',
+          candidateFlashcardId: candidate?.flashcardId ?? anchor.flashcardId,
+          candidateText: candidate?.text ?? '',
         },
         { excludeExtraneousValues: true },
-      ),
-    );
+      );
+    });
   }
 
   /** Every flashcard id referenced by an attempt — question anchors
@@ -634,7 +636,7 @@ export class TestService {
     );
   }
 
-  private buildResultResponse(
+  private async buildResultResponse(
     attempt: Prisma.TestAttemptGetPayload<{
       include: {
         testQuestionAttempts: {
@@ -642,10 +644,28 @@ export class TestService {
         };
       };
     }>,
-  ): TestAttemptResultDto {
+  ): Promise<TestAttemptResultDto> {
+    // Pre-load flashcard texts so matching-pair review rows can render
+    // the actual anchor/candidate strings instead of raw UUIDs.
+    const pairFlashcardIds = new Set<string>();
+    for (const q of attempt.testQuestionAttempts) {
+      if (q.questionType !== TestQuestionType.TEST_MATCH) continue;
+      for (const p of q.matchingPairs) {
+        pairFlashcardIds.add(p.flashcardId);
+        if (p.userMatchedFlashcardId)
+          pairFlashcardIds.add(p.userMatchedFlashcardId);
+      }
+    }
+    const cardTexts = await this.loadCardTexts([...pairFlashcardIds]);
+
     const questions: TestQuestionResultDto[] = attempt.testQuestionAttempts.map(
-      (q) =>
-        plainToInstance(
+      (q) => {
+        const promptSide =
+          q.answerDirection === LearnAnswerDirection.DEFINITION_TO_TERM
+            ? 'definition'
+            : 'term';
+        const answerSide = promptSide === 'term' ? 'definition' : 'term';
+        return plainToInstance(
           TestQuestionResultDto,
           {
             questionAttemptId: q.id,
@@ -666,22 +686,32 @@ export class TestService {
             orderIndex: q.orderIndex,
             pairs:
               q.questionType === TestQuestionType.TEST_MATCH
-                ? q.matchingPairs.map((p) =>
-                    plainToInstance(
+                ? q.matchingPairs.map((p) => {
+                    const anchorCard = cardTexts.get(p.flashcardId);
+                    const pickedCard = p.userMatchedFlashcardId
+                      ? cardTexts.get(p.userMatchedFlashcardId)
+                      : undefined;
+                    return plainToInstance(
                       TestPairResultDto,
                       {
                         pairId: p.id,
                         flashcardId: p.flashcardId,
                         userMatchedFlashcardId: p.userMatchedFlashcardId,
                         isCorrect: p.isCorrect,
+                        anchorText: anchorCard ? anchorCard[promptSide] : '',
+                        correctText: anchorCard ? anchorCard[answerSide] : '',
+                        userAnswerText: pickedCard
+                          ? pickedCard[answerSide]
+                          : null,
                       },
                       { excludeExtraneousValues: true },
-                    ),
-                  )
+                    );
+                  })
                 : undefined,
           },
           { excludeExtraneousValues: true },
-        ),
+        );
+      },
     );
 
     return plainToInstance(

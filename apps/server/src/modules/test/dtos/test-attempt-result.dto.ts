@@ -27,6 +27,29 @@ export class TestPairResultDto {
   @ApiProperty()
   @Expose()
   isCorrect!: boolean;
+
+  @ApiProperty({
+    description:
+      'Prompt-side text of the anchor card (the fixed left-column value under the resolved direction).',
+  })
+  @Expose()
+  anchorText!: string;
+
+  @ApiProperty({
+    description:
+      'Answer-side text of the anchor card — the correct match for this anchor.',
+  })
+  @Expose()
+  correctText!: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description:
+      'Answer-side text of the card the learner dropped on this anchor. Null when they left it blank.',
+  })
+  @Expose()
+  userAnswerText!: string | null;
 }
 
 /**

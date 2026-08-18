@@ -2355,6 +2355,11 @@ export interface components {
         TestMatchingPairDto: {
             /** @description Anchor text — the term (or definition, under reverse direction) shown on the left column. */
             anchorText: string;
+            /**
+             * Format: uuid
+             * @description The card whose answer-side text is shown on this row as a draggable candidate pill. Clients must echo this value back as `userMatchedFlashcardId` when the learner drops this pill on an anchor — that is what the server compares against the anchor pair to grade the match.
+             */
+            candidateFlashcardId: string;
             /** @description Candidate text — the definition (or term) that should be dragged onto the anchor. Server shuffles the candidate order independently so the correct match is not always at the same row as its anchor. */
             candidateText: string;
             /**
@@ -2366,11 +2371,17 @@ export interface components {
             pairId: string;
         };
         TestPairResultDto: {
+            /** @description Prompt-side text of the anchor card (the fixed left-column value under the resolved direction). */
+            anchorText: string;
+            /** @description Answer-side text of the anchor card — the correct match for this anchor. */
+            correctText: string;
             /** Format: uuid */
             flashcardId: string;
             isCorrect: boolean;
             /** Format: uuid */
             pairId: string;
+            /** @description Answer-side text of the card the learner dropped on this anchor. Null when they left it blank. */
+            userAnswerText?: string | null;
             /** Format: uuid */
             userMatchedFlashcardId?: string | null;
         };

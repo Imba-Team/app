@@ -19,7 +19,6 @@ import { ResponseDto } from 'src/common/interfaces/response.dto';
 import { JwtGuard } from 'src/guards/jwt.guard';
 import { StudySetResponseDto } from 'src/modules/study-set/dtos/study-set-response.dto';
 
-import { CreateFavouriteStudySetDto } from './dto/create-favourite-study-set.dto';
 import { FavouriteStudySetService } from './favourite-study-set.service';
 
 @ApiTags('Library')

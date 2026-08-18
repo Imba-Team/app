@@ -198,6 +198,9 @@ importers:
       eslint-config-prettier:
         specifier: ^10.0.1
         version: 10.1.8(eslint@9.39.5(jiti@2.7.0))
+      eslint-formatter-unix:
+        specifier: ^9.0.1
+        version: 9.0.1
       eslint-plugin-prettier:
         specifier: ^5.2.2
         version: 5.5.6(@types/eslint@9.6.1)(eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)))(eslint@9.39.5(jiti@2.7.0))(prettier@3.9.5)
@@ -352,6 +355,9 @@ importers:
       eslint-config-next:
         specifier: 16.0.3
         version: 16.0.3(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      eslint-formatter-unix:
+        specifier: ^9.0.1
+        version: 9.0.1
       eslint-plugin-unicorn:
         specifier: ^60.0.0
         version: 60.0.0(eslint@9.39.5(jiti@2.7.0))
@@ -4438,6 +4444,10 @@ packages:
     hasBin: true
     peerDependencies:
       eslint: '>=7.0.0'
+
+  eslint-formatter-unix@9.0.1:
+    resolution: {integrity: sha512-6trzj/OL0Q2B5mw3dqryAmQWzo5vVfL9YkaJdw3laouSgbs83TsSz9GFN+1/7lMUlUkBY+8mVEWelkAQoKnlcA==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   eslint-import-resolver-node@0.3.10:
     resolution: {integrity: sha512-tRrKqFyCaKict5hOd244sL6EQFNycnMQnBe+j8uqGNXYzsImGbGUU4ibtoaBmv5FLwJwcFJNeg1GeVjQfbMrDQ==}
@@ -12214,6 +12224,8 @@ snapshots:
   eslint-config-prettier@10.1.8(eslint@9.39.5(jiti@2.7.0)):
     dependencies:
       eslint: 9.39.5(jiti@2.7.0)
+
+  eslint-formatter-unix@9.0.1: {}
 
   eslint-import-resolver-node@0.3.10:
     dependencies:

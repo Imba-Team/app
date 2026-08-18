@@ -29,6 +29,14 @@ export class TestMatchingPairDto {
   anchorText!: string;
 
   @ApiProperty({
+    format: 'uuid',
+    description:
+      'The card whose answer-side text is shown on this row as a draggable candidate pill. Clients must echo this value back as `userMatchedFlashcardId` when the learner drops this pill on an anchor — that is what the server compares against the anchor pair to grade the match.',
+  })
+  @Expose()
+  candidateFlashcardId!: string;
+
+  @ApiProperty({
     description:
       'Candidate text — the definition (or term) that should be dragged onto the anchor. Server shuffles the candidate order independently so the correct match is not always at the same row as its anchor.',
   })

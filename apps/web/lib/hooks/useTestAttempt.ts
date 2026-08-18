@@ -111,6 +111,10 @@ export function useTestAttempt({
   // increments on retry to force a fresh start.
   const startedRef = useRef(false);
   const [attemptKey, setAttemptKey] = useState(0);
+  // When true, the next spawn ignores `reviewAttemptId` and starts a
+  // brand-new attempt. Set by retry() so a "Take another test" click
+  // from a review deep-link doesn't just re-hydrate the same result.
+  const forceFreshRef = useRef(false);
 
   // Kick off the attempt (or hydrate a review) once enabled.
   useEffect(() => {
@@ -118,10 +122,12 @@ export function useTestAttempt({
     startedRef.current = true;
     setStatus("starting");
     setError(null);
+    const skipReview = forceFreshRef.current;
+    forceFreshRef.current = false;
 
     (async () => {
       try {
-        if (reviewAttemptId) {
+        if (reviewAttemptId && !skipReview) {
           const reviewed = await getTestAttempt(reviewAttemptId);
           setResult(reviewed);
           setStatus("complete");
@@ -229,7 +235,7 @@ export function useTestAttempt({
   }, [attempt]);
 
   const retry = useCallback(() => {
-    if (startedRef.current && status !== "error") return;
+    if (status === "starting" || status === "submitting") return;
     // Reset local state so a fresh start is clean.
     setAttempt(null);
     setResult(null);
@@ -238,6 +244,7 @@ export function useTestAttempt({
     setStartedAt(null);
     setError(null);
     startedRef.current = false;
+    forceFreshRef.current = true;
     setAttemptKey((k) => k + 1);
   }, [status]);
 
