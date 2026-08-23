@@ -24,7 +24,6 @@ enum StudySessionMode {
   WRITE
   SPELL
   TEST
-  MATCH
   AI_FILL_BLANK
   AI_GUESS_WORD
 }

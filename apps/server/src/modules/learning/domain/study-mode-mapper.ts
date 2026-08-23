@@ -21,7 +21,5 @@ export function granularToCoarse(mode: StudyMode): StudySessionMode {
       return StudySessionMode.AI_FILL_BLANK;
     case 'AI_GUESS_WORD':
       return StudySessionMode.AI_GUESS_WORD;
-    case 'MATCH':
-      return StudySessionMode.MATCH;
   }
 }

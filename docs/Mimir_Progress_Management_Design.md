@@ -65,9 +65,6 @@ A typed answer in Write Mode is real recall. A multiple-choice guess or a self-r
 | Test Mode — multiple choice / true-false | Recognition | 0.5 / 0.3 | 0.25 / 0.15 |
 | AI Fill-in-the-Blank | Recall (contextual) | 1.0 | 0.5 |
 | AI Guess the Word | Recall (inferential) | 1.0 | 0.5 |
-| Match Game | — | not counted | not counted |
-
-Match Game is deliberately excluded from mastery signal. It's a speed/drag-and-drop activity with very little evidentiary value about whether someone actually knows a term — including it would let users farm mastery by replaying the game. It still logs as a "seen" event for engagement stats, just not for progress.
 
 ---
 
@@ -206,7 +203,6 @@ The mode weights and the 3.0 mastery threshold are a reasonable starting point, 
 | True/False weight | 0.3 | Highly guessable — lowest recognition weight |
 | Self-report weight (Flashcards "Know it") | 0.5 | No actual recall test performed |
 | Hint multiplier | × 0.5 | Applied on top of the base weight for any mode |
-| Match Game | not counted | Engagement signal only, no mastery weight |
 
 ---
 

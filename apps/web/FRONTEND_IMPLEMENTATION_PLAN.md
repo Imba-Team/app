@@ -90,19 +90,18 @@ The scaffolding under [src/](src/) covers the skeletal layout described in TDD �
 
 ---
 
-## Sprint 3 — Flashcards & Match modes
+## Sprint 3 — Flashcards mode
 
-**Requirements covered:** FR-FLASH-001…006, FR-MATCH-001…003 · US-010, US-011, US-012, US-017.
+**Requirements covered:** FR-FLASH-001…006 · US-010, US-011, US-012.
 
 **Deliverables**
 
 1. **`SessionProvider`** ([src/features/study/](src/features/study/)) implementing the reducer from TDD §11.3 — `cards`, `currentIndex`, `correct`, `incorrect`, `sessionId`, `isComplete`. Wires `POST /sessions` on entry and `POST /sessions/:id/complete` on exit.
 2. **`FlashcardsMode`** — 3D flip animation (350 ms, cubic-bezier per TDD §12.4), keyboard nav (arrow, space), shuffle, star, "Know it / Still learning" per-card marks (FR-FLASH-002), progress bar, first-side config (FR-FLASH-006).
 3. **`AudioButton`** — visible on every card (FR-AUD-001); disabled with "TTS ships in v1.1" tooltip until §10 lands (per TDD §11.4 note). The button component and its speed toggle (0.5×/0.75×/1×/1.25×) are ready; the hook is stubbed.
-4. **`MatchMode`** — configurable grid (6–20 pairs), click or drag to pair, timer starts on first interaction (FR-MATCH-003), win screen with time recorded.
-5. Session results screen — accuracy, time, "Study weak cards" CTA.
+4. Session results screen — accuracy, time, "Study weak cards" CTA.
 
-**Definition of done:** Flashcards is fully keyboard-driven and touch-friendly; Match records completion times. TTS button renders but doesn't call the API.
+**Definition of done:** Flashcards is fully keyboard-driven and touch-friendly. TTS button renders but doesn't call the API.
 
 ---
 

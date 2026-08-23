@@ -594,35 +594,33 @@ export class StudySetService {
     const ownerMap = new Map(ownerUsers.map((o) => [o.id, o]));
     const favoritedIds = new Set(favoriteLinks.map((f) => f.studySetId));
 
-    return Promise.all(
-      studySets.map((studySet) => {
-        this.withSortedFlashcards(studySet);
-        const ownerUserId = studySet.ownerId;
-        const isOwner = ownerUserId === userId;
-        const isCollected = isOwner || favoritedIds.has(studySet.id);
-        const flashcards = studySet.flashcards || [];
-        const owner = ownerMap.get(ownerUserId);
+    return studySets.map((studySet) => {
+      this.withSortedFlashcards(studySet);
+      const ownerUserId = studySet.ownerId;
+      const isOwner = ownerUserId === userId;
+      const isCollected = isOwner || favoritedIds.has(studySet.id);
+      const flashcards = studySet.flashcards || [];
+      const owner = ownerMap.get(ownerUserId);
 
-        return plainToInstance(
-          StudySetResponseDto,
-          {
-            id: studySet.id,
-            slug: studySet.slug,
-            title: studySet.title,
-            description: studySet.description ?? '',
-            isPrivate: studySet.visibility === StudySetVisibility.PRIVATE,
-            ownerId: ownerUserId,
-            ownerName: owner?.username ?? undefined,
-            ownerImg: owner?.profilePicture,
-            isOwner,
-            isCollected,
-            flashcardsCount: flashcards.length,
-            createdAt: studySet.createdAt,
-            updatedAt: studySet.updatedAt,
-          },
-          { excludeExtraneousValues: true },
-        );
-      }),
-    );
+      return plainToInstance(
+        StudySetResponseDto,
+        {
+          id: studySet.id,
+          slug: studySet.slug,
+          title: studySet.title,
+          description: studySet.description ?? '',
+          isPrivate: studySet.visibility === StudySetVisibility.PRIVATE,
+          ownerId: ownerUserId,
+          ownerName: owner?.username ?? undefined,
+          ownerImg: owner?.profilePicture,
+          isOwner,
+          isCollected,
+          flashcardsCount: flashcards.length,
+          createdAt: studySet.createdAt,
+          updatedAt: studySet.updatedAt,
+        },
+        { excludeExtraneousValues: true },
+      );
+    });
   }
 }

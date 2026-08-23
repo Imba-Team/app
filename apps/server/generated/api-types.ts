@@ -1749,7 +1749,7 @@ export interface components {
              */
             lastActivityAt: string;
             /** @enum {string} */
-            mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "MATCH" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
+            mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
             /** @description Opaque JSON blob written by the client on pause. Structure is a client-side contract (LearnResumeState in the web app); the server only round-trips it. Null when the session was never paused. */
             resumeState?: Record<string, never> | null;
             /** Format: uuid */
@@ -2007,7 +2007,7 @@ export interface components {
             durationSeconds: number;
             incorrectAnswers: number;
             /** @enum {string} */
-            mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "MATCH" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
+            mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
             /** Format: uuid */
             sessionId: string;
             /** Format: date-time */
@@ -2034,7 +2034,7 @@ export interface components {
             durationSeconds: number;
             incorrectAnswers: number;
             /** @enum {string} */
-            mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "MATCH" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
+            mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
             /** Format: uuid */
             sessionId: string;
             /** Format: date-time */
@@ -2138,13 +2138,13 @@ export interface components {
         };
         StartSessionDto: {
             /** @enum {string} */
-            mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "MATCH" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
+            mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
             /** Format: uuid */
             studySetId: string;
         };
         StartSessionResponseDto: {
             /** @enum {string} */
-            mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "MATCH" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
+            mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
             /**
              * @description True when the caller already had an in-flight session for this (set, mode) pair and the server returned it instead of creating a new one. The client can use this to render "resumed" UI without a separate lookup.
              * @example false
@@ -2256,7 +2256,7 @@ export interface components {
              */
             responseMs?: number;
             /** @enum {string} */
-            studyMode: "FLASHCARD" | "LEARN_MC" | "LEARN_WRITTEN" | "WRITE" | "SPELL" | "TEST_WRITTEN" | "TEST_MC" | "TEST_TF" | "AI_FILL_BLANK" | "AI_GUESS_WORD" | "MATCH";
+            studyMode: "FLASHCARD" | "LEARN_MC" | "LEARN_WRITTEN" | "WRITE" | "SPELL" | "TEST_WRITTEN" | "TEST_MC" | "TEST_TF" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
         };
         SubmitTestAttemptDto: {
             /** @description One entry per question in the attempt. Missing entries count as unanswered (incorrect). Order does not matter — questions are matched by questionAttemptId. */
@@ -4140,7 +4140,7 @@ export interface operations {
         parameters: {
             query: {
                 /** @description Only the mode you plan to enter is looked up. */
-                mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "MATCH" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
+                mode: "FLASHCARD" | "LEARN" | "WRITE" | "SPELL" | "TEST" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
                 setId: string;
             };
             header?: never;

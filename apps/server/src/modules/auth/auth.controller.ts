@@ -310,10 +310,10 @@ export class AuthController {
       'new login.',
   })
   @ApiResponse({ status: 302, description: 'Redirects to Google consent' })
-  async linkGoogleStart(
+  linkGoogleStart(
     @Req() req: Request & { user: { id: string } },
     @Res() res: Response,
-  ): Promise<void> {
+  ): void {
     this.authService.issueGoogleLinkIntentCookie(res, req.user.id);
     res.redirect('/auth/google');
   }

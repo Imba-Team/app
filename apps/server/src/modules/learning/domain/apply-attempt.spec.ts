@@ -130,22 +130,6 @@ describe('applyAttempt', () => {
       expect(next.weightedStreak).toBeCloseTo(weight, 5);
       expect(next.correctCount).toBe(1);
     });
-
-    it('MATCH is not counted — no streak change, correctCount not incremented', () => {
-      const prev = state({
-        status: 'LEARNING',
-        weightedStreak: 1.5,
-        correctCount: 3,
-      });
-      const result = applyAttempt(
-        prev,
-        event({ studyMode: 'MATCH' }),
-        FIXED_NOW,
-      );
-      expect(result.next).toEqual(prev);
-      expect(result.graduated).toBe(false);
-      expect(result.demoted).toBe(false);
-    });
   });
 
   describe('CORRECT — hint multiplier', () => {

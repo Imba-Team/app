@@ -45,5 +45,5 @@ export class InflightSessionResponseDto {
       'Opaque JSON blob written by the client on pause. Structure is a client-side contract (LearnResumeState in the web app); the server only round-trips it. Null when the session was never paused.',
   })
   @Expose()
-  resumeState!: unknown | null;
+  resumeState!: unknown;
 }

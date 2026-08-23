@@ -40,7 +40,6 @@ const MODE_LABEL: Record<SessionHistoryItem['mode'], string> = {
   WRITE: 'Write',
   SPELL: 'Spell',
   TEST: 'Test',
-  MATCH: 'Match',
   AI_FILL_BLANK: 'Fill in the blank',
   AI_GUESS_WORD: 'Guess the word',
 };
@@ -60,7 +59,6 @@ const MODE_BADGE: Record<SessionHistoryItem['mode'], string> = {
   WRITE: 'bg-amber-50 text-amber-700',
   SPELL: 'bg-cyan-50 text-cyan-700',
   TEST: 'bg-rose-50 text-rose-700',
-  MATCH: 'bg-fuchsia-50 text-fuchsia-700',
   AI_FILL_BLANK: 'bg-purple-50 text-purple-700',
   AI_GUESS_WORD: 'bg-purple-50 text-purple-700',
 };

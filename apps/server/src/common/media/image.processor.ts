@@ -5,7 +5,7 @@ import { Injectable, Logger } from '@nestjs/common';
 // `.default`), so calling it blows up with
 // `sharp_1.default is not a function`. Use `require()` directly for
 // the callable, and a type-only `import type` for the shapes.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
 const sharp: typeof import('sharp').default = require('sharp');
 import type { Metadata, OutputInfo, Sharp } from 'sharp';
 import { MediaErrorCode, MediaValidationException } from './media.errors';

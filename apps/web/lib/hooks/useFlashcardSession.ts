@@ -114,7 +114,13 @@ export function useFlashcardSession({
   const [sessionId, setSessionId] = useState<string | null>(
     resumeSessionId ?? null,
   );
-  const [status, setStatus] = useState<Status>("idle");
+  // Seed status from mount-time inputs so the effect below doesn't need
+  // to setState synchronously (React Compiler flags that as cascading).
+  const [status, setStatus] = useState<Status>(() => {
+    if (!enabled) return "idle";
+    if (resumeSessionId) return "active";
+    return "starting";
+  });
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
@@ -151,15 +157,12 @@ export function useFlashcardSession({
     // session row on the server is fine to keep using. We don't know
     // the true original startedAt without another round-trip, so
     // approximate with "now" — duration will underreport for resumes,
-    // which is fine.
+    // which is fine. Status was already seeded to "active" from the
+    // useState initializer above.
     if (resumeSessionId) {
       startedAtRef.current = new Date();
-      setStatus("active");
       return;
     }
-
-    setStatus("starting");
-    setError(null);
 
     startSession(moduleId, "FLASHCARD")
       .then((res) => {
@@ -177,6 +180,8 @@ export function useFlashcardSession({
 
   const retry = useCallback(() => {
     if (startedRef.current) return;
+    setError(null);
+    setStatus("starting");
     setAttemptKey((k) => k + 1);
   }, []);
 

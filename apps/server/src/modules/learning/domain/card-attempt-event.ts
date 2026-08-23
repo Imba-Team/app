@@ -12,8 +12,7 @@ export type StudyMode =
    *  definition onto a term), so mode-weight matches TEST_MC. */
   | 'TEST_MATCH'
   | 'AI_FILL_BLANK'
-  | 'AI_GUESS_WORD'
-  | 'MATCH';
+  | 'AI_GUESS_WORD';
 
 export type AttemptOutcome = 'CORRECT' | 'INCORRECT' | 'SKIPPED';
 

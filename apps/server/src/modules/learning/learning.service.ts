@@ -21,7 +21,6 @@ import { PrismaService } from 'src/common/prisma/prisma.service';
 import { REDIS_CLIENT } from 'src/common/redis/redis.constants';
 import { StudySetService } from 'src/modules/study-set/study-set.service';
 import { SetPreferencesService } from 'src/modules/set-preferences/set-preferences.service';
-import { SetPreferencesResponseDto } from 'src/modules/set-preferences/dtos/set-preferences-response.dto';
 import { SrsService } from 'src/modules/srs/srs.service';
 
 import { InflightSessionResponseDto } from './dtos/inflight-session-response.dto';

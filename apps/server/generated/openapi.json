@@ -3569,7 +3569,6 @@
                 "WRITE",
                 "SPELL",
                 "TEST",
-                "MATCH",
                 "AI_FILL_BLANK",
                 "AI_GUESS_WORD"
               ]
@@ -5965,7 +5964,6 @@
               "WRITE",
               "SPELL",
               "TEST",
-              "MATCH",
               "AI_FILL_BLANK",
               "AI_GUESS_WORD"
             ]
@@ -6014,7 +6012,6 @@
               "WRITE",
               "SPELL",
               "TEST",
-              "MATCH",
               "AI_FILL_BLANK",
               "AI_GUESS_WORD"
             ]
@@ -6044,7 +6041,6 @@
               "WRITE",
               "SPELL",
               "TEST",
-              "MATCH",
               "AI_FILL_BLANK",
               "AI_GUESS_WORD"
             ]
@@ -6215,8 +6211,7 @@
               "TEST_MC",
               "TEST_TF",
               "AI_FILL_BLANK",
-              "AI_GUESS_WORD",
-              "MATCH"
+              "AI_GUESS_WORD"
             ]
           },
           "outcome": {
@@ -6519,7 +6514,6 @@
               "WRITE",
               "SPELL",
               "TEST",
-              "MATCH",
               "AI_FILL_BLANK",
               "AI_GUESS_WORD"
             ]
@@ -6583,7 +6577,6 @@
               "WRITE",
               "SPELL",
               "TEST",
-              "MATCH",
               "AI_FILL_BLANK",
               "AI_GUESS_WORD"
             ]

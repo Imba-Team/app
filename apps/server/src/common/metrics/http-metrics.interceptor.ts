@@ -55,7 +55,7 @@ export class HttpMetricsInterceptor implements NestInterceptor {
   }
 
   private resolveRoute(req: Request): string {
-    const route = req.route?.path as string | undefined;
+    const route = (req.route as { path?: string } | undefined)?.path;
     if (route) {
       const base = (req.baseUrl ?? '').replace(/\/$/, '');
       return `${base}${route}` || route;

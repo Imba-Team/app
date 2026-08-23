@@ -15,16 +15,6 @@ describe('deriveRating — non-review outcomes', () => {
     ).toBeNull();
   });
 
-  it('returns null for MATCH mode (no recall signal)', () => {
-    expect(
-      deriveRating({
-        outcome: 'CORRECT',
-        hintUsed: false,
-        studyMode: 'MATCH',
-      }),
-    ).toBeNull();
-  });
-
   it('returns null for plain FLASHCARD self-report', () => {
     expect(
       deriveRating({
