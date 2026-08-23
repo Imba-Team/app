@@ -52,7 +52,7 @@ const preferencesSchema = z.object({
 
 type PreferencesForm = z.infer<typeof preferencesSchema>;
 
-const STRICTNESS_OPTIONS: {
+const strictnessOptions: {
   value: PreferencesForm['strictness'];
   label: string;
   blurb: string;
@@ -62,7 +62,7 @@ const STRICTNESS_OPTIONS: {
   { value: 'LENIENT', label: 'Lenient', blurb: 'Extra typo tolerance' },
 ];
 
-const DIRECTION_OPTIONS: {
+const directionOptions: {
   value: PreferencesForm['answerDirection'];
   label: string;
   blurb: string;
@@ -113,7 +113,7 @@ const PRESETS: {
  * for something that only shifts if we intentionally tune the server
  * defaults.
  */
-const PRESET_VALUES: Record<
+const presetValues: Record<
   PacePreset,
   Pick<PreferencesForm, 'batchSize' | 'mcWrittenBias' | 'masteryThreshold'>
 > = {
@@ -123,7 +123,7 @@ const PRESET_VALUES: Record<
 };
 
 function activePresetOf(values: PreferencesForm): PacePreset | null {
-  for (const [key, patch] of Object.entries(PRESET_VALUES)) {
+  for (const [key, patch] of Object.entries(presetValues)) {
     if (
       values.batchSize === patch.batchSize &&
       values.mcWrittenBias === patch.mcWrittenBias &&
@@ -332,7 +332,7 @@ function PreferencesForm({
           <SegmentedRow
             label="Answer direction"
             description="Which side you produce."
-            options={DIRECTION_OPTIONS}
+            options={directionOptions}
             value={answerDirection}
             onChange={(v) => setValue('answerDirection', v, { shouldDirty: true })}
           />
@@ -356,7 +356,7 @@ function PreferencesForm({
         <SegmentedRow
           label="Grading strictness"
           description="How lenient the written-answer check is."
-          options={STRICTNESS_OPTIONS}
+          options={strictnessOptions}
           value={strictness}
           onChange={(v) => setValue('strictness', v, { shouldDirty: true })}
         />

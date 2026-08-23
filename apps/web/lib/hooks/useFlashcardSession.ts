@@ -83,7 +83,7 @@ interface UseFlashcardSessionReturn {
 // One retry is enough — the attemptId makes the request idempotent, so
 // even if the client bails and reconnects later the server will dedupe.
 // Keep backoff short so a truly stalled network doesn't jam the queue.
-const SUBMIT_RETRY_DELAYS_MS = [750];
+const submitRetryDelaysMs = [750];
 
 // Cap how long `finish()` waits for the in-flight submission queue to
 // drain before firing POST /sessions/:id/complete. The summary
@@ -91,7 +91,7 @@ const SUBMIT_RETRY_DELAYS_MS = [750];
 // so this drain is only about durable server-side counters — it's fine
 // to fall through quickly and let queued tasks finish in the
 // background.
-const FINISH_DRAIN_TIMEOUT_MS = 1500;
+const finishDrainTimeoutMs = 1500;
 
 function newAttemptId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -232,7 +232,7 @@ export function useFlashcardSession({
 
       const next = submitQueueRef.current.then(async () => {
         let lastErr: Error | null = null;
-        for (let attempt = 0; attempt <= SUBMIT_RETRY_DELAYS_MS.length; attempt++) {
+        for (let attempt = 0; attempt <= submitRetryDelaysMs.length; attempt++) {
           try {
             const res = await submitSessionAnswer(sessionId, {
               attemptId,
@@ -252,7 +252,7 @@ export function useFlashcardSession({
             return;
           } catch (err) {
             lastErr = err as Error;
-            const delay = SUBMIT_RETRY_DELAYS_MS[attempt];
+            const delay = submitRetryDelaysMs[attempt];
             if (delay === undefined) break;
             await new Promise((r) => setTimeout(r, delay));
           }
@@ -279,7 +279,7 @@ export function useFlashcardSession({
     // background.
     await Promise.race([
       submitQueueRef.current,
-      new Promise<void>((r) => setTimeout(r, FINISH_DRAIN_TIMEOUT_MS)),
+      new Promise<void>((r) => setTimeout(r, finishDrainTimeoutMs)),
     ]);
 
     const startedAt = startedAtRef.current ?? new Date();

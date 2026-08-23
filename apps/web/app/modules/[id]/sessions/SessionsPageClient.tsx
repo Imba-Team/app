@@ -32,9 +32,9 @@ import { useModule } from '@/lib/hooks/useModules';
 import { useSessionHistory } from '@/lib/hooks/useSessionHistory';
 import type { SessionHistoryItem } from '@/lib/api';
 
-const PAGE_SIZE = 20;
+const pageSize = 20;
 
-const MODE_LABEL: Record<SessionHistoryItem['mode'], string> = {
+const modeLabel: Record<SessionHistoryItem['mode'], string> = {
   FLASHCARD: 'Flashcards',
   LEARN: 'Learn',
   WRITE: 'Write',
@@ -46,14 +46,14 @@ const MODE_LABEL: Record<SessionHistoryItem['mode'], string> = {
 
 // Modes that have a built UI today. Others render "In progress" without
 // a resume button — we don't want to link into a route that doesn't exist.
-const RESUMABLE_MODE_ROUTE: Partial<
+const resumableModeRoute: Partial<
   Record<SessionHistoryItem['mode'], string>
 > = {
   FLASHCARD: 'flashcards',
   LEARN: 'learn',
 };
 
-const MODE_BADGE: Record<SessionHistoryItem['mode'], string> = {
+const modeBadge: Record<SessionHistoryItem['mode'], string> = {
   FLASHCARD: 'bg-brand-500/10 text-brand-500',
   LEARN: 'bg-emerald-50 text-emerald-700',
   WRITE: 'bg-amber-50 text-amber-700',
@@ -96,8 +96,8 @@ export default function SessionsPageClient({ moduleId }: { moduleId: string }) {
   const { data: moduleData } = useModule(moduleId);
   const { data, isLoading, isError } = useSessionHistory({
     studySetId: moduleId,
-    limit: PAGE_SIZE,
-    offset: page * PAGE_SIZE,
+    limit: pageSize,
+    offset: page * pageSize,
   });
 
   const totals = useMemo(() => {
@@ -246,14 +246,14 @@ function SessionRow({
   session: SessionHistoryItem;
   moduleId: string;
 }) {
-  const label = MODE_LABEL[session.mode] ?? session.mode;
+  const label = modeLabel[session.mode] ?? session.mode;
   const badge =
-    MODE_BADGE[session.mode] ?? 'bg-neutral-100 text-neutral-700';
+    modeBadge[session.mode] ?? 'bg-neutral-100 text-neutral-700';
   const accuracyPct = Math.round((session.accuracy ?? 0) * 100);
   const isInProgress = !session.completedAt;
   const totalAnswers = session.correctAnswers + session.incorrectAnswers;
   const resumeRoute = isInProgress
-    ? RESUMABLE_MODE_ROUTE[session.mode]
+    ? resumableModeRoute[session.mode]
     : undefined;
 
   return (

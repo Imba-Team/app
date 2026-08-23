@@ -32,14 +32,14 @@ export interface ParseResult {
   total: number;
 }
 
-const PRESET_BETWEEN: Record<Exclude<PresetBetween, 'custom'>, string> = {
+const presetBetween: Record<Exclude<PresetBetween, 'custom'>, string> = {
   tab: '\t',
   comma: ',',
   dash: ' - ',
   semicolon: ';',
 };
 
-const PRESET_CARD: Record<Exclude<PresetCard, 'custom'>, string> = {
+const presetCard: Record<Exclude<PresetCard, 'custom'>, string> = {
   newline: '\n',
   doubleNewline: '\n\n',
   semicolon: ';',
@@ -86,12 +86,12 @@ export function unescapeSeparator(input: string): string {
 
 export function resolveBetween(preset: PresetBetween, custom: string): string {
   if (preset === 'custom') return unescapeSeparator(custom);
-  return PRESET_BETWEEN[preset];
+  return presetBetween[preset];
 }
 
 export function resolveCard(preset: PresetCard, custom: string): string {
   if (preset === 'custom') return unescapeSeparator(custom);
-  return PRESET_CARD[preset];
+  return presetCard[preset];
 }
 
 /** Split by a separator that could be multi-character. Empty separator

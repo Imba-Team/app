@@ -126,10 +126,10 @@ export default function Navbar({ variant }: { variant: NavbarVariant }) {
 // Slide-tabs animated navigation
 
 type CursorPos = { left: number; width: number; opacity: number };
-const HIDDEN_CURSOR: CursorPos = { left: 0, width: 0, opacity: 0 };
+const hiddenCursor: CursorPos = { left: 0, width: 0, opacity: 0 };
 
 function SlideNav({ links, pathname }: { links: NavLink[]; pathname: string }) {
-  const [position, setPosition] = useState<CursorPos>(HIDDEN_CURSOR);
+  const [position, setPosition] = useState<CursorPos>(hiddenCursor);
 
   return (
     <ul

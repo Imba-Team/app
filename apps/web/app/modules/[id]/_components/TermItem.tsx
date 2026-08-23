@@ -42,7 +42,7 @@ interface TermItemProps {
  * completed` on the wire). A small colored dot is not enough to be
  * accessible; pair it with a text label.
  */
-const STATUS_STYLES: Record<string, { dot: string; label: string; badge: string }> = {
+const statusStyles: Record<string, { dot: string; label: string; badge: string }> = {
   completed: {
     dot: 'bg-emerald-500',
     label: 'Mastered',
@@ -114,7 +114,7 @@ export default function TermItem({
     }
   };
 
-  const status = STATUS_STYLES[term.status ?? 'not_started'] ?? STATUS_STYLES.not_started;
+  const status = statusStyles[term.status ?? 'not_started'] ?? statusStyles.not_started;
 
   const StatusPill = (
     <div

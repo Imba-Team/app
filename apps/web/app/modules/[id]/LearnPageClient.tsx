@@ -68,7 +68,7 @@ type ModeCard = {
   img: string;
 };
 
-const MODE_CARDS: ModeCard[] = [
+const modeCards: ModeCard[] = [
   { href: (id) => `/modules/${id}/flashcards`, label: 'Flashcards', img: '/images/img3.png' },
   { href: (id) => `/modules/${id}/learn`, label: 'Learn', img: '/images/img1.png' },
   { href: (id) => `/modules/${id}/test`, label: 'Test', img: '/images/img4.png' },
@@ -270,7 +270,7 @@ export default function LearnPageClient({ id }: { id: string }) {
             )}
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {MODE_CARDS.map((m) => (
+            {modeCards.map((m) => (
               <Link key={m.label} href={m.href(id)} className="group">
                 <Card className="cursor-pointer transition-all hover:-translate-y-0.5 hover:bg-brand-300/20">
                   <CardContent className="flex flex-col items-center gap-3">

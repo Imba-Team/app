@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 import { Loader2, Link2, Unlink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { API_BASE_URL } from '@/lib/env';
+import { apiBaseUrl } from '@/lib/env';
 import { useMe, useUnlinkGoogle } from '@/lib/hooks/useUser';
 
 const LinkErrorCopy: Record<string, string> = {
@@ -65,7 +65,7 @@ export default function ConnectedAccountsCard() {
   const isLinked = me?.googleLinked ?? false;
 
   const handleConnect = () => {
-    window.location.href = `${API_BASE_URL}/auth/google/link`;
+    window.location.href = `${apiBaseUrl}/auth/google/link`;
   };
 
   const handleDisconnect = () => {
