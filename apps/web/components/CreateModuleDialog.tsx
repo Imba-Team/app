@@ -35,12 +35,12 @@ import { useCreateModule } from '@/lib/hooks/useModules';
 import { termKeys } from '@/lib/hooks/useTerms';
 import { cn } from '@/lib/utils';
 
-const NO_FOLDER = '__none__';
+const noFolder = '__none__';
 
-const FIELD_CLASS =
+const fieldClass =
   'w-full min-h-24 resize-y rounded-2xl border border-black/10 bg-white px-4 py-3 text-base leading-relaxed text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/20 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40 disabled:bg-neutral-50';
 
-const LABEL_CLASS = 'text-[11px] font-semibold uppercase tracking-wide text-neutral-500';
+const labelClass = 'text-[11px] font-semibold uppercase tracking-wide text-neutral-500';
 
 interface DraftCard {
   key: string;
@@ -74,7 +74,7 @@ export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Prop
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
-  const [folderId, setFolderId] = useState<string>(defaultFolderId ?? NO_FOLDER);
+  const [folderId, setFolderId] = useState<string>(defaultFolderId ?? noFolder);
   const [cards, setCards] = useState<DraftCard[]>(() => [emptyCard(), emptyCard(), emptyCard()]);
   const [saving, setSaving] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -154,7 +154,7 @@ export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Prop
       });
       const moduleId = created.id;
 
-      if (folderId !== NO_FOLDER) {
+      if (folderId !== noFolder) {
         try {
           await addToFolder.mutateAsync({
             folderId,
@@ -243,7 +243,7 @@ export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Prop
                 placeholder="What is this module for?"
                 rows={3}
                 disabled={saving}
-                className={cn(FIELD_CLASS, 'min-h-24')}
+                className={cn(fieldClass, 'min-h-24')}
               />
             </div>
 
@@ -281,7 +281,7 @@ export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Prop
                   <SelectValue placeholder="No folder" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={NO_FOLDER}>No folder</SelectItem>
+                  <SelectItem value={noFolder}>No folder</SelectItem>
                   {(folders.data ?? []).map((f) => (
                     <SelectItem key={f.id} value={f.id}>
                       <span className="inline-flex items-center gap-2">
@@ -501,7 +501,7 @@ function FlashcardRow({
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
-          {/* <Label className={LABEL_CLASS}>Term</Label> */}
+          {/* <Label className={labelClass}>Term</Label> */}
           <Textarea
             ref={termRef}
             data-card-term={index}
@@ -511,11 +511,11 @@ function FlashcardRow({
             placeholder="Enter the term"
             rows={2}
             disabled={disabled}
-            className={FIELD_CLASS}
+            className={fieldClass}
           />
         </div>
         <div className="space-y-2">
-          {/* <Label className={LABEL_CLASS}>Definition</Label> */}
+          {/* <Label className={labelClass}>Definition</Label> */}
           <Textarea
             ref={defRef}
             value={card.definition}
@@ -524,7 +524,7 @@ function FlashcardRow({
             placeholder="Enter the definition"
             rows={2}
             disabled={disabled}
-            className={FIELD_CLASS}
+            className={fieldClass}
           />
         </div>
       </div>

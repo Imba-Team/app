@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Globe, Layers, Loader2, Lock, Trash2 } from "lucide-react";
@@ -30,7 +30,7 @@ interface Props {
 export default function SetEditClient({ id }: Props) {
   const router = useRouter();
   const { data: envelope, isLoading, isError } = useModule(id);
-  const module = envelope?.data;
+  const mod = envelope?.data;
   const updateModule = useUpdateModule();
   const deleteModule = useDeleteModule();
 
@@ -39,17 +39,20 @@ export default function SetEditClient({ id }: Props) {
   const [language, setLanguage] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [seededForId, setSeededForId] = useState<string | null>(null);
 
-  // Seed form from server data once loaded. `module.id` in the dep list
-  // keeps re-fetches from clobbering in-progress edits.
-  useEffect(() => {
-    if (!module) return;
-    setTitle(module.title);
-    setDescription(module.description ?? "");
-    setIsPrivate(module.isPrivate);
+  // Seed form from server data on first load and re-seed if the module
+  // identity changes. Setting state during render (guarded by
+  // `seededForId`) keeps this out of an effect and folds into the
+  // same commit as the initial paint.
+  if (mod && seededForId !== mod.id) {
+    setSeededForId(mod.id);
+    setTitle(mod.title);
+    setDescription(mod.description ?? "");
+    setIsPrivate(mod.isPrivate);
     // `language` isn't on StudySetResponseDto (yet) — fall back to empty.
     setLanguage("");
-  }, [module?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   if (isLoading) {
     return (
@@ -60,7 +63,7 @@ export default function SetEditClient({ id }: Props) {
     );
   }
 
-  if (isError || !module) {
+  if (isError || !mod) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-8">
         <p className="text-gray-500">Module not found.</p>
@@ -71,7 +74,7 @@ export default function SetEditClient({ id }: Props) {
     );
   }
 
-  if (!module.isOwner) {
+  if (!mod.isOwner) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-8">
         <p className="text-gray-800 font-semibold">
@@ -88,9 +91,9 @@ export default function SetEditClient({ id }: Props) {
   }
 
   const dirty =
-    title.trim() !== module.title ||
-    description.trim() !== (module.description ?? "") ||
-    isPrivate !== module.isPrivate;
+    title.trim() !== mod.title ||
+    description.trim() !== (mod.description ?? "") ||
+    isPrivate !== mod.isPrivate;
 
   const canSave = title.trim().length > 0 && dirty && !updateModule.isPending;
 
@@ -208,8 +211,8 @@ export default function SetEditClient({ id }: Props) {
         </CardHeader>
         <CardContent className="flex items-center justify-between">
           <p className="text-sm text-gray-600">
-            {module.flashcardsCount ?? 0} card
-            {(module.flashcardsCount ?? 0) === 1 ? "" : "s"}. Edit them on the
+            {mod.flashcardsCount ?? 0} card
+            {(mod.flashcardsCount ?? 0) === 1 ? "" : "s"}. Edit them on the
             module page.
           </p>
           <Button asChild variant="outline">

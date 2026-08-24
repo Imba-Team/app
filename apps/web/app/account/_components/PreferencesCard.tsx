@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * Language + timezone preferences.
@@ -13,24 +13,24 @@
  * so the user can accept the sensible default with one click.
  */
 
-import { useEffect, useMemo, useState } from "react";
-import { Check, Globe, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMemo, useState } from 'react';
+import { Check, Globe, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { useMe, useUpdateMe } from "@/lib/hooks/useUser";
+} from '@/components/ui/select';
+import { useMe, useUpdateMe } from '@/lib/hooks/useUser';
 
-const LANGUAGE_OPTIONS = [
-  { value: "en", label: "English" },
-  { value: "ru", label: "Русский" },
-  { value: "az", label: "Azərbaycanca" },
+const LanguageOptions = [
+  { value: 'en', label: 'English' },
+  { value: 'ru', label: 'Русский' },
+  { value: 'az', label: 'Azərbaycanca' },
 ] as const;
 
 /**
@@ -44,17 +44,15 @@ function getBrowserTimeZones(): string[] {
   const anyIntl = Intl as unknown as {
     supportedValuesOf?: (k: string) => string[];
   };
-  const zones = anyIntl.supportedValuesOf?.("timeZone") ?? [];
-  return zones.length > 0 ? zones : ["UTC"];
+  const zones = anyIntl.supportedValuesOf?.('timeZone') ?? [];
+  return zones.length > 0 ? zones : ['UTC'];
 }
 
 function detectBrowserTz(): string {
   try {
-    return (
-      Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
-    );
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   } catch {
-    return "UTC";
+    return 'UTC';
   }
 }
 
@@ -62,27 +60,30 @@ export default function PreferencesCard() {
   const { data: me } = useMe();
   const updateMe = useUpdateMe();
 
-  const zones = useMemo(getBrowserTimeZones, []);
-  const savedTz = me?.timezone ?? "UTC";
-  const savedLang = me?.preferredLanguage ?? "en";
+  const zones = useMemo(() => getBrowserTimeZones(), []);
+  const savedTz = me?.timezone ?? 'UTC';
+  const savedLang = me?.preferredLanguage ?? 'en';
 
   // Local draft state — only pushed on Save. Pre-fills from the saved
   // value; if the account is still on the UTC default and the browser
   // reports something more specific, suggest it up-front.
+  const browserTz = detectBrowserTz();
+  const suggestedTzValue =
+    savedTz === 'UTC' && browserTz !== 'UTC' && browserTz !== savedTz ? browserTz : null;
   const [tz, setTz] = useState<string>(savedTz);
   const [lang, setLang] = useState<string>(savedLang);
-  const [suggestedTz, setSuggestedTz] = useState<string | null>(null);
+  const [suggestedTz, setSuggestedTz] = useState<string | null>(suggestedTzValue);
+  const [prevSavedTz, setPrevSavedTz] = useState(savedTz);
+  const [prevSuggestedTz, setPrevSuggestedTz] = useState(suggestedTzValue);
 
-  useEffect(() => {
+  // Only sync state when the saved values change (e.g., after a successful save)
+  if (savedTz !== prevSavedTz || suggestedTzValue !== prevSuggestedTz) {
     setTz(savedTz);
     setLang(savedLang);
-    const browserTz = detectBrowserTz();
-    if (savedTz === "UTC" && browserTz !== "UTC" && browserTz !== savedTz) {
-      setSuggestedTz(browserTz);
-    } else {
-      setSuggestedTz(null);
-    }
-  }, [savedTz, savedLang]);
+    setSuggestedTz(suggestedTzValue);
+    setPrevSavedTz(savedTz);
+    setPrevSuggestedTz(suggestedTzValue);
+  }
 
   const dirty = tz !== savedTz || lang !== savedLang;
 
@@ -90,7 +91,7 @@ export default function PreferencesCard() {
     updateMe.mutate(
       {
         timezone: tz,
-        preferredLanguage: lang as "en" | "ru" | "az",
+        preferredLanguage: lang as 'en' | 'ru' | 'az',
       },
       {
         onSuccess: () => {
@@ -114,9 +115,8 @@ export default function PreferencesCard() {
       <CardHeader>
         <CardTitle className="text-xl">Preferences</CardTitle>
         <p className="text-sm text-gray-500 mt-1">
-          Language sets the page language for accessibility. Timezone
-          controls what &quot;today&quot; means for your SRS queue and when
-          your daily reminder fires.
+          Language sets the page language for accessibility. Timezone controls what
+          &quot;today&quot; means for your SRS queue and when your daily reminder fires.
         </p>
       </CardHeader>
 
@@ -135,7 +135,7 @@ export default function PreferencesCard() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {LANGUAGE_OPTIONS.map((opt) => (
+                {LanguageOptions.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </SelectItem>
@@ -143,8 +143,8 @@ export default function PreferencesCard() {
               </SelectContent>
             </Select>
             <p className="text-xs text-gray-400 mt-1">
-              The app UI is currently English only; this preference is
-              stored for future translations.
+              The app UI is currently English only; this preference is stored for future
+              translations.
             </p>
           </div>
 
@@ -184,12 +184,12 @@ export default function PreferencesCard() {
           </div>
         </div>
 
-        {suggestedTz && tz === "UTC" && (
+        {suggestedTz && tz === 'UTC' && (
           <div className="rounded-lg border border-brand-200 bg-brand-50 p-3 text-sm text-brand-800 flex items-start justify-between gap-3">
             <p>
-              Your browser says you&apos;re in{" "}
-              <span className="font-mono font-semibold">{suggestedTz}</span>.
-              Use that instead of UTC?
+              Your browser says you&apos;re in{' '}
+              <span className="font-mono font-semibold">{suggestedTz}</span>. Use that instead of
+              UTC?
             </p>
             <Button
               type="button"
@@ -225,7 +225,7 @@ export default function PreferencesCard() {
                 Saving…
               </>
             ) : (
-              "Save preferences"
+              'Save preferences'
             )}
           </Button>
         </div>

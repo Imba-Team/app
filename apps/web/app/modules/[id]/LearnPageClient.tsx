@@ -20,8 +20,8 @@ import TermItem from './_components/TermItem';
 import AddTerm from './_components/AddTerm';
 import { Button } from '@/components/ui/button';
 import { ImportFlashcardsDialog, type ImportedCard } from '@/components/import-flashcards-dialog';
-import { StudyPreferencesDialog } from '@/components/study-preferences-dialog';
-import { TestPreferencesDialog } from '@/components/test-preferences-dialog';
+import { StudyPreferencesDialog } from '@/components/StudyPreferencesDialog';
+import { TestPreferencesDialog } from '@/components/TestPreferencesDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,7 +68,7 @@ type ModeCard = {
   img: string;
 };
 
-const MODE_CARDS: ModeCard[] = [
+const modeCards: ModeCard[] = [
   { href: (id) => `/modules/${id}/flashcards`, label: 'Flashcards', img: '/images/img3.png' },
   { href: (id) => `/modules/${id}/learn`, label: 'Learn', img: '/images/img1.png' },
   { href: (id) => `/modules/${id}/test`, label: 'Test', img: '/images/img4.png' },
@@ -270,7 +270,7 @@ export default function LearnPageClient({ id }: { id: string }) {
             )}
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {MODE_CARDS.map((m) => (
+            {modeCards.map((m) => (
               <Link key={m.label} href={m.href(id)} className="group">
                 <Card className="cursor-pointer transition-all hover:-translate-y-0.5 hover:bg-brand-300/20">
                   <CardContent className="flex flex-col items-center gap-3">
@@ -324,9 +324,7 @@ export default function LearnPageClient({ id }: { id: string }) {
                       </DropdownMenuItem>
                     )}
                     {isCollected && (
-                      <DropdownMenuItem
-                        onClick={() => setTestPreferencesOpen(true)}
-                      >
+                      <DropdownMenuItem onClick={() => setTestPreferencesOpen(true)}>
                         <SlidersHorizontal className="mr-2 h-4 w-4" />
                         Test preferences…
                       </DropdownMenuItem>

@@ -13,14 +13,14 @@ import { useSrsQueue } from '@/lib/hooks/useSrs';
 // beyond that we can only surface as an aggregate total. 50 is enough
 // to reliably compute the overdue/due/new split for the hero without
 // paginating.
-const QUEUE_SLICE = 50;
+const QueueSlice = 50;
 
 function todayIsoUtc(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
 export function SrsHero() {
-  const queue = useSrsQueue(QUEUE_SLICE, 0);
+  const queue = useSrsQueue(QueueSlice, 0);
   const items = queue.data?.items ?? [];
   const total = queue.data?.total ?? 0;
 

@@ -104,18 +104,17 @@ Two-week sprints. Each sprint lists **Backend**, **Web**, **Exit criteria**. Own
 
 ---
 
-### Sprint 3 — Study modes: Write & Match (weeks 5–6)
+### Sprint 3 — Study modes: Write (weeks 5–6)
 
 **Backend**
-- No new endpoints — Write already uses `/sessions/:id/answer-written`. Confirm Match reuses `answer` with a `mode: 'MATCH'` discriminator or add `POST /sessions/:id/answer-match` if needed.
+- No new endpoints — Write already uses `/sessions/:id/answer-written`.
 - Idempotency review on `SETNX` keys per TDD §8a.5.
 
 **Web**
 - `/modules/[id]/write` — typed-answer mode using existing write evaluator.
-- `/modules/[id]/match` — timed pair-matching grid.
-- Update module home page to expose both modes.
+- Update module home page to expose the mode.
 
-**Exit:** Both modes are playable, sessions complete cleanly, attempt logs written.
+**Exit:** Write mode is playable, sessions complete cleanly, attempt logs written.
 
 ---
 

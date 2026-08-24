@@ -88,7 +88,6 @@ graph TD
   LEARN[Learn Mode]
   WRITE[Write Mode]
   TEST[Test Mode]
-  MATCH[Match Game]
   QUIZ[Quiz Mode]
   SRS[Spaced Repetition Engine]
   PROG[Progress Tracking]
@@ -111,7 +110,6 @@ graph TD
   CARDS --> LEARN
   CARDS --> WRITE
   CARDS --> TEST
-  CARDS --> MATCH
   CARDS --> QUIZ
   CARDS --> SRS
   CARDS --> AIGEN
@@ -234,7 +232,6 @@ The MVP scope is determined by applying three filters to every feature: (1) Does
 | Learn Mode | ✓ YES | Primary adaptive learning mode; core value prop. | Critical | L |
 | Write Mode | ✓ YES | Active recall — essential for retention. | Critical | M |
 | Test Mode | ✓ YES | High teacher demand for assessments. | High | L |
-| Match Game | ✓ YES | Engagement/fun; low dev cost. | Medium | M |
 | Quiz Mode (custom builder) | ✗ NO | Adds significant scope. Defer to v1.1. | Medium | L |
 | **Spaced Repetition** | | | | |
 | Spaced Repetition (SM-2) | ✓ YES | Core differentiator. What makes Mimir better. | Critical | L |
@@ -426,11 +423,11 @@ Development is broken into 10 sequential phases. Each phase has clear entry crit
 
 | | |
 |---|---|
-| **Objectives** | Complete the MVP study mode suite: Test Mode and Match Game. |
-| **Deliverables** | Test Mode (auto-generated multi-type tests, timer, results). Match Game (drag-and-drop grid, time tracking). |
+| **Objectives** | Complete the MVP study mode suite with Test Mode. |
+| **Deliverables** | Test Mode (auto-generated multi-type tests, timer, results). |
 | **Dependencies** | Phase 5 (answer evaluation logic) complete. |
 | **Risks** | Test Mode distractor generation quality. Use other cards in the set as distractors; fallback to True/False format when fewer than 4 cards available. |
-| **Exit Criteria** | Both modes fully playable. Test Mode generates valid assessments for any 10+ card set. |
+| **Exit Criteria** | Test Mode fully playable and generates valid assessments for any 10+ card set. |
 
 ### Phase 8: AI Learning Features (Weeks 15–18)
 
@@ -480,7 +477,6 @@ Epics group related user stories into meaningful units of work. Effort is in eng
 | EPIC-08: Progress Tracking | P0 | 4–5 | 6 | Medium | Absorbed into EPIC-05 mastery engine + Learn/Write |
 | EPIC-09: SRS Engine | P0 | 6 | 14 | High | Progress (EPIC-08) |
 | EPIC-11: Test Mode | P1 | 7 | 8 | Medium | Cards (EPIC-04) |
-| EPIC-12: Match Game | P1 | 7 | 4 | Low | Cards (EPIC-04) |
 | EPIC-XX: TTS Integration | **Post-MVP** | v1.1 | 6 | Medium | Google TTS (or ElevenLabs), Redis rate limiter |
 | EPIC-13: AI Flashcard Generation | P0 | 8 | 10 | High | Anthropic API, Redis |
 | EPIC-14: AI Fill-in-the-Blank Mode | P0 | 8 | 8 | High | Sessions (EPIC-06) |
@@ -507,7 +503,6 @@ graph TD
   E08[EPIC-08 Progress]
   E09[EPIC-09 SRS Engine]
   E11[EPIC-11 Test Mode]
-  E12[EPIC-12 Match Game]
   E13[EPIC-13 AI Generation]
   E14[EPIC-14 AI Fill-Blank]
   E15[EPIC-15 AI Guess Word]
@@ -523,7 +518,6 @@ graph TD
   E04 --> E07 --> E08
   E08 --> E09
   E04 --> E11
-  E04 --> E12
   E09 --> E13
   E06 --> E14
   E06 --> E15
@@ -740,26 +734,24 @@ Sprints 1–12 cover the MVP build (Weeks 1–24). Sprints 13–20 are summarise
 
 ---
 
-### Sprint 8 — Weeks 15–16: Test Mode + Match Game
+### Sprint 8 — Weeks 15–16: Test Mode
 
 **Goal:** Complete the MVP study mode suite.
 
 **User Stories**
 - US-016: As a learner, I can take a Test to assess my full knowledge.
-- US-017: As a learner, I can play the Match Game.
 
 **Technical Tasks**
 - Implement Test Mode auto-generator: MC, matching, written, true/false from set cards.
 - Implement test result saving: per-question analysis, time-per-question, retake tracking.
 - Build Test Mode UI: question list, timer display, result breakdown page.
-- Build Match Game UI: CSS grid, drag-and-drop, shake animation on mismatch, time display.
 
 **Deliverables**
-- Both modes fully playable. Test Mode generates valid assessments for any 10+ card set.
+- Test Mode fully playable and generates valid assessments for any 10+ card set.
 
 **Key Risk:** Test Mode distractors for sets < 10 cards. Fallback: use True/False format when insufficient distractors.
 
-**Definition of Done:** Both modes testable end-to-end. Test results saved to DB. Match Game completes without JS errors.
+**Definition of Done:** Test Mode testable end-to-end. Test results saved to DB.
 
 ---
 
@@ -954,7 +946,7 @@ Sprints 1–12 cover the MVP build (Weeks 1–24). Sprints 13–20 are summarise
 | M4 | Core Study Loop Playable | Week 10 | Flashcard Mode + mastery engine working in browser. | BE1, FE2 |
 | M5 | Active Recall Modes Complete | Week 12 | Learn Mode + Write Mode with progress tracking. | BE2, FE1 |
 | M6 | SRS Engine Live | Week 14 | SM-2 queue, daily reviews, nightly reminders. | BE3 |
-| M7 | MVP Study Modes Complete | Week 16 | Test Mode + Match Game working. (TTS post-MVP.) | BE2, FE2 |
+| M7 | MVP Study Modes Complete | Week 16 | Test Mode working. (TTS post-MVP.) | BE2, FE2 |
 | M8 | AI Features Live | Week 18 | Flashcard Gen, Fill-Blank, Guess Word all working. | BE1, FE2 |
 | M9 | Search Live | Week 20 | Full-text search returns results in < 300 ms. | BE3, FE1 |
 | M10 | Classroom Complete | Week 22 | Class creation, assignments, teacher analytics working. | BE1, FE1 |
@@ -1132,7 +1124,7 @@ Every step is justified against four optimisation criteria: **fastest MVP delive
 | 7 | Learn Mode + session model + progress tracking | Learn Mode is the primary driver of mastery and retention. It also establishes the session state machine that Test Mode and SRS reuse. Build it before Test/SRS. | Business value ↑, Risk ↓ (foundational) |
 | 8 | Write Mode — active recall | Write Mode shares 80% of the infrastructure built for Learn Mode (session model, answer evaluation). Build it immediately after. | MVP speed ↑ (low marginal cost) |
 | 9 | Spaced Repetition Engine (SM-2) | This is the hardest backend component and the biggest differentiator. Build it before modes that depend on it (Test is simpler and can wait). Getting SM-2 into users' hands early generates the retention data the product needs. | Business value ↑ (core differentiator), Risk ↓ (test early) |
-| 10 | Test Mode + Match Game | Two straightforward modes given the existing session model and evaluation logic. Build together in one sprint. | MVP speed ↑ (batch work) |
+| 10 | Test Mode | Straightforward mode given the existing session model and evaluation logic. | MVP speed ↑ |
 | 11 | AI Flashcard Generation | The single biggest user acquisition hook. Reduces the #1 friction point (creating cards) to zero. Also the largest technical risk due to Claude API reliability — build and test it before it is on the critical path. | Business value ↑ (acquisition), Risk ↓ (isolated) |
 | 12 | AI Fill-in-the-Blank Mode + AI Guess the Word Mode | These modes are built on top of the same Learning Service session model and the same AnthropicService. Build both together after Flashcard Generation proves the AI integration is stable. | Business value ↑ (retention differentiator) |
 | 13 | Elasticsearch search + BullMQ sync | Search is needed for public set discovery, which is needed for social growth. But it is not a blocker for the core study loop. Build it after the core product is solid. | Business value ↑ (growth) |

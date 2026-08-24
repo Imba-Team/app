@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * Account settings page.
@@ -16,19 +16,19 @@
  *   4. DangerZone    — delete account (was orphaned before).
  */
 
-import { useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useMe } from "@/lib/hooks/useUser";
-import ProfileCard from "./_components/ProfileCard";
-import SecurityCard from "./_components/SecurityCard";
-import SessionsCard from "./_components/SessionsCard";
-import ConnectedAccountsCard from "./_components/ConnectedAccountsCard";
-import PreferencesCard from "./_components/PreferencesCard";
-import DangerZone from "./_components/DangerZone";
+import { useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useMe } from '@/lib/hooks/useUser';
+import ProfileCard from './_components/ProfileCard';
+import SecurityCard from './_components/SecurityCard';
+import SessionsCard from './_components/SessionsCard';
+import ConnectedAccountsCard from './_components/ConnectedAccountsCard';
+import PreferencesCard from './_components/PreferencesCard';
+import DangerZone from './_components/DangerZone';
 
 export default function AccountPage() {
   const router = useRouter();
@@ -39,7 +39,7 @@ export default function AccountPage() {
     // axios refresh-on-401 interceptor tries once, and if that also
     // fails the query lands in `error`. Bounce to login.
     if (isError) {
-      router.push("/login");
+      router.push('/login');
     }
   }, [isError, router]);
 
@@ -58,9 +58,7 @@ export default function AccountPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-neutral-700">Account</h1>
-          <p className="text-gray-500 mt-1">
-            Manage your profile, security, and preferences.
-          </p>
+          <p className="text-gray-500 mt-1">Manage your profile, security, and preferences.</p>
         </div>
 
         {/* Sections */}

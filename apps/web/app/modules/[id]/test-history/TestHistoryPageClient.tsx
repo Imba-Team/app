@@ -29,7 +29,7 @@ import { useModule } from '@/lib/hooks/useModules';
 import { useTestHistory } from '@/lib/hooks/useTestHistory';
 import type { TestHistoryItem } from '@/lib/api';
 
-const PAGE_SIZE = 20;
+const pageSize = 20;
 
 export default function TestHistoryPageClient({
   moduleId,
@@ -46,8 +46,8 @@ export default function TestHistoryPageClient({
     error,
   } = useTestHistory({
     studySetId: moduleId,
-    limit: PAGE_SIZE,
-    offset: page * PAGE_SIZE,
+    limit: pageSize,
+    offset: page * pageSize,
   });
 
   const items = data?.items ?? [];

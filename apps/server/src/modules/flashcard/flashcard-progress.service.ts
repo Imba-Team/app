@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CardMasteryStatus, Prisma } from '@prisma/client';
+import { CardMasteryStatus } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';

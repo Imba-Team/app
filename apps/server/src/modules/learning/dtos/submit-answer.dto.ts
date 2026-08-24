@@ -26,7 +26,6 @@ const STUDY_MODES: StudyMode[] = [
   'TEST_TF',
   'AI_FILL_BLANK',
   'AI_GUESS_WORD',
-  'MATCH',
 ];
 
 const OUTCOMES: AttemptOutcome[] = ['CORRECT', 'INCORRECT', 'SKIPPED'];

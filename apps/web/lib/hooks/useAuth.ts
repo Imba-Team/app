@@ -6,7 +6,6 @@ import {
   loginUser,
   logoutUser,
   registerUser,
-  type AuthUser,
 } from '@/lib/api/auth';
 
 const authKeys = {

@@ -34,10 +34,12 @@ const makePrisma = (): PrismaMock => {
     $transaction: jest.fn(),
   };
   // $transaction supports both array-of-promises and callback forms
-  mock.$transaction.mockImplementation(async (arg) => {
-    if (typeof arg === 'function') return arg(mock);
-    return Promise.all(arg);
-  });
+  mock.$transaction.mockImplementation(
+    (arg: ((tx: PrismaMock) => unknown) | Promise<unknown>[]) => {
+      if (typeof arg === 'function') return Promise.resolve(arg(mock));
+      return Promise.all(arg);
+    },
+  );
   return mock;
 };
 
@@ -100,18 +102,21 @@ describe('SrsService', () => {
         },
       });
 
-      prisma.srsCard.update.mockImplementation(async ({ data }) => ({
-        id: srsCardId,
-        userId,
-        cardId,
-        easeFactor: data.easeFactor,
-        intervalDays: data.intervalDays,
-        repetitions: data.repetitions,
-        lapses: data.lapses,
-        isLeech: data.isLeech,
-        dueDate: data.dueDate,
-        lastReviewed: data.lastReviewed,
-      }));
+      prisma.srsCard.update.mockImplementation(
+        ({ data }: { data: Prisma.SrsCardUpdateInput }) =>
+          Promise.resolve({
+            id: srsCardId,
+            userId,
+            cardId,
+            easeFactor: data.easeFactor,
+            intervalDays: data.intervalDays,
+            repetitions: data.repetitions,
+            lapses: data.lapses,
+            isLeech: data.isLeech,
+            dueDate: data.dueDate,
+            lastReviewed: data.lastReviewed,
+          }),
+      );
       prisma.srsCard.count.mockResolvedValue(0);
 
       const svc = new SrsService(fakeLogger(), prisma as never, redis);
@@ -153,18 +158,21 @@ describe('SrsService', () => {
           hint: null,
         },
       });
-      prisma.srsCard.update.mockImplementation(async ({ data }) => ({
-        id: srsCardId,
-        userId,
-        cardId,
-        easeFactor: data.easeFactor,
-        intervalDays: data.intervalDays,
-        repetitions: data.repetitions,
-        lapses: data.lapses,
-        isLeech: data.isLeech,
-        dueDate: data.dueDate,
-        lastReviewed: data.lastReviewed,
-      }));
+      prisma.srsCard.update.mockImplementation(
+        ({ data }: { data: Prisma.SrsCardUpdateInput }) =>
+          Promise.resolve({
+            id: srsCardId,
+            userId,
+            cardId,
+            easeFactor: data.easeFactor,
+            intervalDays: data.intervalDays,
+            repetitions: data.repetitions,
+            lapses: data.lapses,
+            isLeech: data.isLeech,
+            dueDate: data.dueDate,
+            lastReviewed: data.lastReviewed,
+          }),
+      );
       prisma.srsCard.count.mockResolvedValue(0);
 
       const svc = new SrsService(fakeLogger(), prisma as never, redis);

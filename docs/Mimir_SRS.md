@@ -78,9 +78,8 @@
    - 9.2 [FLASHCARD Mode Logic](#92-flashcard-mode-logic)
    - 9.3 [LEARN Mode Logic](#93-learn-mode-logic)
    - 9.4 [TEST Mode Logic](#94-test-mode-logic)
-   - 9.5 [MATCH Mode Logic](#95-match-mode-logic)
-   - 9.6 [Slug Generation](#96-slug-generation)
-   - 9.7 [Soft Delete Strategy](#97-soft-delete-strategy)
+   - 9.5 [Slug Generation](#95-slug-generation)
+   - 9.6 [Soft Delete Strategy](#96-soft-delete-strategy)
 10. [File Storage Specification](#10-file-storage-specification)
     - 10.1 [MinIO Bucket Configuration](#101-minio-bucket-configuration)
     - 10.2 [Upload Flow](#102-upload-flow)
@@ -189,7 +188,7 @@ At a high level, the system provides:
 1. **Identity management** — registration, login, Google OAuth, profile management
 2. **Content management** — create, read, update, delete study sets and flashcards
 3. **Collaboration** — invite collaborators with OWNER / EDITOR / VIEWER roles
-4. **Study modes** — FLASHCARD, LEARN, TEST, and MATCH sessions with tracking
+4. **Study modes** — FLASHCARD, LEARN, and TEST sessions with tracking
 5. **Spaced repetition** — per-user card scheduling using SM-2
 6. **Social features** — favouriting sets, threaded comments, tagging
 7. **Organization** — group study sets into personal folders
@@ -446,7 +445,7 @@ enum Visibility {
 
 **Constraints:**
 
-- `slug` is auto-generated from `title` (see Section 9.6) and must be globally unique
+- `slug` is auto-generated from `title` (see Section 9.5) and must be globally unique
 - Deleting a StudySet cascades to: Flashcards, Comments, StudySetCollaborators, FavouriteStudySets, FolderStudySets, StudySetTags
 
 ### 4.4 Flashcard
@@ -646,7 +645,6 @@ enum StudyMode {
   FLASHCARD
   LEARN
   TEST
-  MATCH
 }
 ```
 
@@ -798,7 +796,7 @@ Returns another user's public profile (`username`, `profilePictureUrl`) and thei
 #### FR-SET-01: Create Study Set
 
 - Authenticated user required
-- `slug` auto-generated from `title` (see Section 9.6)
+- `slug` auto-generated from `title` (see Section 9.5)
 - A `StudySetCollaborator` record with `role: OWNER` is automatically created for the creator
 - Tags provided in the create DTO are upserted lazily
 
@@ -1609,17 +1607,7 @@ function isAnswerCorrect(userAnswer: string, correctAnswer: string): boolean {
 score = (correctAnswers / totalQuestions) * 100; // stored as Float
 ```
 
-### 9.5 MATCH Mode Logic
-
-Match mode is primarily client-side gameplay. The backend only provides data and records the outcome.
-
-1. Client starts session: `POST /study-sessions` with `mode: MATCH`
-2. Client fetches cards: `GET /study-sets/:slug/flashcards` (server returns up to 20 randomly shuffled)
-3. Client runs the matching game entirely locally
-4. On completion, client sends: `POST /study-sessions/:id/complete` with final stats
-5. No SM-2 update is triggered for MATCH mode
-
-### 9.6 Slug Generation
+### 9.5 Slug Generation
 
 ```typescript
 import { slugify } from 'transliteration';
@@ -1640,7 +1628,7 @@ function generateSlug(title: string): string {
 - The suffix ensures global uniqueness even for identical titles
 - Maximum total length: 69 characters
 
-### 9.7 Soft Delete Strategy
+### 9.6 Soft Delete Strategy
 
 | Entity | Strategy | Rationale |
 |---|---|---|

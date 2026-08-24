@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 
-const FAKE_USER = {
+const fakeUser = {
   id: '00000000-0000-0000-0000-000000000001',
   email: 'jane@mimir.test',
   username: 'jane',
@@ -39,7 +39,7 @@ async function stubBackend(page: Page) {
   await page.route(/\/auth\/logout$/, async (route) => route.fulfill(jsonRes(200, null)));
   await page.route(/\/auth\/refresh$/, async (route) => route.fulfill(jsonRes(200, null)));
   await page.route(/\/auth\/verify-email$/, async (route) => route.fulfill(jsonRes(200, null)));
-  await page.route(/\/users\/me$/, async (route) => route.fulfill(jsonRes(200, FAKE_USER)));
+  await page.route(/\/users\/me$/, async (route) => route.fulfill(jsonRes(200, fakeUser)));
   await page.route(/\/users\/me\/change-password$/, async (route) =>
     route.fulfill(jsonRes(200, null)),
   );

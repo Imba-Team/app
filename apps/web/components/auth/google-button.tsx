@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { API_BASE_URL } from "@/lib/env";
+import { apiBaseUrl } from "@/lib/env";
 
 interface GoogleButtonProps {
   label?: string;
@@ -16,7 +16,7 @@ export function GoogleButton({
     if (disabled) return;
     // Full navigation: the browser must follow the backend → Google →
     // backend callback redirect chain, so we can't use fetch here.
-    window.location.href = `${API_BASE_URL}/auth/google`;
+    window.location.href = `${apiBaseUrl}/auth/google`;
   };
 
   return (

@@ -1,5 +1,5 @@
 import { LearnPromptType } from '../dtos/learn-batch-response.dto';
-import { AttemptOutcome, StudyMode } from './card-attempt-event';
+import { AttemptOutcome } from './card-attempt-event';
 
 /**
  * A single row from CardAttempt trimmed down to the fields the prompt
@@ -7,7 +7,7 @@ import { AttemptOutcome, StudyMode } from './card-attempt-event';
  * project directly out of prisma without adapting shapes.
  */
 export interface RecentAttempt {
-  studyMode: StudyMode | string;
+  studyMode: string;
   outcome: AttemptOutcome;
   hintUsed: boolean;
   createdAt: Date;

@@ -83,7 +83,7 @@ function flashcardToTerm(fc: Schemas['FlashcardResponseDto']): Term {
 
 // Server CardMasteryStatus (NEW/LEARNING/MASTERED) → the UI-facing triad
 // the existing components already render against.
-const MASTERY_TO_STATUS: Record<
+const masteryToStatus: Record<
   Schemas['FlashcardWithProgressDto']['status'],
   Term['status']
 > = {
@@ -102,7 +102,7 @@ function flashcardWithProgressToTerm(
     definition: fc.definition,
     moduleId,
     isStarred: fc.isStarred,
-    status: MASTERY_TO_STATUS[fc.status] ?? 'not_started',
+    status: masteryToStatus[fc.status] ?? 'not_started',
   };
 }
 

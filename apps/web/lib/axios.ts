@@ -1,10 +1,10 @@
 import axios, { AxiosError, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
-import { API_BASE_URL } from '@/lib/env';
+import { apiBaseUrl } from '@/lib/env';
 
 type RetriableRequest = InternalAxiosRequestConfig & { _retry?: boolean };
 
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: apiBaseUrl,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -22,15 +22,15 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-const REFRESH_URL = '/auth/refresh';
-const NO_REFRESH_URLS = new Set([REFRESH_URL, '/auth/login', '/auth/register', '/auth/logout']);
+const refreshUrl = '/auth/refresh';
+const noRefreshUrls = new Set([refreshUrl, '/auth/login', '/auth/register', '/auth/logout']);
 
 let refreshPromise: Promise<void> | null = null;
 
 async function refreshSession(): Promise<void> {
   if (!refreshPromise) {
     refreshPromise = apiClient
-      .post(REFRESH_URL)
+      .post(refreshUrl)
       .then(() => undefined)
       .finally(() => {
         refreshPromise = null;
@@ -58,7 +58,7 @@ apiClient.interceptors.response.use(
       status === 401 &&
       originalRequest &&
       !originalRequest._retry &&
-      !NO_REFRESH_URLS.has(url)
+      !noRefreshUrls.has(url)
     ) {
       originalRequest._retry = true;
       try {

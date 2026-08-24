@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { Lock } from "lucide-react";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Lock } from 'lucide-react';
 
-import { useAuth } from "@/contexts/AuthContext";
-import { useLogin } from "@/lib/hooks/useAuth";
-import { AuthApiError } from "@/lib/api/auth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useAuth } from '@/contexts/AuthContext';
+import { useLogin } from '@/lib/hooks/useAuth';
+import { AuthApiError } from '@/lib/api/auth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
@@ -19,14 +19,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { GoogleButton } from "@/components/auth/google-button";
-import { AuthShell } from "@/components/auth/auth-shell";
-import { PasswordInput } from "@/components/auth/password-input";
+} from '@/components/ui/form';
+import { GoogleButton } from '@/components/auth/google-button';
+import { AuthShell } from '@/components/auth/auth-shell';
+import { PasswordInput } from '@/components/auth/password-input';
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -36,7 +36,7 @@ function formatDuration(totalSeconds: number): string {
   const minutes = Math.floor(s / 60);
   const seconds = s % 60;
   if (minutes === 0) return `${seconds}s`;
-  return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+  return `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
 }
 
 export default function LoginPage() {
@@ -44,17 +44,17 @@ export default function LoginPage() {
   const { isAuthenticated, isLoading, checkAuthentication } = useAuth();
   const login = useLogin();
 
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [lockUntil, setLockUntil] = useState<number | null>(null);
   const [now, setNow] = useState<number>(() => Date.now());
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { email: '', password: '' },
   });
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) router.push("/dashboard");
+    if (!isLoading && isAuthenticated) router.push('/dashboard');
   }, [isAuthenticated, isLoading, router]);
 
   // Tick the countdown while locked.
@@ -64,12 +64,11 @@ export default function LoginPage() {
     return () => window.clearInterval(interval);
   }, [lockUntil]);
 
-  useEffect(() => {
-    if (lockUntil !== null && now >= lockUntil) {
-      setLockUntil(null);
-      setError("");
-    }
-  }, [lockUntil, now]);
+  // Check if lock period has expired
+  if (lockUntil !== null && now >= lockUntil) {
+    setLockUntil(null);
+    setError('');
+  }
 
   const secondsRemaining =
     lockUntil !== null ? Math.max(0, Math.ceil((lockUntil - now) / 1000)) : 0;
@@ -77,18 +76,18 @@ export default function LoginPage() {
 
   const handleSubmit = (values: LoginFormValues) => {
     if (isLocked) return;
-    setError("");
+    setError('');
     login.mutate(values, {
       onSuccess: async () => {
         await checkAuthentication();
-        router.push("/dashboard");
+        router.push('/dashboard');
       },
       onError: (err: Error) => {
-        if (err instanceof AuthApiError && err.code === "ACCOUNT_LOCKED") {
+        if (err instanceof AuthApiError && err.code === 'ACCOUNT_LOCKED') {
           const seconds = err.retryAfterSeconds ?? 0;
           setLockUntil(Date.now() + seconds * 1000);
           setNow(Date.now());
-          setError("");
+          setError('');
           return;
         }
         setError(err.message);
@@ -111,37 +110,26 @@ export default function LoginPage() {
     >
       <div className="w-full max-w-md">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-neutral-900">
-            Welcome back
-          </h1>
-          <p className="text-sm text-gray-500 mt-2">
-            Sign in to keep your streak going.
-          </p>
+          <h1 className="text-3xl md:text-4xl font-bold text-neutral-900">Welcome back</h1>
+          <p className="text-sm text-gray-500 mt-2">Sign in to keep your streak going.</p>
         </div>
 
         <GoogleButton disabled={isLocked} />
 
         <div className="my-6 flex items-center gap-3" aria-hidden="true">
           <div className="h-px flex-1 bg-gray-200" />
-          <span className="text-xs uppercase tracking-wide text-gray-400">
-            or
-          </span>
+          <span className="text-xs uppercase tracking-wide text-gray-400">or</span>
           <div className="h-px flex-1 bg-gray-200" />
         </div>
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(handleSubmit)}
-            className="flex flex-col gap-4"
-          >
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-4">
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm text-neutral-700">
-                    Email
-                  </FormLabel>
+                  <FormLabel className="text-sm text-neutral-700">Email</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
@@ -151,7 +139,7 @@ export default function LoginPage() {
                       {...field}
                       onChange={(e) => {
                         field.onChange(e);
-                        setError("");
+                        setError('');
                       }}
                       className="h-12 rounded-xl border-gray-300 focus-visible:ring-brand-400 disabled:opacity-60"
                     />
@@ -166,15 +154,13 @@ export default function LoginPage() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm text-neutral-700">
-                    Password
-                  </FormLabel>
+                  <FormLabel className="text-sm text-neutral-700">Password</FormLabel>
                   <FormControl>
                     <PasswordInput
                       {...field}
                       onChange={(e) => {
                         field.onChange(e);
-                        setError("");
+                        setError('');
                       }}
                       autoComplete="current-password"
                       placeholder="Your password"
@@ -197,7 +183,7 @@ export default function LoginPage() {
                 <div>
                   <p className="font-semibold">Account temporarily locked</p>
                   <p className="mt-1">
-                    Too many failed sign-in attempts. Try again in{" "}
+                    Too many failed sign-in attempts. Try again in{' '}
                     <span className="font-mono font-semibold">
                       {formatDuration(secondsRemaining)}
                     </span>
@@ -221,8 +207,8 @@ export default function LoginPage() {
               {isLocked
                 ? `Locked · ${formatDuration(secondsRemaining)}`
                 : login.isPending
-                  ? "Signing in…"
-                  : "Sign in"}
+                  ? 'Signing in…'
+                  : 'Sign in'}
             </Button>
           </form>
         </Form>

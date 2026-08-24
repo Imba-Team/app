@@ -45,19 +45,19 @@ interface TermsFilterBarProps {
   className?: string;
 }
 
-const SORT_OPTIONS: { key: SortField; label: string }[] = [
+const sortOptions: { key: SortField; label: string }[] = [
   { key: 'original', label: 'Original order' },
   { key: 'name', label: 'Name' },
   { key: 'progress', label: 'Learning progress' },
 ];
 
-const SORT_TRIGGER_LABEL: Record<SortField, string> = {
+const sortTriggerLabel: Record<SortField, string> = {
   original: 'Original',
   name: 'Name',
   progress: 'Progress',
 };
 
-const STATUS_OPTIONS: {
+const statusOptions: {
   key: StatusFilter;
   label: string;
   dot?: string;
@@ -68,7 +68,7 @@ const STATUS_OPTIONS: {
   { key: 'MASTERED', label: 'Mastered', dot: 'bg-emerald-500' },
 ];
 
-const STATUS_TRIGGER_LABEL: Record<StatusFilter, string> = {
+const statusTriggerLabel: Record<StatusFilter, string> = {
   all: 'All',
   NEW: 'New',
   LEARNING: 'Learning',
@@ -78,7 +78,7 @@ const STATUS_TRIGGER_LABEL: Record<StatusFilter, string> = {
 // Progress ordering for client-side sort. Ascending = least-mastered
 // first so learners can attack their weakest cards without having to
 // flip direction.
-const PROGRESS_RANK: Record<Term['status'], number> = {
+const progressRank: Record<Term['status'], number> = {
   not_started: 0,
   in_progress: 1,
   completed: 2,
@@ -97,7 +97,7 @@ export function sortTerms(terms: Term[], field: SortField, dir: SortDir): Term[]
       return a.term.localeCompare(b.term, undefined, { sensitivity: 'base' });
     }
     // progress
-    return PROGRESS_RANK[a.status] - PROGRESS_RANK[b.status];
+    return progressRank[a.status] - progressRank[b.status];
   });
   return dir === 'asc' ? sorted : sorted.reverse();
 }
@@ -121,7 +121,7 @@ export default function TermsFilterBar({
   onStatusChange,
   className,
 }: TermsFilterBarProps) {
-  const activeStatus = STATUS_OPTIONS.find((o) => o.key === status)!;
+  const activeStatus = statusOptions.find((o) => o.key === status)!;
   const DirIcon = sortDir === 'asc' ? ChevronUp : ChevronDown;
   const sortIsDefault = sortField === 'original' && sortDir === 'asc';
 
@@ -159,7 +159,7 @@ export default function TermsFilterBar({
       <DropdownMenu>
         <DropdownMenuTrigger className={cn(pillBase)}>
           <span className="text-neutral-500">Sort</span>
-          <span>{SORT_TRIGGER_LABEL[sortField]}</span>
+          <span>{sortTriggerLabel[sortField]}</span>
           <DirIcon
             size={14}
             className={sortIsDefault ? 'text-neutral-500' : 'text-brand-600'}
@@ -169,7 +169,7 @@ export default function TermsFilterBar({
         <DropdownMenuContent align="start" className="min-w-52">
           <DropdownMenuLabel>Sort by</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {SORT_OPTIONS.map((o) => {
+          {sortOptions.map((o) => {
             const selected = o.key === sortField;
             const ItemDirIcon = selected && sortDir === 'asc' ? ChevronUp : ChevronDown;
             return (
@@ -210,7 +210,7 @@ export default function TermsFilterBar({
           {activeStatus.dot && (
             <span aria-hidden className={cn('size-2 rounded-full', activeStatus.dot)} />
           )}
-          <span>{STATUS_TRIGGER_LABEL[status]}</span>
+          <span>{statusTriggerLabel[status]}</span>
           <ChevronDown
             size={14}
             className={status === 'all' ? 'text-neutral-500' : 'text-brand-600'}
@@ -219,7 +219,7 @@ export default function TermsFilterBar({
         <DropdownMenuContent align="start" className="min-w-48">
           <DropdownMenuLabel>Filter by status</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {STATUS_OPTIONS.map((o) => {
+          {statusOptions.map((o) => {
             const selected = o.key === status;
             return (
               <DropdownMenuItem

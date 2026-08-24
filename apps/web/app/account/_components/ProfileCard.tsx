@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * Combined view + inline edit for the account owner's profile.
@@ -10,23 +10,14 @@
  * only puts name + bio behind inputs when editing.
  */
 
-import { useEffect, useRef, useState } from "react";
-import { Camera, CheckCircle2, Loader2, Pencil, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
-import { buildAssetUrl } from "@/lib/env";
-import {
-  useUpdateMe,
-  useUpdateProfilePicture,
-  type User,
-} from "@/lib/hooks/useUser";
+import { useEffect, useRef, useState } from 'react';
+import { Camera, CheckCircle2, Loader2, Pencil, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
+import { buildAssetUrl } from '@/lib/env';
+import { useUpdateMe, useUpdateProfilePicture, type User } from '@/lib/hooks/useUser';
 
 interface ProfileCardProps {
   user: User;
@@ -34,13 +25,13 @@ interface ProfileCardProps {
 
 function formatMemberSince(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
 
 export default function ProfileCard({ user }: ProfileCardProps) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user.name);
-  const [bio, setBio] = useState(user.bio ?? "");
+  const [bio, setBio] = useState(user.bio ?? '');
   const nameRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -50,13 +41,15 @@ export default function ProfileCard({ user }: ProfileCardProps) {
   const saving = updateMe.isPending;
 
   // Reset form to canonical values whenever the user record refreshes
-  // (e.g. after a successful save).
-  useEffect(() => {
-    if (!editing) {
-      setName(user.name);
-      setBio(user.bio ?? "");
-    }
-  }, [editing, user.name, user.bio]);
+  // (e.g. after a successful save) only when not editing.
+  const [lastEditingState, setLastEditingState] = useState(editing);
+  if (!editing && lastEditingState && (user.name !== name || user.bio !== bio)) {
+    setName(user.name);
+    setBio(user.bio ?? '');
+    setLastEditingState(false);
+  } else if (editing !== lastEditingState) {
+    setLastEditingState(editing);
+  }
 
   useEffect(() => {
     if (editing) {
@@ -66,14 +59,14 @@ export default function ProfileCard({ user }: ProfileCardProps) {
 
   const startEdit = () => {
     setName(user.name);
-    setBio(user.bio ?? "");
+    setBio(user.bio ?? '');
     setEditing(true);
   };
 
   const cancel = () => {
     setEditing(false);
     setName(user.name);
-    setBio(user.bio ?? "");
+    setBio(user.bio ?? '');
   };
 
   const save = () => {
@@ -86,7 +79,7 @@ export default function ProfileCard({ user }: ProfileCardProps) {
     // works but is wasteful.
     const payload: { name?: string; bio?: string } = {};
     if (trimmedName !== user.name) payload.name = trimmedName;
-    if (trimmedBio !== (user.bio ?? "")) payload.bio = trimmedBio;
+    if (trimmedBio !== (user.bio ?? '')) payload.bio = trimmedBio;
 
     if (Object.keys(payload).length === 0) {
       setEditing(false);
@@ -103,14 +96,14 @@ export default function ProfileCard({ user }: ProfileCardProps) {
     if (!file) return;
     updatePicture.mutate(file);
     // Reset the input value so re-selecting the same file re-fires change.
-    e.target.value = "";
+    e.target.value = '';
   };
 
-  const initials = (user.name ?? user.username ?? "?")
+  const initials = (user.name ?? user.username ?? '?')
     .split(/\s+/)
     .map((s) => s.charAt(0).toUpperCase())
     .slice(0, 2)
-    .join("");
+    .join('');
 
   return (
     <Card>
@@ -118,26 +111,16 @@ export default function ProfileCard({ user }: ProfileCardProps) {
         <CardTitle className="text-xl">Profile</CardTitle>
         {editing ? (
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={cancel}
-              disabled={saving}
-            >
+            <Button size="sm" variant="ghost" onClick={cancel} disabled={saving}>
               <X size={14} className="mr-1" /> Cancel
             </Button>
-            <Button
-              size="sm"
-              onClick={save}
-              disabled={saving || !name.trim()}
-              className="min-w-20"
-            >
+            <Button size="sm" onClick={save} disabled={saving || !name.trim()} className="min-w-20">
               {saving ? (
                 <>
                   <Loader2 size={14} className="mr-1 animate-spin" /> Saving
                 </>
               ) : (
-                "Save"
+                'Save'
               )}
             </Button>
           </div>
@@ -154,11 +137,7 @@ export default function ProfileCard({ user }: ProfileCardProps) {
           <div className="relative group shrink-0">
             <Avatar className="size-20 border border-gray-200">
               <AvatarImage
-                src={
-                  user.profilePicture
-                    ? buildAssetUrl(user.profilePicture)
-                    : undefined
-                }
+                src={user.profilePicture ? buildAssetUrl(user.profilePicture) : undefined}
                 alt={user.name}
                 crossOrigin="anonymous"
                 className="object-cover"
@@ -179,19 +158,15 @@ export default function ProfileCard({ user }: ProfileCardProps) {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              aria-label={uploading ? "Uploading avatar" : "Change avatar"}
+              aria-label={uploading ? 'Uploading avatar' : 'Change avatar'}
               className={cn(
-                "absolute -bottom-1 -right-1 size-8 rounded-full bg-white border border-gray-200 shadow-sm",
-                "flex items-center justify-center text-gray-600",
-                "hover:text-brand-500 hover:border-brand-500 transition-colors",
-                uploading && "cursor-wait",
+                'absolute -bottom-1 -right-1 size-8 rounded-full bg-white border border-gray-200 shadow-sm',
+                'flex items-center justify-center text-gray-600',
+                'hover:text-brand-500 hover:border-brand-500 transition-colors',
+                uploading && 'cursor-wait',
               )}
             >
-              {uploading ? (
-                <Loader2 size={14} className="animate-spin" />
-              ) : (
-                <Camera size={14} />
-              )}
+              {uploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
             </button>
           </div>
 
@@ -222,9 +197,7 @@ export default function ProfileCard({ user }: ProfileCardProps) {
                     className="text-xs font-medium text-gray-500 block mb-1"
                   >
                     Bio
-                    <span className="text-gray-400 ml-1 font-normal">
-                      · {bio.length}/280
-                    </span>
+                    <span className="text-gray-400 ml-1 font-normal">· {bio.length}/280</span>
                   </label>
                   <textarea
                     id="profile-bio"
@@ -241,9 +214,7 @@ export default function ProfileCard({ user }: ProfileCardProps) {
             ) : (
               <>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 leading-tight">
-                    {user.name}
-                  </h2>
+                  <h2 className="text-2xl font-bold text-gray-900 leading-tight">{user.name}</h2>
                   <p className="text-sm text-gray-500">@{user.username}</p>
                 </div>
                 {user.bio ? (
@@ -252,8 +223,7 @@ export default function ProfileCard({ user }: ProfileCardProps) {
                   </p>
                 ) : (
                   <p className="text-sm text-gray-400 italic">
-                    No bio yet. Add one to tell people what you&apos;re
-                    learning.
+                    No bio yet. Add one to tell people what you&apos;re learning.
                   </p>
                 )}
               </>
@@ -276,30 +246,19 @@ export default function ProfileCard({ user }: ProfileCardProps) {
                 </span>
               )}
             </span>
-            <p className="text-xs text-gray-400 mt-1">
-              To change your email, contact support.
-            </p>
+            <p className="text-xs text-gray-400 mt-1">To change your email, contact support.</p>
           </ReadOnlyField>
 
           <ReadOnlyField label="Member since">
-            <span className="text-gray-800">
-              {formatMemberSince(user.createdAt)}
-            </span>
+            <span className="text-gray-800">{formatMemberSince(user.createdAt)}</span>
           </ReadOnlyField>
         </div>
-
       </CardContent>
     </Card>
   );
 }
 
-function ReadOnlyField({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function ReadOnlyField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
       <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>

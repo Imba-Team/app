@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { BookOpen, Compass, Plus, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { useCreateModuleDialog } from "@/contexts/CreateModuleDialogContext";
+import Link from 'next/link';
+import { BookOpen, Compass, Plus, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { useCreateModuleDialog } from '@/contexts/CreateModuleDialogContext';
 
 /**
  * First-run screen for a learner with zero modules.
@@ -18,7 +18,7 @@ export default function EmptyDashboard() {
   return (
     <section className="py-6">
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-300 to-brand-600 text-neutral-900 p-8 sm:p-12 shadow-lg">
+      <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-brand-300 to-brand-600 text-neutral-900 p-8 sm:p-12 shadow-lg">
         <div className="absolute -top-8 -right-8 opacity-15 text-neutral-900">
           <Sparkles size={140} strokeWidth={1.4} />
         </div>
@@ -30,9 +30,8 @@ export default function EmptyDashboard() {
             Your first module is a few clicks away.
           </h1>
           <p className="text-neutral-900/75 text-base sm:text-lg mb-6">
-            Modules are your study sets — a topic plus the flashcards you want
-            to learn. Create one, study with Flashcards, Learn, or Test, and
-            Mimir tracks your mastery card-by-card.
+            Modules are your study sets — a topic plus the flashcards you want to learn. Create one,
+            study with Flashcards, Learn, or Test, and Mimir tracks your mastery card-by-card.
           </p>
           <div className="flex flex-wrap gap-3">
             <Button
@@ -65,9 +64,7 @@ export default function EmptyDashboard() {
           rhythm of the populated dashboard so returning users aren't
           surprised by a totally different layout. */}
       <div className="mt-10">
-        <h2 className="text-2xl text-brand-500 font-bold mb-4">
-          Recent Modules
-        </h2>
+        <h2 className="text-2xl text-brand-500 font-bold mb-4">Recent Modules</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <button
             type="button"
@@ -79,21 +76,15 @@ export default function EmptyDashboard() {
                 <div className="mx-auto mb-2 rounded-full bg-brand-500/10 p-2 w-fit">
                   <Plus size={20} className="text-brand-500" />
                 </div>
-                <p className="font-semibold text-gray-800">
-                  Create your first module
-                </p>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  Ctrl+N works here too
-                </p>
+                <p className="font-semibold text-gray-800">Create your first module</p>
+                <p className="text-xs text-gray-500 mt-0.5">Ctrl+N works here too</p>
               </CardContent>
             </Card>
           </button>
           <Card className="bg-gray-50 p-6 h-32 flex items-center justify-center">
             <CardContent className="p-0 text-center text-gray-400">
               <BookOpen size={20} className="mx-auto mb-1" />
-              <p className="text-sm">
-                Modules you study will appear here.
-              </p>
+              <p className="text-sm">Modules you study will appear here.</p>
             </CardContent>
           </Card>
           <div className="hidden md:block">

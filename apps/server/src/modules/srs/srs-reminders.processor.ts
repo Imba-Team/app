@@ -121,7 +121,7 @@ export class SrsRemindersProcessor extends WorkerHost {
     );
   }
 
-  private async remindUser(
+  private remindUser(
     jobId: string,
     payload: SrsRemindUserPayload,
   ): Promise<void> {
@@ -131,5 +131,6 @@ export class SrsRemindersProcessor extends WorkerHost {
     this.logger.log(
       `[job=${jobId}] SRS reminder (stub) userId=${payload.userId} dueCount=${payload.dueCount}`,
     );
+    return Promise.resolve();
   }
 }

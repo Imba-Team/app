@@ -17,13 +17,10 @@ export function useDebouncedValue<T extends string>(
   const [debounced, setDebounced] = useState(value);
 
   useEffect(() => {
-    if (value.trim() === "") {
-      setDebounced(value);
-      return;
-    }
+    if (value.trim() === "") return;
     const t = setTimeout(() => setDebounced(value), delay);
     return () => clearTimeout(t);
   }, [value, delay]);
 
-  return debounced;
+  return value.trim() === "" ? value : debounced;
 }

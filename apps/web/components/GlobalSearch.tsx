@@ -46,7 +46,7 @@ import { useFolders, useLibrarySets } from '@/lib/hooks/useLibrary';
 import { Input } from './ui/input';
 
 const LIMIT = 5;
-const MIN_LENGTH_FOR_REMOTE = 2;
+const minLengthForRemote = 2;
 
 // -----------------------------------------------------------------------------
 // Static pages catalog
@@ -110,12 +110,12 @@ const includes = (q: string, ...hs: (string | null | undefined)[]) =>
 // useSyncExternalStore returns the server snapshot during SSR + the
 // initial client render, then swaps to the real snapshot on the
 // commit that follows hydration — no cascading render.
-const NEVER_SUBSCRIBE = () => () => {};
-const SERVER_SHORTCUT = () => 'Ctrl K';
-const CLIENT_SHORTCUT = () => (/Mac|iPhone|iPod|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K');
+const neverSubscribe = () => () => {};
+const serverShortcut = () => 'Ctrl K';
+const clientShortcut = () => (/Mac|iPhone|iPod|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K');
 
 function useShortcutLabel(): string {
-  return useSyncExternalStore(NEVER_SUBSCRIBE, CLIENT_SHORTCUT, SERVER_SHORTCUT);
+  return useSyncExternalStore(neverSubscribe, clientShortcut, serverShortcut);
 }
 
 // -----------------------------------------------------------------------------
@@ -167,7 +167,7 @@ export function GlobalSearch() {
       cardHits.length +
       communityHits.length >
     0;
-  const showSeeAll = q.length >= MIN_LENGTH_FOR_REMOTE;
+  const showSeeAll = q.length >= minLengthForRemote;
 
   useEffect(() => {
     if (!open) return;
@@ -387,7 +387,7 @@ export function GlobalSearch() {
 // Row + Highlight — shared shell across every section
 // -----------------------------------------------------------------------------
 
-const ICON_BOX = 'mt-0.5 shrink-0 rounded-md bg-brand-500/10 p-1.5 text-brand-500';
+const iconBox = 'mt-0.5 shrink-0 rounded-md bg-brand-500/10 p-1.5 text-brand-500';
 
 function Row({
   value,
@@ -410,7 +410,7 @@ function Row({
 }) {
   return (
     <CommandItem value={value} onSelect={onSelect}>
-      <div className={ICON_BOX}>{icon}</div>
+      <div className={iconBox}>{icon}</div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="truncate text-sm font-semibold text-gray-900">{title}</p>

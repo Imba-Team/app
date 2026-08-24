@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 
 // Kept in sync with AddTerm — matching class means the inline editor
 // looks and behaves identically to the "Add term" form.
-const EDIT_FIELD_CLASS =
+const EditFieldClass =
   'w-full min-h-28 resize-y rounded-2xl border border-black/10 bg-white px-4 py-3 text-base leading-relaxed text-neutral-900 placeholder:text-neutral-400 outline-none transition-colors hover:border-black/20 focus-visible:border-brand-400 focus-visible:ring-4 focus-visible:ring-brand-300/40 disabled:bg-neutral-50';
 
-const KBD_CLASS = 'font-mono rounded border border-black/10 bg-white px-1 text-neutral-700';
+const KbdClass = 'font-mono rounded border border-black/10 bg-white px-1 text-neutral-700';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,7 +42,7 @@ interface TermItemProps {
  * completed` on the wire). A small colored dot is not enough to be
  * accessible; pair it with a text label.
  */
-const STATUS_STYLES: Record<string, { dot: string; label: string; badge: string }> = {
+const statusStyles: Record<string, { dot: string; label: string; badge: string }> = {
   completed: {
     dot: 'bg-emerald-500',
     label: 'Mastered',
@@ -114,7 +114,7 @@ export default function TermItem({
     }
   };
 
-  const status = STATUS_STYLES[term.status ?? 'not_started'] ?? STATUS_STYLES.not_started;
+  const status = statusStyles[term.status ?? 'not_started'] ?? statusStyles.not_started;
 
   const StatusPill = (
     <div
@@ -156,7 +156,7 @@ export default function TermItem({
               onChange={(e) => setEditTermValue(e.target.value)}
               onKeyDown={handleTermKey}
               rows={3}
-              className={EDIT_FIELD_CLASS}
+              className={EditFieldClass}
               placeholder="e.g. photosynthesis"
             />
           </div>
@@ -174,7 +174,7 @@ export default function TermItem({
               onChange={(e) => setEditDefValue(e.target.value)}
               onKeyDown={handleDefKey}
               rows={3}
-              className={EDIT_FIELD_CLASS}
+              className={EditFieldClass}
               placeholder="Explanation (Shift+Enter for a new line)"
             />
           </div>
@@ -183,13 +183,13 @@ export default function TermItem({
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-black/5 pt-4">
           <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-neutral-500">
             <span>
-              <kbd className={KBD_CLASS}>Enter</kbd> save
+              <kbd className={KbdClass}>Enter</kbd> save
             </span>
             <span>
-              <kbd className={KBD_CLASS}>Shift+Enter</kbd> new line
+              <kbd className={KbdClass}>Shift+Enter</kbd> new line
             </span>
             <span>
-              <kbd className={KBD_CLASS}>Esc</kbd> cancel
+              <kbd className={KbdClass}>Esc</kbd> cancel
             </span>
           </div>
           <div className="flex gap-2">

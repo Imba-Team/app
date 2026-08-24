@@ -3569,7 +3569,6 @@
                 "WRITE",
                 "SPELL",
                 "TEST",
-                "MATCH",
                 "AI_FILL_BLANK",
                 "AI_GUESS_WORD"
               ]
@@ -5965,7 +5964,6 @@
               "WRITE",
               "SPELL",
               "TEST",
-              "MATCH",
               "AI_FILL_BLANK",
               "AI_GUESS_WORD"
             ]
@@ -6014,7 +6012,6 @@
               "WRITE",
               "SPELL",
               "TEST",
-              "MATCH",
               "AI_FILL_BLANK",
               "AI_GUESS_WORD"
             ]
@@ -6044,7 +6041,6 @@
               "WRITE",
               "SPELL",
               "TEST",
-              "MATCH",
               "AI_FILL_BLANK",
               "AI_GUESS_WORD"
             ]
@@ -6215,8 +6211,7 @@
               "TEST_MC",
               "TEST_TF",
               "AI_FILL_BLANK",
-              "AI_GUESS_WORD",
-              "MATCH"
+              "AI_GUESS_WORD"
             ]
           },
           "outcome": {
@@ -6519,7 +6514,6 @@
               "WRITE",
               "SPELL",
               "TEST",
-              "MATCH",
               "AI_FILL_BLANK",
               "AI_GUESS_WORD"
             ]
@@ -6583,7 +6577,6 @@
               "WRITE",
               "SPELL",
               "TEST",
-              "MATCH",
               "AI_FILL_BLANK",
               "AI_GUESS_WORD"
             ]
@@ -7122,6 +7115,11 @@
             "type": "string",
             "description": "Anchor text — the term (or definition, under reverse direction) shown on the left column."
           },
+          "candidateFlashcardId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The card whose answer-side text is shown on this row as a draggable candidate pill. Clients must echo this value back as `userMatchedFlashcardId` when the learner drops this pill on an anchor — that is what the server compares against the anchor pair to grade the match."
+          },
           "candidateText": {
             "type": "string",
             "description": "Candidate text — the definition (or term) that should be dragged onto the anchor. Server shuffles the candidate order independently so the correct match is not always at the same row as its anchor."
@@ -7131,6 +7129,7 @@
           "pairId",
           "flashcardId",
           "anchorText",
+          "candidateFlashcardId",
           "candidateText"
         ]
       },
@@ -7279,12 +7278,27 @@
           },
           "isCorrect": {
             "type": "boolean"
+          },
+          "anchorText": {
+            "type": "string",
+            "description": "Prompt-side text of the anchor card (the fixed left-column value under the resolved direction)."
+          },
+          "correctText": {
+            "type": "string",
+            "description": "Answer-side text of the anchor card — the correct match for this anchor."
+          },
+          "userAnswerText": {
+            "type": "string",
+            "nullable": true,
+            "description": "Answer-side text of the card the learner dropped on this anchor. Null when they left it blank."
           }
         },
         "required": [
           "pairId",
           "flashcardId",
-          "isCorrect"
+          "isCorrect",
+          "anchorText",
+          "correctText"
         ]
       },
       "TestQuestionResultDto": {

@@ -40,7 +40,6 @@ export const MODE_WEIGHT: Record<StudyMode, number> = {
   TEST_MATCH: 0.5,
   AI_FILL_BLANK: 1.0,
   AI_GUESS_WORD: 1.0,
-  MATCH: 0,
 };
 
 export interface MasteryConfig {

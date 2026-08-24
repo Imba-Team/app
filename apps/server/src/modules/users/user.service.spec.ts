@@ -133,9 +133,10 @@ describe('UsersService.updateMyProfile', () => {
       } as unknown as { name?: string; bio?: string }),
     });
 
-    const calledWith = prisma.user.update.mock.calls[0][0] as {
-      data: Record<string, unknown>;
-    };
+    const firstCall = prisma.user.update.mock.calls[0] as unknown as [
+      { data: Record<string, unknown> },
+    ];
+    const calledWith = firstCall[0];
     expect(calledWith.data).not.toHaveProperty('role');
     expect(calledWith.data).not.toHaveProperty('status');
     expect(calledWith.data).not.toHaveProperty('email');

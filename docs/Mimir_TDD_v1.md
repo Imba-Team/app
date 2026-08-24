@@ -1347,8 +1347,7 @@ export type StudyMode =
   | 'FLASHCARD' | 'LEARN_MC' | 'LEARN_WRITTEN'
   | 'WRITE'
   | 'TEST_WRITTEN' | 'TEST_MC' | 'TEST_TF'
-  | 'AI_FILL_BLANK' | 'AI_GUESS_WORD'
-  | 'MATCH'; // ingested but never affects mastery (see §8a.3)
+  | 'AI_FILL_BLANK' | 'AI_GUESS_WORD';
 
 export type AttemptOutcome = 'CORRECT' | 'INCORRECT' | 'SKIPPED';
 
@@ -1378,9 +1377,6 @@ export interface CardAttemptEvent {
 | `TEST_TF` | 0.3 | 0.15 |
 | `AI_FILL_BLANK` | 1.0 | 0.5 |
 | `AI_GUESS_WORD` | 1.0 | 0.5 |
-| `MATCH` | **not counted** | **not counted** |
-
-Match Game is logged for engagement analytics but never affects mastery — speed/drag-and-drop has too little evidentiary value, and counting it would let users farm mastery by replaying it.
 
 ### 8a.4 Update Algorithm (pure function)
 
@@ -1395,7 +1391,6 @@ const MODE_WEIGHT: Record<StudyMode, number> = {
   WRITE: 1.0,
   TEST_WRITTEN: 1.0, TEST_MC: 0.5, TEST_TF: 0.3,
   AI_FILL_BLANK: 1.0, AI_GUESS_WORD: 1.0,
-  MATCH: 0,
 };
 
 export interface ProgressState {
@@ -1431,10 +1426,6 @@ export function applyAttempt(
 
   // CORRECT
   const base = MODE_WEIGHT[event.studyMode] ?? 0;
-  if (base === 0) {
-    // Match Game etc. — still count "seen" elsewhere; mastery untouched.
-    return { next: prev, graduated: false, demoted: false };
-  }
   const credit = event.hintUsed ? base * 0.5 : base;
   const newStreak = prev.weightedStreak + credit;
   const reachedMastery = newStreak >= MASTERY_THRESHOLD;
@@ -1923,7 +1914,6 @@ mimir-web/src/                        # Standalone React repo (mimir-web)
 │   │   │   ├── LearnMode.tsx
 │   │   │   ├── WriteMode.tsx
 │   │   │   ├── TestMode.tsx
-│   │   │   ├── MatchMode.tsx
 │   │   │   ├── AiFillBlankMode.tsx
 │   │   │   └── AiGuessWordMode.tsx
 │   │   ├── SessionProvider.tsx   # Session state + answer submission

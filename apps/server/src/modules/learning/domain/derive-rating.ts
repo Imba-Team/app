@@ -26,8 +26,8 @@ export const RATING_FAST_RESPONSE_MS = 3_500;
 
 /**
  * Map a per-attempt event to an SM-2 rating. Returns `null` when the
- * attempt should NOT be forwarded to SRS — SKIPPED answers, and modes
- * with zero mastery weight (e.g. MATCH) don't count as reviews.
+ * attempt should NOT be forwarded to SRS — SKIPPED answers and
+ * FLASHCARD self-report views don't count as reviews.
  *
  * The mapping is intentionally coarse:
  *  - INCORRECT → AGAIN (SM-2 reset).
@@ -42,9 +42,9 @@ export const RATING_FAST_RESPONSE_MS = 3_500;
  */
 export function deriveRating(input: DeriveRatingInput): Sm2Rating | null {
   if (input.outcome === 'SKIPPED') return null;
-  // Non-scoring modes (MATCH has weight 0) shouldn't ping SRS either —
-  // the game modes don't produce a real recall signal.
-  if (input.studyMode === 'MATCH' || input.studyMode === 'FLASHCARD') {
+  // FLASHCARD is a self-report/view mode — no real recall signal, so
+  // skip SRS scheduling.
+  if (input.studyMode === 'FLASHCARD') {
     return null;
   }
 
