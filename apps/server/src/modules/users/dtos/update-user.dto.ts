@@ -32,7 +32,9 @@ export class UpdateUserDto {
   @IsEnum(Role)
   role?: Role;
 
-  @ApiPropertyOptional({ example: '/uploads/profile-pictures/abc.jpg' })
+  @ApiPropertyOptional({
+    example: 'https://cdn.mimir.app/profile-pictures/abc.jpg',
+  })
   @IsOptional()
   @IsString()
   profilePicture?: string;

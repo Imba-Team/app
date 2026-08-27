@@ -1,4 +1,5 @@
 import * as path from 'node:path';
+import * as fs from 'node:fs';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -15,8 +16,6 @@ import { StudySetTagModule } from './modules/study-set-tag/study-set-tag.module'
 import { FolderModule } from './modules/folder/folder.module';
 import { FolderStudySetModule } from './modules/folder-study-set/folder-study-set.module';
 import { CommentModule } from './modules/comment/comment.module';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 import { PrismaModule } from './common/prisma/prisma.module';
 import { HealthModule } from './common/health/health.module';
 import { MetricsModule } from './common/metrics/metrics.module';
@@ -38,10 +37,6 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'), // folder on disk
-      serveRoot: '/uploads', // public URL path root
-    }),
     // Single global throttler. Auth-sensitive routes opt into a stricter
     // limit via @Throttle({ default: { limit, ttl } }) — applying multiple
     // named throttlers globally would force every non-auth route to also
@@ -92,7 +87,15 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     AnalyticsModule,
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: path.resolve(process.cwd(), '../../.env'),
+      // In dev the repo root `.env` sits two levels above `apps/server`. In
+      // containers (or any deploy where the file layout differs) the env is
+      // injected as process env, and no dotenv file exists — skip loading in
+      // that case so ConfigModule falls back to process.env cleanly.
+      envFilePath: (() => {
+        const candidate = path.resolve(process.cwd(), '../../.env');
+        return fs.existsSync(candidate) ? candidate : undefined;
+      })(),
+      ignoreEnvFile: process.env.NODE_ENV === 'production',
     }),
   ],
   providers: [

@@ -38,6 +38,8 @@ export class StorageService implements OnApplicationBootstrap {
   private readonly logger = new Logger(StorageService.name);
   private readonly bucket: string;
   private readonly publicUrl: string;
+  private readonly provider: 'minio' | 'r2' | 's3';
+  private readonly publicUrlIncludesBucket: boolean;
 
   constructor(
     @Inject(STORAGE_CLIENT) private readonly client: MinioClient,
@@ -45,16 +47,34 @@ export class StorageService implements OnApplicationBootstrap {
   ) {
     this.bucket = cfg.get<string>('MINIO_BUCKET') ?? 'mimir';
     // Public URL the FE will hit. In production this should be a CDN
-    // host fronting MinIO; in local dev it points straight at MinIO.
+    // host fronting the bucket; in local dev it points straight at MinIO.
     this.publicUrl =
       cfg.get<string>('MINIO_PUBLIC_URL') ?? 'http://localhost:9000';
+    this.provider =
+      (cfg.get<string>('STORAGE_PROVIDER') ?? 'minio').toLowerCase() as
+        | 'minio'
+        | 'r2'
+        | 's3';
+    // MinIO's public URL is `<endpoint>/<bucket>/<object>`. R2 and most
+    // S3 CDN setups serve at `<host>/<object>` (bucket already baked into
+    // the host or worker route). Default preserves MinIO behavior.
+    this.publicUrlIncludesBucket = this.provider === 'minio';
   }
 
   /**
    * Ensure the configured bucket exists and has a public-read policy
-   * applied. Idempotent: safe to call on every boot.
+   * applied. Idempotent: safe to call on every boot. Skipped for R2/S3
+   * because those providers manage buckets and public-access via their
+   * own dashboards (R2 public dev URL / custom domain, S3 bucket policy
+   * you set once out-of-band).
    */
   async onApplicationBootstrap(): Promise<void> {
+    if (this.provider !== 'minio') {
+      this.logger.log(
+        `Storage provider = ${this.provider}; skipping bucket create + policy bootstrap`,
+      );
+      return;
+    }
     try {
       const exists = await this.client.bucketExists(this.bucket);
       if (!exists) {
@@ -115,7 +135,9 @@ export class StorageService implements OnApplicationBootstrap {
    */
   buildPublicUrl(objectName: string): string {
     const base = this.publicUrl.replace(/\/$/, '');
-    return `${base}/${this.bucket}/${objectName}`;
+    return this.publicUrlIncludesBucket
+      ? `${base}/${this.bucket}/${objectName}`
+      : `${base}/${objectName}`;
   }
 
   /**
