@@ -18,7 +18,7 @@ import type { CommunityModule as CommunitySearchHit } from '@/lib/api';
 import { useCommunityModules } from '@/lib/hooks/useModules';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
 import { toast } from 'sonner';
-import { DiscoverLoading } from './DiscoverSkeleton';
+import { DiscoverLoading } from './discoverSkeleton';
 
 const PageSize = 20;
 
