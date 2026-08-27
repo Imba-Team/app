@@ -1,7 +1,17 @@
-# compiled output
-/dist
-/node_modules
-/build
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build output
+dist
+build
+out
+*.tsbuildinfo
+
+# Tests
+coverage
+*.lcov
+.nyc_output
 
 # Logs
 logs
@@ -14,19 +24,18 @@ lerna-debug.log*
 
 # OS
 .DS_Store
-
-# Tests
-/coverage
-/.nyc_output
+Thumbs.db
 
 # IDEs and editors
-/.idea
+.idea
 .project
 .classpath
 .c9/
 *.launch
 .settings/
 *.sublime-workspace
+*.swp
+*.swo
 
 # IDE - VSCode
 .vscode/*
@@ -41,6 +50,8 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 .env.local
+.env.*.local
+!.env.example
 
 # temp directory
 .temp
@@ -54,3 +65,17 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Playwright
+test-results
+playwright-report
+blob-report
+playwright/.cache
+
+# Turbo / Nx caches (if adopted later)
+.turbo
+.nx/cache
+
+# Other
+TASKS.md
+.neon

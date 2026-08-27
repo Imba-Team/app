@@ -1,0 +1,59 @@
+name: docker-build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - auth
+          - study
+          - learning
+          - srs
+          - ai
+          - classroom
+          - search
+          - notification
+          - analytics
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          load: true
+          tags: mimir/${{ matrix.service }}:ci-${{ github.sha }}
+          build-args: |
+            SERVICE_NAME=${{ matrix.service }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
+
+      - name: Smoke-test container
+        run: |
+          docker run -d --name mimir-${{ matrix.service }} \
+            -e SERVICE_NAME=${{ matrix.service }} \
+            -e JWT_SECRET=ci-test-secret \
+            -e DATABASE_URL=postgresql://mimir:mimir@127.0.0.1:5432/mimir?schema=public \
+            -p 9090:9090 \
+            mimir/${{ matrix.service }}:ci-${{ github.sha }} || true
+          echo "(container start is non-fatal in CI without infra; verifying image was produced)"
+          docker image inspect mimir/${{ matrix.service }}:ci-${{ github.sha }} > /dev/null
