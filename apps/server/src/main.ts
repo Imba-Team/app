@@ -3,8 +3,6 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
-import * as express from 'express';
-import { join } from 'path';
 import { PrismaService } from './common/prisma/prisma.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
@@ -98,8 +96,6 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document); // Access Swagger UI at /api
 
   const port = process.env.PORT || 9090;
-  // Serve uploaded static assets
-  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
   await app.listen(port);
   console.log(`Application is running on: http://localhost:${port}`);
   console.log(

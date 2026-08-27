@@ -86,10 +86,16 @@ export class MagicLinkService {
   }
 
   private buildLink(purpose: MagicLinkPurposeValue, token: string): string {
-    const base =
+    const configured =
       this.config.get<string>('FRONTEND_BASE_URL') ??
-      this.config.get<string>('BASE_URL') ??
-      FALLBACK_FRONTEND_URL;
+      this.config.get<string>('BASE_URL');
+    if (!configured && process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'FRONTEND_BASE_URL is not configured. Refusing to send emails ' +
+          'with localhost links in production.',
+      );
+    }
+    const base = configured ?? FALLBACK_FRONTEND_URL;
     const trimmed = base.replace(/\/$/, '');
     const path = PURPOSE_CONFIG[purpose].frontendPath;
     return `${trimmed}${path}?token=${encodeURIComponent(token)}`;

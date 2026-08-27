@@ -64,6 +64,13 @@ export function loadJwtKeyPair(cfg: ConfigService): JwtKeyPair {
   }
 
   // 4. ephemeral — dev-only fallback
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'JWT key pair is not configured. Set JWT_PRIVATE_KEY[_BASE64|_PATH] + ' +
+        'JWT_PUBLIC_KEY[_BASE64|_PATH]. Refusing to boot with an ephemeral ' +
+        'key pair in production — every restart would invalidate all sessions.',
+    );
+  }
   logger.warn(
     'NO RSA KEY PAIR CONFIGURED. Generating an ephemeral key pair for ' +
       'this process. All sessions will be invalidated when the app ' +

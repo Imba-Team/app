@@ -38,13 +38,23 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     // boot for dev / OpenAPI generation / tests without a Google
     // project) by passing harmless placeholders; the GoogleOauthGuard
     // would still bounce real requests to a non-existent Google app
-    // gracefully.
+    // gracefully. In production we hard-fail instead so a missing env
+    // doesn't silently ship a broken localhost callback URL to users.
+    const clientId = cfg.get<string>('GOOGLE_CLIENT_ID');
+    const clientSecret = cfg.get<string>('GOOGLE_CLIENT_SECRET');
+    const callbackURL = cfg.get<string>('GOOGLE_CALLBACK_URL');
+    if (process.env.NODE_ENV === 'production') {
+      if (!clientId || !clientSecret || !callbackURL) {
+        throw new Error(
+          'Google OAuth is not configured. Set GOOGLE_CLIENT_ID, ' +
+            'GOOGLE_CLIENT_SECRET, and GOOGLE_CALLBACK_URL in production.',
+        );
+      }
+    }
     super({
-      clientID: cfg.get<string>('GOOGLE_CLIENT_ID') || 'disabled',
-      clientSecret: cfg.get<string>('GOOGLE_CLIENT_SECRET') || 'disabled',
-      callbackURL:
-        cfg.get<string>('GOOGLE_CALLBACK_URL') ||
-        'http://localhost/auth/google/callback',
+      clientID: clientId || 'disabled',
+      clientSecret: clientSecret || 'disabled',
+      callbackURL: callbackURL || 'http://localhost/auth/google/callback',
       scope: ['profile', 'email'],
       // Needed so we can inspect the link-intent cookie on the callback
       // and branch between login vs. account-link handling.

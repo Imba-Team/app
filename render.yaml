@@ -1,0 +1,141 @@
+# Render Blueprint for the Mimir API (@mimir/server).
+#
+# The web app (apps/web) is not deployed here — pick a target for it
+# separately (Render static/Web Service, Vercel, or Railway).
+#
+# One-time setup after `render blueprint apply`:
+#   1. Fill in every env var marked `sync: false` in the dashboard.
+#   2. On paid plans `preDeployCommand` runs `prisma migrate deploy`
+#      before traffic switches. On the free plan, remove it and run
+#      `pnpm --filter @mimir/server prisma:deploy` manually after each
+#      schema change.
+#   3. Point GOOGLE_CALLBACK_URL at
+#      https://<this-service>.onrender.com/auth/google/callback and
+#      register that URL in the Google OAuth console.
+
+services:
+  - type: web
+    name: mimir-api
+    runtime: node
+    plan: starter
+    region: frankfurt
+    branch: main
+    autoDeploy: true
+
+    # Repo root is the build context so pnpm workspace resolution works.
+    rootDir: .
+
+    buildCommand: |
+      corepack enable
+      pnpm install --frozen-lockfile
+      pnpm --filter @mimir/server exec prisma generate
+      pnpm --filter @mimir/server build
+
+    # Runs after build, before traffic switches. Requires a paid plan.
+    preDeployCommand: pnpm --filter @mimir/server exec prisma migrate deploy
+
+    startCommand: node apps/server/dist/main.js
+
+    healthCheckPath: /health
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 9090
+
+      # --- Database ---
+      # Point at Render Postgres or an external (Neon/Supabase) URL.
+      - key: DATABASE_URL
+        sync: false
+
+      # --- JWT signing keys (RSA) ---
+      # Prefer BASE64 vars so Render's env editor doesn't mangle newlines.
+      - key: JWT_PRIVATE_KEY_BASE64
+        sync: false
+      - key: JWT_PUBLIC_KEY_BASE64
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ISSUER
+        value: mimir-api
+      - key: JWT_ACCESS_TTL
+        value: 15m
+      - key: JWT_REFRESH_TTL_DAYS
+        value: "30"
+
+      # --- URLs that drive email links, CORS, OAuth redirects ---
+      - key: FRONTEND_BASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+
+      # --- Google OAuth ---
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        sync: false
+
+      # --- Redis (BullMQ + rate limiter) ---
+      - key: REDIS_URL
+        sync: false
+
+      # --- Object storage (Cloudflare R2, S3-compatible) ---
+      # Setup in the Cloudflare dashboard:
+      #   1. Create an R2 bucket (name goes in MINIO_BUCKET).
+      #   2. Create an R2 API token (Object Read & Write) — the
+      #      access key ID + secret access key go in MINIO_ROOT_USER /
+      #      MINIO_ROOT_PASSWORD.
+      #   3. Either enable the bucket's public "r2.dev" URL, OR bind a
+      #      custom domain — whichever host you pick goes in
+      #      MINIO_PUBLIC_URL (WITHOUT the bucket in the path — the app
+      #      auto-strips it when STORAGE_PROVIDER=r2).
+      #   4. MINIO_ENDPOINT_HOST is the S3 API host:
+      #      <account-id>.r2.cloudflarestorage.com
+      - key: STORAGE_PROVIDER
+        value: r2
+      - key: MINIO_ENDPOINT_HOST
+        sync: false            # <account-id>.r2.cloudflarestorage.com
+      - key: MINIO_ENDPOINT_PORT
+        value: "443"
+      - key: MINIO_USE_SSL
+        value: "true"
+      - key: MINIO_ROOT_USER
+        sync: false            # R2 access key ID
+      - key: MINIO_ROOT_PASSWORD
+        sync: false            # R2 secret access key
+      - key: MINIO_BUCKET
+        sync: false            # R2 bucket name
+      - key: MINIO_PUBLIC_URL
+        sync: false            # https://pub-<hash>.r2.dev  OR  https://cdn.mimir.app
+
+      # --- Mail (SendGrid or SMTP) ---
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: NO_REPLY_MAIL
+        sync: false
+
+      # --- Anthropic (AI features) ---
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-sonnet-4-6
+
+      # --- Elasticsearch (search) ---
+      # Optional at boot but SearchModule will complain if absent.
+      - key: ELASTICSEARCH_NODE
+        sync: false
+
+      # --- Throttling / login lockout ---
+      - key: DEFAULT_THROTTLE_LIMIT
+        value: "100"
+      - key: DEFAULT_THROTTLE_TTL_SECONDS
+        value: "60"
+      - key: LOGIN_MAX_ATTEMPTS
+        value: "5"
+      - key: LOGIN_LOCKOUT_MINUTES
+        value: "15"
