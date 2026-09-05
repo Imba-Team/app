@@ -6,6 +6,7 @@ import {
   SEARCH_SYNC_QUEUE,
   SRS_REMINDERS_QUEUE,
 } from './queue.constants';
+import { resolveRedisConnectionOptions } from '../redis/redis.config';
 
 /**
  * Wires the BullMQ connection (Redis) and registers all queues we own.
@@ -24,9 +25,7 @@ import {
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         connection: {
-          host: cfg.get<string>('REDIS_HOST') ?? 'localhost',
-          port: cfg.get<number>('REDIS_PORT') ?? 6379,
-          password: cfg.get<string>('REDIS_PASSWORD') || undefined,
+          ...resolveRedisConnectionOptions(cfg),
           // Standardised reconnect — BullMQ uses ioredis under the hood.
           maxRetriesPerRequest: null,
           enableReadyCheck: true,
