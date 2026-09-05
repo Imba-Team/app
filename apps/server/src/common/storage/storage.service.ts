@@ -50,11 +50,9 @@ export class StorageService implements OnApplicationBootstrap {
     // host fronting the bucket; in local dev it points straight at MinIO.
     this.publicUrl =
       cfg.get<string>('MINIO_PUBLIC_URL') ?? 'http://localhost:9000';
-    this.provider =
-      (cfg.get<string>('STORAGE_PROVIDER') ?? 'minio').toLowerCase() as
-        | 'minio'
-        | 'r2'
-        | 's3';
+    this.provider = (
+      cfg.get<string>('STORAGE_PROVIDER') ?? 'minio'
+    ).toLowerCase() as 'minio' | 'r2' | 's3';
     // MinIO's public URL is `<endpoint>/<bucket>/<object>`. R2 and most
     // S3 CDN setups serve at `<host>/<object>` (bucket already baked into
     // the host or worker route). Default preserves MinIO behavior.

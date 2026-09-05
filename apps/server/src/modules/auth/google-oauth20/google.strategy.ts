@@ -1,9 +1,17 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Profile, Strategy, VerifyCallback } from 'passport-google-oauth20';
 import { Request } from 'express';
 import { AuthService } from '../auth.service';
+
+export function isGoogleOauthConfigured(cfg: ConfigService): boolean {
+  return Boolean(
+    cfg.get<string>('GOOGLE_CLIENT_ID') &&
+    cfg.get<string>('GOOGLE_CLIENT_SECRET') &&
+    cfg.get<string>('GOOGLE_CALLBACK_URL'),
+  );
+}
 
 export interface GoogleProfilePayload {
   providerId: string;
@@ -34,22 +42,18 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     private readonly authService: AuthService,
   ) {
     // passport-google-oauth20 throws at construction time if any of the
-    // three options are falsy. We tolerate missing env (so the app can
-    // boot for dev / OpenAPI generation / tests without a Google
-    // project) by passing harmless placeholders; the GoogleOauthGuard
-    // would still bounce real requests to a non-existent Google app
-    // gracefully. In production we hard-fail instead so a missing env
-    // doesn't silently ship a broken localhost callback URL to users.
+    // three options are falsy. When creds are absent we pass harmless
+    // placeholders and the auth controller short-circuits the /auth/google
+    // endpoints with 404, so the strategy is never actually invoked.
     const clientId = cfg.get<string>('GOOGLE_CLIENT_ID');
     const clientSecret = cfg.get<string>('GOOGLE_CLIENT_SECRET');
     const callbackURL = cfg.get<string>('GOOGLE_CALLBACK_URL');
-    if (process.env.NODE_ENV === 'production') {
-      if (!clientId || !clientSecret || !callbackURL) {
-        throw new Error(
-          'Google OAuth is not configured. Set GOOGLE_CLIENT_ID, ' +
-            'GOOGLE_CLIENT_SECRET, and GOOGLE_CALLBACK_URL in production.',
-        );
-      }
+    if (!clientId || !clientSecret || !callbackURL) {
+      new Logger(GoogleStrategy.name).warn(
+        'Google OAuth is not configured (missing GOOGLE_CLIENT_ID / ' +
+          'GOOGLE_CLIENT_SECRET / GOOGLE_CALLBACK_URL). The /auth/google ' +
+          'endpoints will return 404 until credentials are provided.',
+      );
     }
     super({
       clientID: clientId || 'disabled',
