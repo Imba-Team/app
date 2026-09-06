@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: 'Mimir',
   description: 'Study smarter with flashcards, quizzes, and modules',
+  icons: {
+    icon: [{ url: '/favicon.png', sizes: 'any' }],
+  },
 };
 
 export default function RootLayout({
