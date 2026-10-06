@@ -29,11 +29,13 @@ import { STORAGE_CLIENT } from './storage.constants';
         const endpoint = cfg.get<string>('MINIO_ENDPOINT_HOST') ?? 'localhost';
         // For R2 / hosted S3 the port is implicit in the scheme (443).
         const port =
-          Number(cfg.get<string>('MINIO_ENDPOINT_PORT')) || (isMinio ? 9000 : 443);
+          Number(cfg.get<string>('MINIO_ENDPOINT_PORT')) ||
+          (isMinio ? 9000 : 443);
         // Default useSSL to true for anything that isn't local MinIO.
         const useSSL =
-          (cfg.get<string>('MINIO_USE_SSL') ?? (isMinio ? 'false' : 'true'))
-            .toLowerCase() === 'true';
+          (
+            cfg.get<string>('MINIO_USE_SSL') ?? (isMinio ? 'false' : 'true')
+          ).toLowerCase() === 'true';
         // R2 requires region "auto"; MinIO ignores it.
         const region =
           cfg.get<string>('STORAGE_REGION') ??
@@ -45,7 +47,10 @@ import { STORAGE_CLIENT } from './storage.constants';
         const secretKey =
           cfg.get<string>('MINIO_ROOT_PASSWORD') ??
           cfg.get<string>('MINIO_SECRET_KEY');
-        if (process.env.NODE_ENV === 'production' && (!accessKey || !secretKey)) {
+        if (
+          process.env.NODE_ENV === 'production' &&
+          (!accessKey || !secretKey)
+        ) {
           throw new Error(
             'Object storage credentials are not configured. Set ' +
               'MINIO_ROOT_USER + MINIO_ROOT_PASSWORD (or *_ACCESS_KEY / ' +
