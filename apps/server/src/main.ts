@@ -122,8 +122,7 @@ function printStartupBanner({ apiPort, webPort, env }: BannerConfig): void {
   const yellow = (t: string) => paint('33', t);
   const magenta = (t: string) => paint('35', t);
 
-  const envTint =
-    env === 'production' ? green : env === 'test' ? yellow : cyan;
+  const envTint = env === 'production' ? green : env === 'test' ? yellow : cyan;
   const rows: Array<[string, string]> = [
     ['env', envTint(env)],
     ['api', cyan(`http://localhost:${apiPort}`)],
@@ -132,9 +131,7 @@ function printStartupBanner({ apiPort, webPort, env }: BannerConfig): void {
     ['web', `${magenta(`http://localhost:${webPort}`)}  ${dim('(next.js)')}`],
   ];
   const title = 'Mimir API — ready';
-  const labelWidth = Math.max(
-    ...rows.map(([k]) => k.length),
-  );
+  const labelWidth = Math.max(...rows.map(([k]) => k.length));
 
   const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
   const visibleLen = (s: string) => stripAnsi(s).length;
@@ -162,7 +159,6 @@ function printStartupBanner({ apiPort, webPort, env }: BannerConfig): void {
     dim(`└${hbar}┘`),
   ];
 
-  // eslint-disable-next-line no-console
   console.log('\n' + lines.join('\n') + '\n');
 }
 

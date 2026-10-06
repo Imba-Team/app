@@ -23,31 +23,6 @@ import { resolveRedisConnectionOptions } from '../redis/redis.config';
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => {
-        const redisUrl = cfg.get<string>('REDIS_URL');
-        const connection = redisUrl
-          ? {
-              url: redisUrl,
-              maxRetriesPerRequest: null,
-              enableReadyCheck: true,
-            }
-          : {
-              host: cfg.get<string>('REDIS_HOST') ?? 'localhost',
-              port: cfg.get<number>('REDIS_PORT') ?? 6379,
-              password: cfg.get<string>('REDIS_PASSWORD') || undefined,
-              maxRetriesPerRequest: null,
-              enableReadyCheck: true,
-            };
-        return {
-          connection,
-          defaultJobOptions: {
-            attempts: 5,
-            backoff: { type: 'exponential', delay: 1000 },
-            removeOnComplete: { age: 24 * 3600, count: 1000 },
-            removeOnFail: { age: 7 * 24 * 3600, count: 5000 },
-          },
-        };
-      },
       useFactory: (cfg: ConfigService) => ({
         connection: {
           ...resolveRedisConnectionOptions(cfg),
