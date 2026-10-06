@@ -28,10 +28,11 @@ export function useLibrarySets() {
   });
 }
 
-export function useFolders() {
+export function useFolders(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: libraryKeys.folders(),
     queryFn: getFolders,
+    enabled: options?.enabled ?? true,
   });
 }
 

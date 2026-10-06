@@ -80,7 +80,7 @@ export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Prop
   const [importOpen, setImportOpen] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
 
-  const folders = useFolders();
+  const folders = useFolders({ enabled: open });
   const createModule = useCreateModule();
   const addToFolder = useAddSetsToFolder();
 

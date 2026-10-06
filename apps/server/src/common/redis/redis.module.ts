@@ -32,6 +32,16 @@ import { resolveRedisConfig } from './redis.config';
       inject: [ConfigService],
       useFactory: (cfg: ConfigService): Redis => {
         const logger = new Logger('RedisClient');
+        const redisUrl = cfg.get<string>('REDIS_URL');
+        const client = redisUrl
+          ? new Redis(redisUrl, { lazyConnect: true, maxRetriesPerRequest: 5 })
+          : new Redis({
+              host: cfg.get<string>('REDIS_HOST') ?? 'localhost',
+              port: cfg.get<number>('REDIS_PORT') ?? 6379,
+              password: cfg.get<string>('REDIS_PASSWORD') || undefined,
+              lazyConnect: true,
+              maxRetriesPerRequest: 5,
+            });
         const { url, options } = resolveRedisConfig(cfg);
         const commonOptions = {
           ...options,
