@@ -8,6 +8,7 @@ import {
   UseGuards,
   Req,
   Delete,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -24,7 +25,10 @@ import { VerifyEmailRequestDto } from './dtos/verify-email.dto';
 import { ResendVerificationRequestDto } from './dtos/resend-verification.dto';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
 import { JwtGuard } from 'src/guards/jwt.guard';
-import type { GoogleAuthResult } from './google-oauth20/google.strategy';
+import {
+  isGoogleOauthConfigured,
+  type GoogleAuthResult,
+} from './google-oauth20/google.strategy';
 
 // Sensitive auth endpoints are rate-limited per IP. The values here are
 // conservative starting points — they sit on top of the per-account
@@ -314,6 +318,9 @@ export class AuthController {
     @Req() req: Request & { user: { id: string } },
     @Res() res: Response,
   ): void {
+    if (!isGoogleOauthConfigured(this.configService)) {
+      throw new NotFoundException('Google OAuth is not configured');
+    }
     this.authService.issueGoogleLinkIntentCookie(res, req.user.id);
     res.redirect('/auth/google');
   }

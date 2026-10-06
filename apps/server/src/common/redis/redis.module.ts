@@ -8,6 +8,7 @@ import {
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { REDIS_CLIENT } from './redis.constants';
+import { resolveRedisConfig } from './redis.config';
 
 /**
  * Provides a singleton ioredis client at the application level.
@@ -41,6 +42,15 @@ import { REDIS_CLIENT } from './redis.constants';
               lazyConnect: true,
               maxRetriesPerRequest: 5,
             });
+        const { url, options } = resolveRedisConfig(cfg);
+        const commonOptions = {
+          ...options,
+          lazyConnect: true,
+          maxRetriesPerRequest: 5,
+        };
+        const client = url
+          ? new Redis(url, commonOptions)
+          : new Redis(commonOptions);
 
         client.on('error', (err) => {
           logger.warn(`Redis client error: ${err.message}`);

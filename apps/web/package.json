@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "dotenv -e ../../.env -- sh -c 'next dev -p ${WEB_PORT:-3000}'",
     "build": "next build",
-    "start": "next start",
+    "start": "dotenv -e ../../.env -- sh -c 'next start -p ${WEB_PORT:-3000}'",
     "lint": "eslint --format stylish",
     "generate:api-types": "pnpm --filter @mimir/server openapi && cp ../server/generated/api-types.ts lib/api/generated.ts && echo '✓ api-types synced to apps/web/lib/api/generated.ts'"
   },
@@ -47,6 +47,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv": "^17.4.2",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
     "eslint-formatter-unix": "^9.0.1",

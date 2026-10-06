@@ -100,12 +100,14 @@ export class AuthService {
   }
 
   private hintCookieOptions(): CookieOptions {
+    const domain = this.configService.get<string>('COOKIE_DOMAIN');
     return {
       httpOnly: false,
       path: '/',
       maxAge: this.refreshTtlMs(),
       sameSite: this.isProduction() ? 'none' : 'lax',
       secure: this.isProduction(),
+      ...(domain ? { domain } : {}),
     };
   }
 
