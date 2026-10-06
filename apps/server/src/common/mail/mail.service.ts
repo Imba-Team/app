@@ -2,10 +2,11 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
 import * as sendgrid from '@sendgrid/mail';
+import { Resend } from 'resend';
 import { LoggerService } from '../logger/logger.service';
 import { MailJobPayload } from 'src/common/queue/queue.constants';
 
-type Transport = 'sendgrid' | 'smtp' | 'noop';
+type Transport = 'resend' | 'sendgrid' | 'smtp' | 'noop';
 
 /**
  * MailService is a transport-aware delivery layer.
@@ -23,6 +24,7 @@ export class MailService implements OnModuleInit {
   private readonly context = 'MailService';
   private transport: Transport = 'noop';
   private fromAddress = '';
+  private resendClient: Resend | null = null;
 
   constructor(
     private readonly mailerService: MailerService,
@@ -45,6 +47,14 @@ export class MailService implements OnModuleInit {
         'Neither MAIL_FROM nor NO_REPLY_MAIL is set — outbound mail will be ' +
           'rejected by the transport at send time.',
       );
+    }
+
+    const resendKey = this.configService.get<string>('RESEND_API_KEY');
+    if (resendKey) {
+      this.resendClient = new Resend(resendKey);
+      this.transport = 'resend';
+      this.logger.log('Mail transport: Resend HTTP API');
+      return;
     }
 
     if (sendgridKey) {
@@ -82,6 +92,8 @@ export class MailService implements OnModuleInit {
     }
 
     switch (this.transport) {
+      case 'resend':
+        return this.deliverViaResend(payload);
       case 'sendgrid':
         return this.deliverViaSendGrid(payload);
       case 'smtp':
@@ -106,6 +118,27 @@ export class MailService implements OnModuleInit {
     html: string;
   }): Promise<boolean> {
     return this.deliver({ ...options, context: 'legacy.sendMail' });
+  }
+
+  private async deliverViaResend(payload: MailJobPayload): Promise<boolean> {
+    try {
+      const { error } = await this.resendClient!.emails.send({
+        to: payload.to,
+        from: this.fromAddress,
+        subject: payload.subject,
+        html: payload.html,
+      });
+      if (error) {
+        this.logger.error(
+          `Resend send error: ${error.message} to=${payload.to}`,
+        );
+        return false;
+      }
+      return true;
+    } catch (err) {
+      this.logger.error(this.describeError('Resend send error', err));
+      return false;
+    }
   }
 
   private async deliverViaSendGrid(payload: MailJobPayload): Promise<boolean> {

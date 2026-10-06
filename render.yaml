@@ -111,7 +111,10 @@ services:
       - key: MINIO_PUBLIC_URL
         sync: false            # https://pub-<hash>.r2.dev  OR  https://cdn.mimir.app
 
-      # --- Mail (SendGrid or SMTP) ---
+      # --- Mail (Resend, SendGrid, or SMTP) ---
+      # Set RESEND_API_KEY to use Resend HTTP API (recommended on Render — no SMTP port blocking).
+      - key: RESEND_API_KEY
+        sync: false
       - key: SENDGRID_API_KEY
         sync: false
       - key: MAIL_FROM
