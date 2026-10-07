@@ -23,7 +23,14 @@ apiClient.interceptors.request.use(
 );
 
 const refreshUrl = '/auth/refresh';
-const noRefreshUrls = new Set([refreshUrl, '/auth/login', '/auth/register', '/auth/logout']);
+const noRefreshUrls = new Set([
+  refreshUrl,
+  '/auth/login',
+  '/auth/register',
+  '/auth/logout',
+  '/auth/verify-email',
+  '/auth/resend-verification',
+]);
 
 let refreshPromise: Promise<void> | null = null;
 

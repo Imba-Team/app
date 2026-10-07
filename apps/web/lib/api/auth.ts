@@ -78,6 +78,23 @@ export async function registerUser(credentials: {
   }
 }
 
+export async function verifyEmail(token: string): Promise<{ email: string }> {
+  try {
+    const { data } = await apiClient.post<{ email: string }>('/auth/verify-email', { token });
+    return data;
+  } catch (err) {
+    throw toAuthError(err, 'Email verification failed');
+  }
+}
+
+export async function resendVerification(email: string): Promise<void> {
+  try {
+    await apiClient.post('/auth/resend-verification', { email });
+  } catch (err) {
+    throw toAuthError(err, 'Could not resend verification email');
+  }
+}
+
 export async function logoutUser() {
   try {
     const { data } = await apiClient.post<AuthResponse<null>>('/auth/logout');

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Lock } from 'lucide-react';
+import { Lock, Mail } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useLogin } from '@/lib/hooks/useAuth';
@@ -20,6 +20,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import Link from 'next/link';
 import { GoogleButton } from '@/components/auth/google-button';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { PasswordInput } from '@/components/auth/password-input';
@@ -45,6 +46,7 @@ export default function LoginPage() {
   const login = useLogin();
 
   const [error, setError] = useState('');
+  const [emailNotVerified, setEmailNotVerified] = useState(false);
   const [lockUntil, setLockUntil] = useState<number | null>(null);
   const [now, setNow] = useState<number>(() => Date.now());
 
@@ -87,6 +89,11 @@ export default function LoginPage() {
           const seconds = err.retryAfterSeconds ?? 0;
           setLockUntil(Date.now() + seconds * 1000);
           setNow(Date.now());
+          setError('');
+          return;
+        }
+        if (err instanceof AuthApiError && err.code === 'EMAIL_NOT_VERIFIED') {
+          setEmailNotVerified(true);
           setError('');
           return;
         }
@@ -140,6 +147,7 @@ export default function LoginPage() {
                       onChange={(e) => {
                         field.onChange(e);
                         setError('');
+                        setEmailNotVerified(false);
                       }}
                       className="h-12 rounded-xl border-gray-300 focus-visible:ring-brand-400 disabled:opacity-60"
                     />
@@ -161,6 +169,7 @@ export default function LoginPage() {
                       onChange={(e) => {
                         field.onChange(e);
                         setError('');
+                        setEmailNotVerified(false);
                       }}
                       autoComplete="current-password"
                       placeholder="Your password"
@@ -172,6 +181,24 @@ export default function LoginPage() {
                 </FormItem>
               )}
             />
+
+            {emailNotVerified && !isLocked && (
+              <div
+                role="alert"
+                className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+              >
+                <Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <div>
+                  <p className="font-semibold">Please verify your email before signing in</p>
+                  <Link
+                    href={`/auth/verify-email/pending?email=${encodeURIComponent(form.getValues('email'))}`}
+                    className="mt-1 inline-block underline hover:text-amber-700"
+                  >
+                    Resend verification email
+                  </Link>
+                </div>
+              </div>
+            )}
 
             {isLocked && (
               <div

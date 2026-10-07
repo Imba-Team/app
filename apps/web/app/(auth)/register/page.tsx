@@ -32,7 +32,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, checkAuthentication } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const register = useRegister();
 
   const [error, setError] = useState("");
@@ -49,9 +49,8 @@ export default function RegisterPage() {
   const handleSubmit = (values: RegisterFormValues) => {
     setError("");
     register.mutate(values, {
-      onSuccess: async () => {
-        await checkAuthentication();
-        router.push("/dashboard");
+      onSuccess: () => {
+        router.push(`/auth/verify-email/pending?email=${encodeURIComponent(values.email)}`);
       },
       onError: (err: Error) => setError(err.message),
     });

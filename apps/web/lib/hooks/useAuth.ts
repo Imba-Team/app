@@ -6,6 +6,8 @@ import {
   loginUser,
   logoutUser,
   registerUser,
+  verifyEmail,
+  resendVerification,
 } from '@/lib/api/auth';
 
 const authKeys = {
@@ -44,6 +46,21 @@ export function useAuthMe() {
     queryKey: authKeys.me(),
     queryFn: getAuthMe,
     retry: false,
+  });
+}
+
+export function useVerifyEmail() {
+  return useMutation({
+    mutationFn: (token: string) => verifyEmail(token),
+  });
+}
+
+export function useResendVerification() {
+  return useMutation({
+    mutationFn: (email: string) => resendVerification(email),
+    onError: (error: Error) => {
+      toast.error(error.message || 'Could not send verification email');
+    },
   });
 }
 

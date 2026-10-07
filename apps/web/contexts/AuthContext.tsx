@@ -81,7 +81,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Check authentication when navigating to protected routes
   useEffect(() => {
     const publicPaths = ["/", "/login", "/register"];
-    const isPublicPath = publicPaths.includes(pathname);
+    const isPublicPath =
+      publicPaths.includes(pathname) ||
+      pathname.startsWith('/auth/verify-email') ||
+      pathname.startsWith('/auth/callback');
 
     if (!isPublicPath && !isLoading && !isAuthenticated) {
       router.push("/login");
