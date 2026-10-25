@@ -27,9 +27,10 @@ function unwrap<T>(res: { ok: boolean; message?: string; data?: T } | undefined,
   return res.data;
 }
 
-export function useMe() {
+export function useMe({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: userKeys.me(),
+    enabled,
     queryFn: async () => {
       const res = await apiFetch("get", "/users/me");
       return unwrap(res, "Failed to load profile");

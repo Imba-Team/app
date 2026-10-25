@@ -4,12 +4,20 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, LogIn, LogOut, Moon, Plus, Settings, Sun, User2 } from 'lucide-react';
+import { Bell, LogIn, LogOut, Menu, Moon, Plus, Settings, Sun, User2 } from 'lucide-react';
 
 import { GlobalSearch } from '@/components/GlobalSearch';
 
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Skeleton } from './ui/skeleton';
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from './ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +30,7 @@ import { useCreateModuleDialog } from '@/contexts/CreateModuleDialogContext';
 import { useMe } from '@/lib/hooks/useUser';
 import { buildAssetUrl } from '@/lib/env';
 import { cn } from '@/lib/utils';
-import { Button } from './ui/button';
+import { Button, buttonVariants } from './ui/button';
 
 type NavLink = { label: string; href: string };
 
@@ -33,6 +41,7 @@ const AppLinks: NavLink[] = [
 ];
 
 const LandingLinks: NavLink[] = [
+  { label: 'Why it works', href: '#why-it-works' },
   { label: 'How it works', href: '#how-it-works' },
   { label: 'Features', href: '#features' },
   { label: 'FAQ', href: '#faq' },
@@ -49,7 +58,8 @@ export type NavbarVariant = 'landing' | 'app';
 export default function Navbar({ variant }: { variant: NavbarVariant }) {
   const pathname = usePathname();
   const { isAuthenticated, isLoading, logout } = useAuth();
-  const { data: me } = useMe();
+  // Anonymous visitors have no profile to load — fetching would only 401.
+  const { data: me } = useMe({ enabled: isAuthenticated });
   const scrolled = useHasScrolled();
   const createModule = useCreateModuleDialog();
 
@@ -91,7 +101,9 @@ export default function Navbar({ variant }: { variant: NavbarVariant }) {
             </Button>
           )}
 
-          <SlideNav links={links} pathname={pathname} />
+          <div className="hidden md:block">
+            <SlideNav links={links} pathname={pathname} />
+          </div>
 
           {variant === 'app' ? (
             <AppActions
@@ -117,9 +129,61 @@ export default function Navbar({ variant }: { variant: NavbarVariant }) {
               onLogout={logout}
             />
           )}
+
+          <div className="md:hidden">
+            <MobileNav
+              links={links}
+              showAuthLinks={variant === 'landing' && !isLoading && !isAuthenticated}
+            />
+          </div>
         </div>
       </div>
     </header>
+  );
+}
+
+// Mobile navigation — SlideNav is hidden below md, so its links live in a sheet.
+
+function MobileNav({ links, showAuthLinks }: { links: NavLink[]; showAuthLinks: boolean }) {
+  const itemClass =
+    'rounded-full px-4 py-2.5 text-sm font-medium text-neutral-800 transition-colors hover:bg-black/5';
+
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button type="button" variant="navbar" size="icon-sm" aria-label="Open menu">
+          <Menu className="size-4" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="right" className="w-72 bg-white p-6" aria-describedby={undefined}>
+        <SheetHeader className="p-0">
+          <SheetTitle className="text-xl font-bold text-neutral-800">Mimir</SheetTitle>
+        </SheetHeader>
+        <nav className="-mx-4 flex flex-col gap-1">
+          {links.map((link) => (
+            <SheetClose key={link.href} asChild>
+              <Link href={link.href} className={itemClass}>
+                {link.label}
+              </Link>
+            </SheetClose>
+          ))}
+        </nav>
+        {showAuthLinks && (
+          <div className="mt-auto flex flex-col gap-2">
+            <SheetClose asChild>
+              <Link href="/login" className={buttonVariants({ variant: 'secondary' })}>
+                Log in
+              </Link>
+            </SheetClose>
+            <SheetClose asChild>
+              <Link href="/register" className={buttonVariants()}>
+                Sign up
+              </Link>
+            </SheetClose>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -173,7 +237,7 @@ function NavTab({
       <Link
         href={link.href}
         className={cn(
-          'block rounded-full px-8 py-2 text-sm font-medium transition-colors',
+          'block rounded-full px-5 py-2 text-sm font-medium transition-colors',
           active ? 'bg-neutral-900 text-white' : 'text-neutral-800',
         )}
       >
@@ -291,11 +355,11 @@ type AvatarProps = {
 
 function ProfileAvatar({ isLoading, hasProfilePicture, avatarSrc, avatarAlt }: AvatarProps) {
   if (isLoading) {
-    return <Skeleton className="size-9 rounded-full" />;
+    return <Skeleton className="rounded-full" />;
   }
   if (hasProfilePicture) {
     return (
-      <Avatar className="size-9">
+      <Avatar className="h-auto">
         <AvatarImage src={avatarSrc} alt={avatarAlt} crossOrigin="anonymous" />
         <AvatarFallback>
           <User2 className="size-4 text-neutral-500" />
@@ -353,7 +417,7 @@ function AppActions({
             type="button"
             variant="secondary"
             aria-label="Open profile menu"
-            className="inline-flex size-11 items-center justify-center hover:bg-white"
+            className="inline-flex size-11 items-center justify-center rounded-full hover:bg-white p-1"
           >
             <ProfileAvatar
               isLoading={isLoading}
@@ -395,41 +459,35 @@ function LandingActions({
 
   if (isAuthenticated) {
     return (
-      <Link href="/dashboard">
-        <Button
-          type="button"
-          aria-label={`Continue as ${displayName ?? 'signed-in user'}`}
-          className="h-9 flex px-1.5"
-          variant="navbar"
-        >
+      <Button asChild className="h-9 flex px-1.5" variant="navbar">
+        <Link href="/dashboard" aria-label={`Continue as ${displayName ?? 'signed-in user'}`}>
           <ProfileAvatar
             hasProfilePicture={hasProfilePicture}
             avatarSrc={avatarSrc}
             avatarAlt={avatarAlt}
           />
           <span className="text-sm font-medium">
-            <span className="text-neutral-500">Continue as</span>{' '}
+            <span className="hidden text-neutral-500 sm:inline">Continue as</span>{' '}
             <span className="text-neutral-900">{displayName || 'you'}</span>
           </span>
-        </Button>
-      </Link>
+        </Link>
+      </Button>
     );
   }
 
   return (
     <div className="flex items-center gap-2">
-      <Link href="/login">
-        <Button variant="navbar" className="h-9">
-          <LogIn className="mr-1 h-4 w-4" />
-          Log in
+      <div className="hidden sm:block">
+        <Button asChild variant="navbar" className="h-9">
+          <Link href="/login">
+            <LogIn className="mr-1 h-4 w-4" />
+            Log in
+          </Link>
         </Button>
-      </Link>
-      <Link href="/register">
-        <Button variant="default">
-          <LogIn className="mr-1 h-4 w-4" />
-          Sign up
-        </Button>
-      </Link>
+      </div>
+      <Button asChild>
+        <Link href="/register">Sign up</Link>
+      </Button>
     </div>
   );
 }

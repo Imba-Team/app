@@ -7,6 +7,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-montserrat);
   --font-mono: var(--font-geist-mono);
+  /* Landing-only body font; `--font-inter` is defined on the landing wrapper. */
+  --font-body: var(--font-inter);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -49,6 +51,50 @@
   --color-brand-400: #f5c518;
   --color-brand-500: #ca8a04;
   --color-brand-600: #854d0e;
+}
+
+/* Animations used by the shadcn Accordion and the landing hero highlight. */
+@theme {
+  --animate-accordion-down: accordion-down 0.25s cubic-bezier(0.33, 1, 0.68, 1);
+  --animate-accordion-up: accordion-up 0.2s cubic-bezier(0.32, 0, 0.67, 0);
+  --animate-highlight: highlight-sweep 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.35s both;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+      opacity: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+      opacity: 1;
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+      opacity: 1;
+    }
+    to {
+      height: 0;
+      opacity: 0;
+    }
+  }
+  @keyframes highlight-sweep {
+    from {
+      background-size: 0% 100%;
+    }
+    to {
+      background-size: 100% 100%;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --animate-accordion-down: none;
+    --animate-accordion-up: none;
+    --animate-highlight: none;
+  }
 }
 
 :root {
