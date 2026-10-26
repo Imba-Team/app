@@ -51,6 +51,7 @@ const resumableModeRoute: Partial<
 > = {
   FLASHCARD: 'flashcards',
   LEARN: 'learn',
+  WRITE: 'write',
 };
 
 const modeBadge: Record<SessionHistoryItem['mode'], string> = {

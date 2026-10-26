@@ -58,6 +58,7 @@
   --animate-accordion-down: accordion-down 0.25s cubic-bezier(0.33, 1, 0.68, 1);
   --animate-accordion-up: accordion-up 0.2s cubic-bezier(0.32, 0, 0.67, 0);
   --animate-highlight: highlight-sweep 0.9s cubic-bezier(0.65, 0, 0.35, 1) 0.35s both;
+  --animate-shake: shake 0.4s ease-in-out;
 
   @keyframes accordion-down {
     from {
@@ -79,6 +80,20 @@
       opacity: 0;
     }
   }
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20%,
+    60% {
+      transform: translateX(-6px);
+    }
+    40%,
+    80% {
+      transform: translateX(6px);
+    }
+  }
   @keyframes highlight-sweep {
     from {
       background-size: 0% 100%;
@@ -94,6 +109,7 @@
     --animate-accordion-down: none;
     --animate-accordion-up: none;
     --animate-highlight: none;
+    --animate-shake: none;
   }
 }
 

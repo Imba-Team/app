@@ -67,6 +67,14 @@ export class SetPreferencesResponseDto {
 
   @ApiProperty({
     description:
+      'Whether Learn opens rounds with a "match the pairs" warm-up. Practice only — no mastery credit.',
+    example: true,
+  })
+  @Expose()
+  matchingEnabled!: boolean;
+
+  @ApiProperty({
+    description:
       'Restrict the batch to cards the learner has starred. Empty starred pool triggers a UI empty state.',
     example: false,
   })

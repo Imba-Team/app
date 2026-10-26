@@ -268,6 +268,10 @@ model UserSetPreferences {
   /// jingle). Placeholder like audioEnabled — the toggle persists but
   /// no player is wired yet.
   soundEffectsEnabled Boolean  @default(false)
+  /// Learn opens a round with a "match the pairs" warm-up for cards the
+  /// learner is still recognising (MC stage). Practice only: the client
+  /// runs it from the batch and records no attempts.
+  matchingEnabled  Boolean  @default(true)
   /// Restrict the batch to cards the learner has starred. Empty
   /// starred pool triggers a UI empty state (frontend gates the
   /// session start on this).

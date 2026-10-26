@@ -45,7 +45,7 @@ import SessionResults, {
 import { useModule } from '@/lib/hooks/useModules';
 import { useTerms, useToggleTermStar } from '@/lib/hooks/useTerms';
 import { useLearnSession, type LearnCardResult } from '@/lib/hooks/useLearnSession';
-import type { LearnBatchCard, LearnResumeState } from '@/lib/api';
+import type { BatchStudyMode, LearnBatchCard, LearnResumeState } from '@/lib/api';
 import { abandonSession } from '@/lib/api';
 import {
   useInflightLearnSession,
@@ -54,6 +54,7 @@ import {
 import { useSetPreferences, useUpdateSetPreferences } from '@/lib/hooks/useSetPreferences';
 import { ResumeSessionDialog } from '@/components/ResumeSessionDialog';
 import { StudyPreferencesDialog } from '@/components/StudyPreferencesDialog';
+import { MatchingWarmup, buildWarmupPairs } from './matchingWarmup';
 
 // Fallback hold before auto-advancing past a correct answer, used
 // only when the learner has no saved per-set preference. Wrong
@@ -70,7 +71,17 @@ const writtenFieldClass =
 // instead of a completion screen.
 type EmptyReason = 'no-terms' | 'all-mastered' | 'no-starred' | null;
 
-export default function LearnModeClient({ moduleId }: { moduleId: string }) {
+// Learn and Write share this client: same batch flow, feedback and
+// round-ups. Write sessions get typed prompts only (server-side) and no
+// matching warm-up.
+export default function LearnModeClient({
+  moduleId,
+  mode = 'LEARN',
+}: {
+  moduleId: string;
+  mode?: BatchStudyMode;
+}) {
+  const modeLabel = mode === 'WRITE' ? 'Write' : 'Learn';
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlSessionId = searchParams.get('sessionId') ?? undefined;
@@ -95,6 +106,7 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
   const { data: inflight, isLoading: inflightLoading } = useInflightLearnSession(
     moduleId,
     !moduleLoading && !termsLoading && allTerms.length > 0,
+    mode,
   );
   const invalidateInflight = useInvalidateInflightLearnSession();
 
@@ -125,6 +137,8 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
     error,
     summary,
     currentCard,
+    batch,
+    batchIndex,
     latestProgress,
     answers,
     currentBatchAnswers,
@@ -139,8 +153,10 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
     advance,
     finish,
     retry,
+    resetCardTimer,
   } = useLearnSession({
     moduleId,
+    mode,
     enabled,
     resumeSessionId,
     initialState: initialResumeState,
@@ -160,7 +176,7 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
       // Non-fatal — the sweep will pick it up. Continue with a fresh
       // start regardless.
     } finally {
-      await invalidateInflight(moduleId);
+      await invalidateInflight(moduleId, mode);
       setChoiceBusy(false);
       setStartChoice('fresh');
     }
@@ -225,6 +241,26 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
     };
   }, [atBatchBoundary, lastWasCorrect, holdMs]);
 
+  // Matching warm-up (MIM-20): opens a fresh Learn round when it has
+  // enough multiple-choice cards. Practice only — finishing or skipping
+  // it just records that this batch's warm-up is done.
+  const warmupPairs = useMemo(() => buildWarmupPairs(batch), [batch]);
+  const batchKey = useMemo(() => batch.map((c) => c.cardId).join('|'), [batch]);
+  const [warmupDoneKey, setWarmupDoneKey] = useState<string | null>(null);
+  const showWarmup =
+    mode === 'LEARN' &&
+    preferences?.matchingEnabled !== false &&
+    status === 'active' &&
+    batchIndex === 0 &&
+    currentBatchAnswers.length === 0 &&
+    warmupPairs.length > 0 &&
+    warmupDoneKey !== batchKey &&
+    !roundupOpen;
+  const finishWarmup = useCallback(() => {
+    setWarmupDoneKey(batchKey);
+    resetCardTimer();
+  }, [batchKey, resetCardTimer]);
+
   const dismissRoundup = useCallback(() => {
     setRoundupOpen(false);
     void advance();
@@ -267,6 +303,9 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
     }
     function onKeyDown(e: KeyboardEvent) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      // The warm-up has its own buttons; card shortcuts (1-4, S, H)
+      // would otherwise answer or skip the hidden first card.
+      if (showWarmup) return;
 
       // Round-up: any key dismisses.
       if (roundupOpen) {
@@ -338,6 +377,7 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
     skipCurrent,
     markHintUsed,
     dismissRoundup,
+    showWarmup,
   ]);
 
   // ============================================
@@ -380,7 +420,7 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
             <div className="flex items-center gap-2">
               <XCircle className="h-5 w-5 text-rose-600" />
               <p className="text-lg font-semibold text-neutral-900">
-                Couldn&apos;t start Learn Mode
+                Couldn&apos;t start {modeLabel} mode
               </p>
             </div>
             <p className="text-sm text-neutral-600">{error}</p>
@@ -402,7 +442,7 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
         summary={summary}
         answers={answers}
         moduleId={moduleId}
-        modeRoute="learn"
+        modeRoute={mode === 'WRITE' ? 'write' : 'learn'}
         latestProgress={latestProgress}
       />
     );
@@ -474,8 +514,11 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
               Back to module
             </Link>
           </Button>
+          <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-brand-600">
+            {modeLabel}
+          </p>
           {moduleData?.data && (
-            <h1 className="mt-2 truncate text-2xl font-bold text-neutral-900 md:text-3xl">
+            <h1 className="truncate text-2xl font-bold text-neutral-900 md:text-3xl">
               {moduleData.data.title}
             </h1>
           )}
@@ -496,7 +539,9 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
           shrink and grow through the session. */}
       <ProgressBreakdown progress={latestProgress} answeredThisSession={answers.length} />
 
-      {roundupOpen ? (
+      {showWarmup ? (
+        <MatchingWarmup key={batchKey} pairs={warmupPairs} onDone={finishWarmup} />
+      ) : roundupOpen ? (
         <BatchRoundup
           items={buildRoundupItems(currentBatchAnswers, termsByCardId)}
           onContinue={dismissRoundup}
@@ -540,7 +585,10 @@ export default function LearnModeClient({ moduleId }: { moduleId: string }) {
             }}
           />
 
-          <ShortcutLegend hasHint={!!currentCard.hint} />
+          <ShortcutLegend
+            hasHint={!!currentCard.hint}
+            hasChoices={currentCard.promptType === 'LEARN_MC'}
+          />
         </>
       )}
 
@@ -707,10 +755,15 @@ function CardActions({
 // Keyboard shortcut legend
 // ============================================================
 
-function ShortcutLegend({ hasHint }: { hasHint: boolean }) {
+function ShortcutLegend({ hasHint, hasChoices }: { hasHint: boolean; hasChoices: boolean }) {
   return (
     <p className="text-center text-xs text-neutral-500">
-      <kbd className={kbdClass}>1</kbd>–<kbd className={kbdClass}>4</kbd> choose ·{' '}
+      {/* 1–4 only applies to multiple-choice prompts. */}
+      {hasChoices && (
+        <>
+          <kbd className={kbdClass}>1</kbd>–<kbd className={kbdClass}>4</kbd> choose ·{' '}
+        </>
+      )}
       <kbd className={kbdClass}>any key</kbd> next after correct · <kbd className={kbdClass}>S</kbd>{' '}
       skip
       {hasHint && (
