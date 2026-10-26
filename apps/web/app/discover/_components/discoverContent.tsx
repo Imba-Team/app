@@ -1,12 +1,25 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Loader2, Search, SearchX, X } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import {
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  Bookmark,
+  Layers,
+  Loader2,
+  Search,
+  SearchX,
+  X,
+} from 'lucide-react';
+
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -14,18 +27,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { CommunityModule as CommunitySearchHit } from '@/lib/api';
 import { useCommunityModules } from '@/lib/hooks/useModules';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
-import { toast } from 'sonner';
-import { DiscoverLoading } from './discoverSkeleton';
 
-const PageSize = 20;
+const pageSize = 20;
+const visibleTagCount = 3;
 
 // A small fixed list of common languages. The API accepts any string,
 // so we could later replace this with a tags-style endpoint that
 // returns the languages actually present in the corpus.
-const LanguageOptions: { value: string; label: string }[] = [
+const languageOptions: { value: string; label: string }[] = [
   { value: 'English', label: 'English' },
   { value: 'Spanish', label: 'Spanish' },
   { value: 'French', label: 'French' },
@@ -45,7 +58,7 @@ const LanguageOptions: { value: string; label: string }[] = [
 // sentinel and translate at query-build time.
 const allLanguages = '__all__';
 
-export default function DiscoverContent() {
+export function DiscoverContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -101,22 +114,15 @@ export default function DiscoverContent() {
     language: language === allLanguages ? undefined : language,
     tag: tag || undefined,
     page,
-    limit: PageSize,
+    limit: pageSize,
   };
 
-  const { data, isLoading, isError, isFetching } = useCommunityModules(query);
-
-  if (isLoading) {
-    return <DiscoverLoading />;
-  }
-
-  if (isError) {
-    toast.error('Failed to load community modules');
-  }
+  const { data, isLoading, isError, isFetching, refetch } = useCommunityModules(query);
 
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PageSize));
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const hasFilters = Boolean(debouncedSearch.trim() || tag || language !== allLanguages);
 
   const handleSearchChange = (value: string) => {
     setSearchInput(value);
@@ -128,140 +134,142 @@ export default function DiscoverContent() {
     setPage(1);
   };
 
-  const clearTag = () => {
+  const clearFilters = () => {
+    setSearchInput('');
     setTag('');
+    setLanguage(allLanguages);
     setPage(1);
   };
 
+  // New results replace the old ones in place, so bring the top of the
+  // list back into view instead of leaving the user at the pagination bar.
+  const goToPage = (next: number) => {
+    setPage(next);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6 md:py-8">
-      {/* Header Section */}
-      <div className="mb-8 md:mb-12 space-y-3">
-        <h2 className="text-2xl md:text-3xl lg:text-4xl text-neutral-700 font-bold text-center">
-          Community Modules
-        </h2>
-        <p className="text-center text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-          Search and explore modules shared by the Mimir community. Full-text search across titles,
-          descriptions, and tags.
-        </p>
+    <main className="mx-auto max-w-5xl px-4 py-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-neutral-700">Discover</h1>
+        <p className="mt-1 text-gray-500">Modules shared by the Mimir community.</p>
       </div>
 
-      {/* Search Section — debounced, no submit button. The old submit-
-          to-search pattern was cargo-culted from a client-filter world
-          where each keystroke was cheap. With an ES call per query, a
-          250 ms debounce is a better fit. */}
-      <div className="mb-6 md:mb-8">
-        <div className="flex flex-col sm:flex-row gap-2 w-full max-w-2xl mx-auto">
-          <div className="relative flex-1">
-            <Input
-              type="text"
-              startIcon={<Search />}
-              placeholder="Search titles, descriptions, and tags…"
-              className="pr-10"
-              value={searchInput}
-              onChange={(e) => handleSearchChange(e.target.value)}
+      {/* Debounced search, no submit button — one search request per pause in typing. */}
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row">
+        <div className="relative flex-1">
+          <Input
+            type="text"
+            startIcon={<Search />}
+            placeholder="Search modules…"
+            className="pr-10"
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
+          />
+          {isFetching && !isLoading && (
+            <Loader2
+              size={16}
+              className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400"
             />
-            {isFetching && (
-              <Loader2
-                size={16}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 animate-spin"
-              />
-            )}
-          </div>
-          <Select
-            value={language}
-            onValueChange={(v) => {
-              setLanguage(v);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Language" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={allLanguages}>All languages</SelectItem>
-              {LanguageOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          )}
         </div>
+        <Select
+          value={language}
+          onValueChange={(v) => {
+            setLanguage(v);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Language" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={allLanguages}>All languages</SelectItem>
+            {languageOptions.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
+      <div className="mb-6 flex min-h-7 flex-wrap items-center gap-2">
+        {!isLoading && !isError && (
+          <h2 className="text-sm font-semibold tracking-wide text-gray-500">
+            {total === 1 ? 'Module' : 'Modules'} · {total.toLocaleString()}
+          </h2>
+        )}
         {tag && (
-          <div className="mt-3 flex items-center justify-center gap-2 text-sm">
-            <span className="text-gray-500">Filtering by tag:</span>
+          <Badge asChild>
             <button
               type="button"
-              onClick={clearTag}
-              className="inline-flex items-center gap-1 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-brand-700 hover:bg-brand-100"
+              onClick={() => handleTagClick(tag)}
               aria-label={`Remove tag filter ${tag}`}
+              className="cursor-pointer"
             >
               #{tag}
-              <X className="h-3 w-3" />
+              <X />
             </button>
-          </div>
-        )}
-
-        {total > 0 && (
-          <p className="text-xs text-center text-gray-500 mt-2">
-            {total.toLocaleString()} {total === 1 ? 'result' : 'results'}
-            {debouncedSearch && ` for “${debouncedSearch}”`}
-            {tag && ` tagged #${tag}`}
-            {language !== allLanguages && ` in ${language}`}
-          </p>
+          </Badge>
         )}
       </div>
 
-      {/* Results Grid */}
-      {items.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-          {items.map((m: CommunitySearchHit) => (
-            <CommunityCard
-              key={m.id}
-              hit={m}
-              activeTag={tag}
-              onOpen={() => router.push(`/modules/${m.id}`)}
-              onTagClick={handleTagClick}
-            />
+      {isLoading ? (
+        <Skeleton aria-busy="true" className="h-64 w-full rounded-3xl bg-neutral-200/70" />
+      ) : isError ? (
+        <StatusCard
+          icon={<AlertCircle className="h-8 w-8 text-gray-400" />}
+          title="Couldn't load community modules."
+          description="Check your connection and try again."
+          action={
+            <Button size="sm" onClick={() => refetch()}>
+              Try again
+            </Button>
+          }
+        />
+      ) : items.length === 0 ? (
+        <StatusCard
+          icon={<SearchX className="h-8 w-8 text-gray-400" />}
+          title={hasFilters ? 'No modules match your filters.' : 'No community modules yet.'}
+          description={
+            hasFilters
+              ? 'Try a different search, language or tag.'
+              : 'Public modules appear here once someone shares one.'
+          }
+          action={
+            hasFilters ? (
+              <Button size="sm" variant="outline" onClick={clearFilters}>
+                Clear filters
+              </Button>
+            ) : null
+          }
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((m) => (
+            <CommunityCard key={m.id} hit={m} activeTag={tag} onTagClick={handleTagClick} />
           ))}
         </div>
       )}
 
-      {/* Empty State */}
-      {items.length === 0 && !isFetching && (
-        <div className="text-center py-12 md:py-16 max-w-lg mx-auto">
-          <SearchX className="mx-auto text-gray-400 mb-3" size={36} />
-          <p className="text-gray-800 font-semibold mb-1">
-            {debouncedSearch || tag ? `No modules match your filters` : 'No community modules yet'}
-          </p>
-          <p className="text-sm text-gray-500">
-            {debouncedSearch || tag
-              ? 'Try a different search or clear the tag filter.'
-              : 'Be the first to share one. Public modules appear here once created.'}
-          </p>
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-8">
+      {!isLoading && !isError && totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            onClick={() => goToPage(Math.max(1, page - 1))}
             disabled={page <= 1}
           >
             <ChevronLeft size={16} className="mr-1" /> Prev
           </Button>
-          <span className="text-sm text-gray-500 min-w-24 text-center">
+          <span className="min-w-24 text-center text-sm text-gray-500">
             Page {page} of {totalPages}
           </span>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            onClick={() => goToPage(Math.min(totalPages, page + 1))}
             disabled={page >= totalPages}
           >
             Next <ChevronRight size={16} className="ml-1" />
@@ -272,80 +280,113 @@ export default function DiscoverContent() {
   );
 }
 
+// Same Card shell and icon treatment as the Library's module cards. The
+// title link is stretched over the whole card, so the card is one click
+// target while the tag chips stay separately clickable above it.
 function CommunityCard({
   hit,
   activeTag,
-  onOpen,
   onTagClick,
 }: {
   hit: CommunitySearchHit;
   activeTag: string;
-  onOpen: () => void;
   onTagClick: (tag: string) => void;
 }) {
-  const ownerInitials = (hit.ownerUsername ?? '?').slice(0, 2).toUpperCase();
-  // Titles/descriptions may be returned with <em>…</em> highlight markup
-  // in the future (highlights field). For now render plain text — the
-  // highlighter would be a follow-up if we want it.
+  const owner = hit.ownerUsername ?? 'Unknown';
+  const visibleTags = hit.tags.slice(0, visibleTagCount);
+  const hiddenTagCount = hit.tags.length - visibleTags.length;
+
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="pb-3">
-        <div className="flex flex-col gap-3">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold line-clamp-2 mb-2">{hit.title}</h3>
-            {hit.description && (
-              <p className="text-muted-foreground text-sm line-clamp-2">{hit.description}</p>
-            )}
+    <Card className="relative h-full transition-colors hover:bg-white/90">
+      <CardContent className="flex h-full flex-col gap-3 p-4">
+        <div className="flex items-start gap-3">
+          <div className="rounded-md bg-emerald-100 p-2 text-emerald-700">
+            <Layers className="h-5 w-5" />
           </div>
-          <div className="flex flex-wrap gap-1.5 items-center">
-            <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-xs font-medium">
+          <div className="min-w-0 flex-1">
+            <h3 className="line-clamp-2 font-semibold text-gray-900">
+              <Link
+                href={`/modules/${hit.id}`}
+                className="rounded-sm outline-none after:absolute after:inset-0 after:rounded-3xl focus-visible:after:ring-2 focus-visible:after:ring-black/20"
+              >
+                {hit.title}
+              </Link>
+            </h3>
+            <p className="mt-0.5 text-xs text-gray-500">
               {hit.cardCount} {hit.cardCount === 1 ? 'card' : 'cards'}
-            </span>
-            {hit.language && (
-              <span className="bg-brand-500/10 text-brand-500 rounded-full px-3 py-1 text-xs font-medium">
-                {hit.language}
-              </span>
-            )}
-            {hit.tags.slice(0, 3).map((tagName) => {
+              {hit.language && ` · ${hit.language}`}
+            </p>
+          </div>
+        </div>
+
+        {/* Fixed two-line height so cards in a row line up whether or not a description exists. */}
+        <p className="line-clamp-2 min-h-10 text-sm text-gray-500">{hit.description}</p>
+
+        {visibleTags.length > 0 && (
+          <div className="relative z-10 flex flex-wrap gap-1.5">
+            {visibleTags.map((tagName) => {
               const isActive = activeTag === tagName;
               return (
-                <button
-                  key={tagName}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onTagClick(tagName);
-                  }}
-                  className={
-                    'rounded-full px-2 py-0.5 text-xs transition-colors ' +
-                    (isActive
-                      ? 'bg-brand-500 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200')
-                  }
-                  aria-pressed={isActive}
-                >
-                  #{tagName}
-                </button>
+                <Badge key={tagName} asChild variant={isActive ? 'default' : 'outline'}>
+                  <button
+                    type="button"
+                    onClick={() => onTagClick(tagName)}
+                    aria-pressed={isActive}
+                    className={
+                      isActive ? 'cursor-pointer' : 'cursor-pointer text-gray-600 hover:bg-black/5'
+                    }
+                  >
+                    #{tagName}
+                  </button>
+                </Badge>
               );
             })}
+            {hiddenTagCount > 0 && (
+              <span className="px-1 py-0.5 text-xs text-gray-400">+{hiddenTagCount}</span>
+            )}
           </div>
-        </div>
-      </CardHeader>
+        )}
 
-      <CardContent className="flex-1 flex flex-col justify-between pt-0 space-y-4">
-        <div>
-          <p className="text-xs text-gray-500 mb-2">Shared by:</p>
-          <div className="flex gap-2 items-center">
-            <Avatar className="size-8 border border-gray-100 shrink-0">
-              <AvatarFallback className="text-xs">{ownerInitials}</AvatarFallback>
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-black/5 pt-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <Avatar className="size-6 shrink-0">
+              <AvatarFallback className="text-[10px]">
+                {owner.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
             </Avatar>
-            <p className="text-sm font-medium truncate">{hit.ownerUsername ?? 'Unknown'}</p>
+            <span className="truncate text-sm text-gray-600">{owner}</span>
           </div>
+          {/* likeCount in the search index is the number of users who saved
+              (collected) the module, so it's labelled as saves. */}
+          <span className="inline-flex shrink-0 items-center gap-1 text-xs text-gray-500">
+            <Bookmark className="h-3.5 w-3.5" aria-hidden />
+            {hit.likeCount} {hit.likeCount === 1 ? 'save' : 'saves'}
+          </span>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-        <Button size="sm" className="w-full" onClick={onOpen}>
-          View Module
-        </Button>
+// Same treatment as the Library's empty state, reused for error and no-results.
+function StatusCard({
+  icon,
+  title,
+  description,
+  action,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  action: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardContent className="flex flex-col items-center gap-2 p-10 text-center">
+        {icon}
+        <p className="font-semibold text-gray-800">{title}</p>
+        <p className="text-sm text-gray-500">{description}</p>
+        {action && <div className="mt-2">{action}</div>}
       </CardContent>
     </Card>
   );

@@ -1,12 +1,12 @@
 "use client";
 
 import { useLibrarySets } from "@/lib/hooks/useLibrary";
-import { useRecentStudiedSets } from "@/lib/hooks/useModules";
-import { useSrsQueue } from "@/lib/hooks/useSrs";
+import { usePopularPublicSets, useRecentStudiedSets } from "@/lib/hooks/useModules";
+import { useSrsForecast, useSrsQueue } from "@/lib/hooks/useSrs";
 
 import { ContinueStudying } from "./ContinueStudying";
 import { DashboardLoading } from "./DashboardSkeleton";
-import { DiscoverStrip } from "./DiscoverStrip";
+import { DiscoverStrip, discoverSetLimit } from "./DiscoverStrip";
 import EmptyDashboard from "./EmptyDashboard";
 import { ForecastSection } from "./ForecastSection";
 import { LibraryPreview } from "./LibraryPreview";
@@ -15,44 +15,53 @@ import { SrsHero } from "./SrsHero";
 /**
  * Composed dashboard. Five sections (top-down): SRS "today" queue,
  * continue-studying, 30-day forecast, library preview, discover strip.
- * Each section is self-contained (its own loading/empty state), so the
- * page keeps painting even when one query is slow.
+ * Continue-studying, forecast and discover are hidden when empty, so the
+ * page waits for every query that decides which sections exist and renders
+ * the final layout once — no section title flashes in and then disappears.
  *
  * Sections deliberately excluded here — see docs/Mimir_Roadmap_v2.md:
  * - KPI/streak strip: no analytics endpoint yet (Sprint 9)
  * - Student assignment inbox: no classroom module yet (Sprint 8)
  */
 export default function DashboardTab() {
-  const recent = useRecentStudiedSets(4);
+  // Each call mirrors the arguments its section uses, so the section reads
+  // the same cached result instead of firing a second request.
+  const recent = useRecentStudiedSets(3);
   const library = useLibrarySets();
   const queue = useSrsQueue(50, 0);
+  const forecast = useSrsForecast(30);
+  const popular = usePopularPublicSets(discoverSetLimit);
 
-  // Only wait for the *first* paint's data. Once we know the user has
-  // *anything* (a study session, a set, or a due card), we can render.
-  const stillLoadingBaseline =
-    recent.isLoading && library.isLoading && queue.isLoading;
+  // A pending query has no data yet, which must not read as "empty". Wait
+  // until every query that decides the layout has settled.
+  const isSettled = [recent, library, queue, forecast, popular].every((q) => !q.isPending);
 
-  if (stillLoadingBaseline) {
+  if (!isSettled) {
     return <DashboardLoading />;
   }
 
   const hasCollection = (library.data?.length ?? 0) > 0;
   const hasStudied = (recent.data?.length ?? 0) > 0;
   const hasQueue = (queue.data?.total ?? 0) > 0;
+  const hasActivity = hasCollection || hasStudied || hasQueue;
+  const hasForecast = (forecast.data?.buckets ?? []).some((b) => b.dueCount > 0);
+  const hasPopular = (popular.data?.length ?? 0) > 0;
 
-  // Brand-new user with no modules, no sessions, no queue → welcome hero.
-  // As soon as they have *any* activity, we shift to the composed view.
-  if (!hasCollection && !hasStudied && !hasQueue) {
+  // Brand-new user: all three loaded successfully and came back empty. If a
+  // query failed instead, fall through so each section shows its own error.
+  const isConfirmedEmpty = recent.isSuccess && library.isSuccess && queue.isSuccess;
+
+  if (!hasActivity && isConfirmedEmpty) {
     return <EmptyDashboard />;
   }
 
   return (
     <main className="space-y-8">
       <SrsHero />
-      <ContinueStudying />
-      <ForecastSection />
+      {hasStudied && <ContinueStudying />}
+      {hasForecast && <ForecastSection />}
       <LibraryPreview />
-      <DiscoverStrip />
+      {hasPopular && <DiscoverStrip />}
     </main>
   );
 }

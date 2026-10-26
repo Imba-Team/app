@@ -13,15 +13,7 @@ export function ContinueStudying() {
   const recent = useRecentStudiedSets(3);
 
   if (recent.isLoading) {
-    return (
-      <SectionShell title="Continue studying">
-        <div className="flex flex-col gap-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-lg bg-gray-100" />
-          ))}
-        </div>
-      </SectionShell>
-    );
+    return <ContinueStudyingSkeleton />;
   }
 
   const items = recent.data ?? [];
@@ -32,6 +24,18 @@ export function ContinueStudying() {
       <div className="flex flex-col gap-3">
         {items.map((s) => (
           <RecentSetCard key={s.id} set={s} />
+        ))}
+      </div>
+    </SectionShell>
+  );
+}
+
+function ContinueStudyingSkeleton() {
+  return (
+    <SectionShell title="Continue studying">
+      <div className="flex flex-col gap-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 w-full rounded-lg bg-gray-100" />
         ))}
       </div>
     </SectionShell>

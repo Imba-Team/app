@@ -8,6 +8,8 @@ import {
   registerUser,
   verifyEmail,
   resendVerification,
+  requestPasswordReset,
+  resetPassword,
 } from '@/lib/api/auth';
 
 const authKeys = {
@@ -52,6 +54,18 @@ export function useAuthMe() {
 export function useVerifyEmail() {
   return useMutation({
     mutationFn: (token: string) => verifyEmail(token),
+  });
+}
+
+export function useRequestPasswordReset() {
+  return useMutation({
+    mutationFn: (email: string) => requestPasswordReset(email),
+  });
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: resetPassword,
   });
 }
 

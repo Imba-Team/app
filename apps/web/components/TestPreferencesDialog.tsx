@@ -171,7 +171,6 @@ function PreferencesForm({
   const strictness = watch('strictness');
   const starredOnly = watch('starredOnly');
   const shuffleEnabled = watch('shuffleEnabled');
-  const showResultsPerQuestion = watch('showResultsPerQuestion');
 
   const matchingEnabled = allowedTypes.includes('TEST_MATCH');
 
@@ -279,15 +278,9 @@ function PreferencesForm({
           />
         </div>
 
-        {/* Result-reveal timing. NOTE: the per-question reveal path
-            isn't wired in the client yet — the toggle persists for
-            when that ships. */}
-        <ToggleRow
-          label="Show results per question"
-          description="Reveal correctness after each answer instead of only at the end. Coming soon — the toggle saves for when it ships."
-          value={showResultsPerQuestion}
-          onChange={(v) => setValue('showResultsPerQuestion', v, { shouldDirty: true })}
-        />
+        {/* "Show results per question" is hidden until per-question reveal
+            is built (MIM-47). The field stays in the form, so saving keeps
+            the stored value. */}
       </div>
 
       <DialogFooter className="mt-4">

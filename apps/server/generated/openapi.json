@@ -309,7 +309,8 @@
             "schema": {
               "enum": [
                 "active",
-                "inactive"
+                "inactive",
+                "deleted"
               ],
               "type": "string"
             }
@@ -426,7 +427,8 @@
             "schema": {
               "enum": [
                 "active",
-                "inactive"
+                "inactive",
+                "deleted"
               ],
               "type": "string"
             }
@@ -1431,7 +1433,7 @@
             "bearer": []
           }
         ],
-        "summary": "Search public study sets",
+        "summary": "Search public study sets (excludes the caller's own sets)",
         "tags": [
           "Study Sets"
         ]
@@ -1562,7 +1564,7 @@
             "bearer": []
           }
         ],
-        "summary": "Search public study sets via Elasticsearch (title^3 + tags^2 + description, fuzziness AUTO).",
+        "summary": "Search public study sets via Elasticsearch (title^3 + tags^2 + description, fuzziness AUTO). Excludes the caller's own sets — this is the community view.",
         "tags": [
           "Search"
         ]
@@ -4800,7 +4802,7 @@
           },
           "name": {
             "type": "string",
-            "description": "Display name (maps from username)"
+            "description": "Display name; falls back to username when none is set"
           },
           "bio": {
             "type": "string",

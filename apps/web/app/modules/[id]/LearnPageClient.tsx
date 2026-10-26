@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState } from 'react';
 import {
   ArrowLeft,
+  BookmarkMinus,
   Edit,
   History,
   Loader2,
@@ -22,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { ImportFlashcardsDialog, type ImportedCard } from '@/components/import-flashcards-dialog';
 import { StudyPreferencesDialog } from '@/components/StudyPreferencesDialog';
 import { TestPreferencesDialog } from '@/components/TestPreferencesDialog';
+import { RemoveFromLibraryDialog } from '@/components/removeFromLibraryDialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -110,6 +112,7 @@ export default function LearnPageClient({ id }: { id: string }) {
   const [importing, setImporting] = useState(false);
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [testPreferencesOpen, setTestPreferencesOpen] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
 
   const loading = moduleLoading || termsLoading;
   const moduleInfo = moduleData?.data;
@@ -260,14 +263,22 @@ export default function LearnPageClient({ id }: { id: string }) {
         <section>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-xl font-bold text-neutral-700">Choose your mode</h2>
-            {dueCount > 0 && (
-              <Link
-                href={`/modules/${id}/learn?dueFirst=1`}
-                className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-3 py-1 text-sm font-semibold text-white hover:bg-brand-400"
-              >
-                Review {dueCount} due today →
-              </Link>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {dueCount > 0 && (
+                <Link
+                  href={`/modules/${id}/learn?dueFirst=1`}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-3 py-1 text-sm font-semibold text-white hover:bg-brand-400"
+                >
+                  Review {dueCount} due today →
+                </Link>
+              )}
+              {!isOwner && (
+                <Button variant="ghost" size="sm" onClick={() => setRemoveOpen(true)}>
+                  <BookmarkMinus className="h-4 w-4" />
+                  Remove from library
+                </Button>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {modeCards.map((m) => (
@@ -476,6 +487,15 @@ export default function LearnPageClient({ id }: { id: string }) {
           open={preferencesOpen}
           onOpenChange={setPreferencesOpen}
           setId={id}
+        />
+      )}
+
+      {isCollected && !isOwner && moduleInfo && (
+        <RemoveFromLibraryDialog
+          moduleId={id}
+          moduleTitle={moduleInfo.title}
+          open={removeOpen}
+          onOpenChange={setRemoveOpen}
         />
       )}
 

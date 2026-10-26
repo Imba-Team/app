@@ -3,9 +3,11 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  BookmarkMinus,
   FileText,
   Folder as FolderIcon,
   Layers,
+  MoreVertical,
   Plus,
   Search,
   SearchX,
@@ -14,6 +16,13 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { RemoveFromLibraryDialog } from '@/components/removeFromLibraryDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -44,6 +53,7 @@ export default function LibraryPage() {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
   const [newFolderOpen, setNewFolderOpen] = useState(false);
+  const [removing, setRemoving] = useState<LibraryItem | null>(null);
 
   const sets = useLibrarySets();
   const folders = useFolders();
@@ -75,7 +85,9 @@ export default function LibraryPage() {
   const showFolders = filter === 'all' || filter === 'folders';
   const showSets = filter !== 'folders';
 
-  const isLoading = sets.isLoading || folders.isLoading;
+  // isPending, not isLoading: queries don't fetch during SSR, so isLoading
+  // would be false on the server and render the content branch with no data.
+  const isLoading = sets.isPending || folders.isPending;
 
   const isEmpty =
     !isLoading &&
@@ -122,11 +134,7 @@ export default function LibraryPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-lg bg-gray-100" />
-          ))}
-        </div>
+        <Skeleton aria-busy="true" className="h-64 w-full rounded-3xl bg-neutral-200/70" />
       ) : isEmpty ? (
         <EmptyState
           searching={q.length > 0}
@@ -159,7 +167,12 @@ export default function LibraryPage() {
               </h2>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {filteredSets.map((s) => (
-                  <SetCard key={s.id} set={s} onClick={() => router.push(`/modules/${s.id}`)} />
+                  <SetCard
+                    key={s.id}
+                    set={s}
+                    onClick={() => router.push(`/modules/${s.id}`)}
+                    onRemove={() => setRemoving(s)}
+                  />
                 ))}
               </div>
             </section>
@@ -190,6 +203,14 @@ export default function LibraryPage() {
       )}
 
       <NewFolderDialog open={newFolderOpen} onOpenChange={setNewFolderOpen} />
+      {removing && (
+        <RemoveFromLibraryDialog
+          moduleId={removing.id}
+          moduleTitle={removing.title}
+          open
+          onOpenChange={(open) => !open && setRemoving(null)}
+        />
+      )}
     </main>
   );
 }
@@ -216,7 +237,15 @@ function FolderCard({ folder, onClick }: { folder: Folder; onClick: () => void }
   );
 }
 
-function SetCard({ set, onClick }: { set: LibraryItem; onClick: () => void }) {
+function SetCard({
+  set,
+  onClick,
+  onRemove,
+}: {
+  set: LibraryItem;
+  onClick: () => void;
+  onRemove: () => void;
+}) {
   return (
     <Card onClick={onClick} className="cursor-pointer">
       <CardContent className="flex items-start gap-3 p-4">
@@ -246,6 +275,25 @@ function SetCard({ set, onClick }: { set: LibraryItem; onClick: () => void }) {
             {set.language && <span>· {set.language}</span>}
           </div>
         </div>
+        {!set.isOwner && (
+          // The card itself navigates on click, and React events bubble out
+          // of portals, so the menu stops propagation on both ends.
+          <div onClick={(e) => e.stopPropagation()}>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm" aria-label={`More actions for ${set.title}`}>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem variant="destructive" onSelect={onRemove}>
+                  <BookmarkMinus className="h-4 w-4" />
+                  Remove from library
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -14,4 +14,6 @@ export interface IUser {
 export enum UserStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
+  /** Soft-deleted and anonymised (SRS FR-USER-05). Never authenticates. */
+  DELETED = 'deleted',
 }

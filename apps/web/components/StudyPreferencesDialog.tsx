@@ -217,8 +217,6 @@ function PreferencesForm({
     reset(initial);
   }, [initial, reset]);
 
-  const audioEnabled = watch('audioEnabled');
-  const soundEffectsEnabled = watch('soundEffectsEnabled');
   const starredOnly = watch('starredOnly');
   const shuffleEnabled = watch('shuffleEnabled');
   const autoAdvance = watch('autoAdvance');
@@ -370,19 +368,9 @@ function PreferencesForm({
           onChange={(v) => setValue('autoAdvance', v, { shouldDirty: true })}
         />
 
-        <ToggleRow
-          label="Sound effects"
-          description="Play a short cue on correct / incorrect answers and a jingle at the end of a set. Coming soon — the toggle saves for when it ships."
-          value={soundEffectsEnabled}
-          onChange={(v) => setValue('soundEffectsEnabled', v, { shouldDirty: true })}
-        />
-
-        <ToggleRow
-          label="Voice over (TTS)"
-          description="Text-to-speech playback for term and definition. Coming soon — the toggle saves for when it ships."
-          value={audioEnabled}
-          onChange={(v) => setValue('audioEnabled', v, { shouldDirty: true })}
-        />
+        {/* Sound effects and voice-over (TTS) toggles are hidden until the
+            features exist (MIM-35, MIM-47). The fields stay in the form, so
+            saving keeps whatever value is stored. */}
       </div>
 
       {/* Footer sits outside the scroll region so Cancel + Save

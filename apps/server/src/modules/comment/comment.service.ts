@@ -32,6 +32,33 @@ export class CommentService {
     private readonly studySetService: StudySetService,
   ) {}
 
+  /**
+   * Comments inherit the set's visibility: anyone who can't open the set
+   * (e.g. a private set they don't own or collaborate on) can't read its
+   * discussion either. Throws 404 for a missing set, 403 for no access.
+   */
+  private async ensureCanReadStudySet(
+    currentUserId: string,
+    studySetId: string,
+  ): Promise<void> {
+    const studySet = await this.prisma.studySet.findUnique({
+      where: { id: studySetId },
+      select: { id: true },
+    });
+
+    if (!studySet) {
+      throw new NotFoundException('Study set not found');
+    }
+
+    const canAccess = await this.studySetService.canAccess(
+      currentUserId,
+      studySetId,
+    );
+    if (!canAccess) {
+      throw new ForbiddenException('You do not have access to this study set');
+    }
+  }
+
   async createComment(
     currentUserId: string,
     studySetId: string,
@@ -200,15 +227,12 @@ export class CommentService {
     return { success: true };
   }
 
-  async listComments(studySetId: string, pagination: PaginationDto) {
-    const studySet = await this.prisma.studySet.findUnique({
-      where: { id: studySetId },
-      select: { id: true },
-    });
-
-    if (!studySet) {
-      throw new NotFoundException('Study set not found');
-    }
+  async listComments(
+    currentUserId: string,
+    studySetId: string,
+    pagination: PaginationDto,
+  ) {
+    await this.ensureCanReadStudySet(currentUserId, studySetId);
 
     const { page, limit, skip } = this.normalizePagination(pagination);
 
@@ -251,10 +275,13 @@ export class CommentService {
   }
 
   async listReplies(
+    currentUserId: string,
     studySetId: string,
     parentCommentId: string,
     pagination: PaginationDto,
   ) {
+    await this.ensureCanReadStudySet(currentUserId, studySetId);
+
     const parent = await this.prisma.comment.findUnique({
       where: { id: parentCommentId },
       select: {

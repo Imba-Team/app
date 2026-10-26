@@ -15,6 +15,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { UsersService } from './user.service';
+import { MediaService } from 'src/common/media/media.service';
 
 import { UserStatus } from 'src/common/interfaces/user.interface';
 import { JwtGuard } from 'src/guards/jwt.guard';
@@ -29,7 +30,10 @@ import { User } from '@prisma/client';
 @Roles(Role.ADMIN)
 @Controller('admin/users')
 export class AdminUsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly media: MediaService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all users with pagination and filtering' })
@@ -145,7 +149,10 @@ export class AdminUsersController {
     },
   })
   async delete(@Param('id') id: string): Promise<ResponseDto<null>> {
-    await this.usersService.delete(id);
+    const { removedProfilePicture } = await this.usersService.delete(id);
+    if (removedProfilePicture) {
+      await this.media.delete(removedProfilePicture);
+    }
 
     return {
       ok: true,

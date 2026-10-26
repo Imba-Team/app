@@ -157,6 +157,24 @@ export function useUpdateProfilePicture() {
   });
 }
 
+export function useRemoveProfilePicture() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const res = await apiFetch("delete", "/users/me/profile-picture");
+      return unwrap(res, "Failed to remove profile picture");
+    },
+    onSuccess: (user) => {
+      qc.setQueryData(userKeys.me(), user);
+      qc.invalidateQueries({ queryKey: userKeys.me() });
+      toast.success("Profile picture removed");
+    },
+    onError: (err: unknown) => {
+      toast.error(extractServerError(err) ?? "Failed to remove profile picture");
+    },
+  });
+}
+
 /**
  * Best-effort extraction of the server's `message` field from an axios
  * error payload. Falls back to the generic Error.message when the

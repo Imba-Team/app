@@ -753,6 +753,15 @@ export class AuthService {
   }
 
   async resetPassword(data: ResetPasswordRequestDto) {
+    // Validate input before verifyToken, which consumes the single-use
+    // link — a typo in the confirmation must not burn the user's token.
+    if (data.password !== data.confirmPassword) {
+      throw new HttpException(
+        { ok: false, message: 'Passwords do not match' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     const verificationToken = await this.magicLinkService.verifyToken(
       data.token,
       MagicLinkPurpose.FORGOT_PASSWORD,
@@ -765,13 +774,6 @@ export class AuthService {
       throw new HttpException(
         { ok: false, message: 'User not found' },
         HttpStatus.NOT_FOUND,
-      );
-    }
-
-    if (data.password !== data.confirmPassword) {
-      throw new HttpException(
-        { ok: false, message: 'Passwords do not match' },
-        HttpStatus.BAD_REQUEST,
       );
     }
 

@@ -5,7 +5,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Prisma, StudySetVisibility, User } from '@prisma/client';
+import { Queue } from 'bullmq';
+import { randomUUID } from 'crypto';
 import { UpdateUserDto } from './dtos/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { LoggerService } from 'src/common/logger/logger.service';
@@ -14,12 +17,25 @@ import { UserStatus } from 'src/common/interfaces/user.interface';
 import { slugify } from 'src/common/utils/sligify';
 import { Role } from 'src/common/decorators/roles.decorator';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import {
+  SEARCH_SYNC_QUEUE,
+  SearchSyncJob,
+  SearchSyncJobPayload,
+} from 'src/common/queue/queue.constants';
+
+export interface DeletedAccount {
+  user: User;
+  /** Storage key of the avatar that was detached, for the caller to remove. */
+  removedProfilePicture: string | null;
+}
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly logger: LoggerService,
     private readonly prisma: PrismaService,
+    @InjectQueue(SEARCH_SYNC_QUEUE)
+    private readonly searchSyncQueue: Queue<SearchSyncJobPayload>,
   ) {}
 
   async create(userDto: CreateUserDto): Promise<User> {
@@ -43,6 +59,7 @@ export class UsersService {
         data: {
           email: userDto.email,
           username,
+          displayName: userDto.name?.trim() || null,
           password: hashed,
           status: userDto.status ?? 'active',
           role: userDto.role ?? Role.USER,
@@ -146,6 +163,8 @@ export class UsersService {
    * Narrow-write self-service update used by PATCH /users/me.
    *
    * Only the user-visible profile fields (name, bio) are writable here.
+   * `name` is the display name; it never renames `username`, which stays
+   * stable so profile URLs and mentions don't break.
    * role / status / email / profilePicture are deliberately not in the
    * input DTO and not handled here — they belong to admin, the
    * email-change flow, and the avatar upload endpoint respectively.
@@ -163,7 +182,7 @@ export class UsersService {
     const patch: Prisma.UserUpdateInput = {};
 
     if (dto.name !== undefined) {
-      patch.username = await this.allocateUsername(dto.name, id);
+      patch.displayName = dto.name.trim();
     }
     if (dto.bio !== undefined) {
       patch.bio = dto.bio;
@@ -219,9 +238,75 @@ export class UsersService {
     });
   }
 
-  async delete(id: string) {
-    await this.findById(id);
-    return this.prisma.user.delete({ where: { id } });
+  /**
+   * Soft-deletes an account (SRS FR-USER-05, §9.6). The row stays so study
+   * history, comments and FK references remain intact, but the account is
+   * anonymised and can never sign in again:
+   *  - status=deleted, email/username replaced with `deleted_<id>` values
+   *  - password replaced, Google link, avatar and bio cleared
+   *  - owned sets made private (and dropped from search)
+   *  - every session revoked, pending magic links removed
+   */
+  async delete(id: string): Promise<DeletedAccount> {
+    const existing = await this.findById(id);
+    const tag = randomUUID().replace(/-/g, '').slice(0, 12);
+    const unusablePassword = await bcrypt.hash(randomUUID(), 10);
+
+    const { user, unpublishedSetIds } = await this.prisma.$transaction(
+      async (tx) => {
+        const published = await tx.studySet.findMany({
+          where: {
+            ownerId: id,
+            visibility: { not: StudySetVisibility.PRIVATE },
+          },
+          select: { id: true },
+        });
+        await tx.studySet.updateMany({
+          where: { ownerId: id },
+          data: { visibility: StudySetVisibility.PRIVATE },
+        });
+        await tx.refreshToken.updateMany({
+          where: { userId: id, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        await tx.magicLink.deleteMany({ where: { userId: id } });
+
+        const user = await tx.user.update({
+          where: { id },
+          data: {
+            status: UserStatus.DELETED,
+            email: `deleted_${tag}@deleted.local`,
+            username: `deleted_${tag}`,
+            displayName: null,
+            password: unusablePassword,
+            googleProviderId: null,
+            profilePicture: null,
+            bio: null,
+            emailVerified: false,
+          },
+        });
+
+        return { user, unpublishedSetIds: published.map((s) => s.id) };
+      },
+    );
+
+    // After commit: the index workers read Postgres, so they must see the
+    // sets as private. Same jobId scheme as SearchSyncService.enqueueDelete.
+    await Promise.all(
+      unpublishedSetIds.map((setId) =>
+        this.searchSyncQueue.add(
+          SearchSyncJob.DELETE_SET,
+          { setId },
+          { jobId: `delete-${setId}` },
+        ),
+      ),
+    );
+
+    this.logger.log(
+      `Account soft-deleted: userId=${id}, setsUnpublished=${unpublishedSetIds.length}`,
+    );
+
+    return { user, removedProfilePicture: existing.profilePicture ?? null };
   }
 
   async updatePassword(id: string, newPassword: string): Promise<User> {

@@ -41,7 +41,7 @@ export function SrsHero() {
   }, [items]);
 
   if (queue.isLoading) {
-    return <Skeleton className="h-40 w-full rounded-2xl bg-gray-100" />;
+    return <SrsHeroSkeleton />;
   }
 
   if (total === 0) {
@@ -146,4 +146,8 @@ function Chip({
       <span className="font-bold">{count}</span>
     </div>
   );
+}
+
+function SrsHeroSkeleton() {
+  return <Skeleton className="h-40 w-full rounded-2xl bg-gray-100" />;
 }
