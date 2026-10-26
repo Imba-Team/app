@@ -49,7 +49,7 @@ interface SessionResultsProps {
    * The route segment for "Study again" — 'flashcards' or 'learn'.
    * Used to build the restart link.
    */
-  modeRoute: 'flashcards' | 'learn';
+  modeRoute: 'flashcards' | 'learn' | 'write';
   /** Optional mastery rollup from the last per-card response. */
   latestProgress?: {
     totalCards: number;

@@ -61,6 +61,11 @@ export class UpdateSetPreferencesDto {
   @IsBoolean()
   soundEffectsEnabled?: boolean;
 
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  matchingEnabled?: boolean;
+
   @ApiPropertyOptional({ example: false })
   @IsOptional()
   @IsBoolean()

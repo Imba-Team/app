@@ -733,12 +733,16 @@ export interface LearnResumeState {
   savedAt: string;
 }
 
+/** Session types that run on Learn's batch flow (Learn and Write). */
+export type BatchStudyMode = 'LEARN' | 'WRITE';
+
 export async function getInflightLearnSession(
   studySetId: string,
+  mode: BatchStudyMode = 'LEARN',
 ): Promise<InflightSession | null> {
   try {
     const res = await apiFetch('get', '/sessions/inflight', {
-      query: { setId: studySetId, mode: 'LEARN' },
+      query: { setId: studySetId, mode },
     });
     // A null `data` means nothing is in flight — return null instead of
     // throwing so callers can render "start fresh" cleanly.

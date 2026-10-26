@@ -6851,6 +6851,11 @@
             "description": "Whether UI sound effects are enabled (correct/incorrect tones, session-end jingle). Placeholder for now.",
             "example": false
           },
+          "matchingEnabled": {
+            "type": "boolean",
+            "description": "Whether Learn opens rounds with a \"match the pairs\" warm-up. Practice only — no mastery credit.",
+            "example": true
+          },
           "starredOnly": {
             "type": "boolean",
             "description": "Restrict the batch to cards the learner has starred. Empty starred pool triggers a UI empty state.",
@@ -6889,6 +6894,7 @@
           "autoAdvanceMs",
           "audioEnabled",
           "soundEffectsEnabled",
+          "matchingEnabled",
           "starredOnly",
           "shuffleEnabled",
           "strictness",
@@ -6939,6 +6945,10 @@
           "soundEffectsEnabled": {
             "type": "boolean",
             "example": false
+          },
+          "matchingEnabled": {
+            "type": "boolean",
+            "example": true
           },
           "starredOnly": {
             "type": "boolean",

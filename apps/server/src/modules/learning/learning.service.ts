@@ -763,9 +763,12 @@ export class LearningService {
     if (session.status === StudySessionStatus.ABANDONED) {
       throw new ConflictException('Session was abandoned; start a new one');
     }
-    if (session.mode !== StudySessionMode.LEARN) {
+    // Write mode reuses Learn's card selection (due-first, non-mastered
+    // first, answer direction) but every prompt is typed.
+    const isWriteSession = session.mode === StudySessionMode.WRITE;
+    if (session.mode !== StudySessionMode.LEARN && !isWriteSession) {
       throw new ConflictException(
-        `next-batch is only supported on LEARN sessions (session mode: ${session.mode})`,
+        `next-batch is only supported on LEARN and WRITE sessions (session mode: ${session.mode})`,
       );
     }
     // A PAUSED session that asks for a batch implicitly resumes.
@@ -956,6 +959,16 @@ export class LearningService {
         direction === LearnAnswerDirection.DEFINITION_TO_TERM
           ? termPool
           : definitionPool;
+
+      if (isWriteSession) {
+        return {
+          cardId: card.id,
+          term: promptText,
+          hint: card.hint,
+          answerDirection: direction,
+          promptType: 'LEARN_WRITTEN' as LearnPromptType,
+        };
+      }
 
       const distractors = pickDistractors({ id: card.id, answerText }, pool, 3);
       const canRenderMC = distractors.length >= 3;

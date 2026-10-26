@@ -1,11 +1,11 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { getInflightLearnSession, type InflightSession } from "@/lib/api";
+import { getInflightLearnSession, type BatchStudyMode, type InflightSession } from '@/lib/api';
 
 export const inflightSessionKeys = {
-  all: ["inflight-session"] as const,
-  learn: (setId: string) =>
-    [...inflightSessionKeys.all, "LEARN", setId] as const,
+  all: ['inflight-session'] as const,
+  learn: (setId: string, mode: BatchStudyMode = 'LEARN') =>
+    [...inflightSessionKeys.all, mode, setId] as const,
 };
 
 /**
@@ -15,10 +15,14 @@ export const inflightSessionKeys = {
  * (`staleTime: 0`) so entering the page always shows the current
  * state; the query is cheap on the server.
  */
-export function useInflightLearnSession(setId: string, enabled = true) {
+export function useInflightLearnSession(
+  setId: string,
+  enabled = true,
+  mode: BatchStudyMode = 'LEARN',
+) {
   return useQuery<InflightSession | null>({
-    queryKey: inflightSessionKeys.learn(setId),
-    queryFn: () => getInflightLearnSession(setId),
+    queryKey: inflightSessionKeys.learn(setId, mode),
+    queryFn: () => getInflightLearnSession(setId, mode),
     enabled: enabled && !!setId,
     staleTime: 0,
     // The lookup is a UX gate — don't refetch on window focus, otherwise
@@ -29,8 +33,8 @@ export function useInflightLearnSession(setId: string, enabled = true) {
 
 export function useInvalidateInflightLearnSession() {
   const queryClient = useQueryClient();
-  return (setId: string) =>
+  return (setId: string, mode: BatchStudyMode = 'LEARN') =>
     queryClient.invalidateQueries({
-      queryKey: inflightSessionKeys.learn(setId),
+      queryKey: inflightSessionKeys.learn(setId, mode),
     });
 }

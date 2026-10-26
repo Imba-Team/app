@@ -11,8 +11,7 @@ const features = [
   {
     icon: Layers,
     title: 'Study modes',
-    body: 'Flashcards, Learn and Test. Pick what fits how you want to study today.',
-    badge: 'Match coming soon',
+    body: 'Flashcards, Learn, Write and Test, with a matching warm-up in Learn. Pick what fits how you want to study today.',
     isWide: true,
   },
   {

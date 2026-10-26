@@ -44,6 +44,7 @@ const preferencesSchema = z.object({
   autoAdvance: z.boolean(),
   audioEnabled: z.boolean(),
   soundEffectsEnabled: z.boolean(),
+  matchingEnabled: z.boolean(),
   starredOnly: z.boolean(),
   shuffleEnabled: z.boolean(),
   strictness: z.enum(['STRICT', 'NORMAL', 'LENIENT']),
@@ -158,8 +159,8 @@ export function StudyPreferencesDialog({
         <DialogHeader>
           <DialogTitle>Study preferences</DialogTitle>
           <DialogDescription>
-            Tune how Learn mode behaves for this set. Changes apply to your next batch — sessions
-            already in flight keep the settings they started with.
+            Tune how Learn and Write behave for this set. Changes apply to your next batch —
+            sessions already in flight keep the settings they started with.
           </DialogDescription>
         </DialogHeader>
 
@@ -220,6 +221,7 @@ function PreferencesForm({
   const starredOnly = watch('starredOnly');
   const shuffleEnabled = watch('shuffleEnabled');
   const autoAdvance = watch('autoAdvance');
+  const matchingEnabled = watch('matchingEnabled');
   const strictness = watch('strictness');
   const answerDirection = watch('answerDirection');
   const allValues = watch();
@@ -366,6 +368,13 @@ function PreferencesForm({
           description="Automatically move to the next card after a correct answer. Wrong answers always wait for a click regardless."
           value={autoAdvance}
           onChange={(v) => setValue('autoAdvance', v, { shouldDirty: true })}
+        />
+
+        <ToggleRow
+          label="Matching warm-up"
+          description="Start Learn rounds with a quick match-the-pairs step for cards you're still learning. Practice only — it doesn't change your progress."
+          value={matchingEnabled}
+          onChange={(v) => setValue('matchingEnabled', v, { shouldDirty: true })}
         />
 
         {/* Sound effects and voice-over (TTS) toggles are hidden until the

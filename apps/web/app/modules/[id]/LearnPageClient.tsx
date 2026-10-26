@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   BookmarkMinus,
   Edit,
+  PenLine,
   History,
   Loader2,
   RotateCcw,
@@ -70,14 +71,35 @@ import { toast } from 'sonner';
 type ModeCard = {
   href: (id: string) => string;
   label: string;
-  img: string;
+  /** Illustration; modes without one render `WriteIllustration`. */
+  img?: string;
 };
 
 const modeCards: ModeCard[] = [
   { href: (id) => `/modules/${id}/flashcards`, label: 'Flashcards', img: '/images/img3.png' },
   { href: (id) => `/modules/${id}/learn`, label: 'Learn', img: '/images/img1.png' },
+  { href: (id) => `/modules/${id}/write`, label: 'Write' },
   { href: (id) => `/modules/${id}/test`, label: 'Test', img: '/images/img4.png' },
 ];
+
+// Stand-in artwork for Write until it has its own illustration: same
+// footprint as the 120×120 mode images.
+function WriteIllustration() {
+  return (
+    <div
+      aria-hidden
+      // mb-1 matches the inline-image baseline gap under the other cards' art.
+      className="mb-1 flex size-[120px] flex-col justify-center gap-2 rounded-xl bg-white p-4 shadow-sm"
+    >
+      <span className="h-2 w-16 rounded-full bg-neutral-200" />
+      <div className="flex items-center gap-1.5 rounded-md border border-black/10 px-2 py-1.5">
+        <PenLine className="size-3.5 text-brand-600" />
+        <span className="h-1.5 w-12 rounded-full bg-brand-300" />
+      </div>
+      <span className="h-2 w-10 rounded-full bg-neutral-200" />
+    </div>
+  );
+}
 
 export default function LearnPageClient({ id }: { id: string }) {
   const queryClient = useQueryClient();
@@ -287,12 +309,16 @@ export default function LearnPageClient({ id }: { id: string }) {
               )}
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {modeCards.map((m) => (
               <Link key={m.label} href={m.href(id)} className="group">
                 <Card className="cursor-pointer transition-all hover:-translate-y-0.5 hover:bg-brand-300/20">
                   <CardContent className="flex flex-col items-center gap-3">
-                    <Image src={m.img} width={120} height={120} alt={m.label} />
+                    {m.img ? (
+                      <Image src={m.img} width={120} height={120} alt={m.label} />
+                    ) : (
+                      <WriteIllustration />
+                    )}
                     <span className="text-lg font-semibold text-neutral-800">{m.label}</span>
                   </CardContent>
                 </Card>
@@ -580,8 +606,8 @@ function ModuleHeaderSkeleton() {
 
 function ModeChooserSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      {Array.from({ length: 3 }).map((_, i) => (
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      {Array.from({ length: modeCards.length }).map((_, i) => (
         <Skeleton key={i} className="h-40 rounded-3xl" />
       ))}
     </div>

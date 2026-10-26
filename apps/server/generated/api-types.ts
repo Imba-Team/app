@@ -2097,6 +2097,11 @@ export interface components {
              */
             masteryThreshold: number;
             /**
+             * @description Whether Learn opens rounds with a "match the pairs" warm-up. Practice only — no mastery credit.
+             * @example true
+             */
+            matchingEnabled: boolean;
+            /**
              * @description Multiplier on the weighted-streak threshold that flips a card from LEARN_MC (recognition) to LEARN_WRITTEN (recall). Higher = written triggers sooner. 0 keeps a card on MC until mastery.
              * @example 1
              */
@@ -2575,6 +2580,8 @@ export interface components {
             hintMultiplier?: number;
             /** @example 3 */
             masteryThreshold?: number;
+            /** @example true */
+            matchingEnabled?: boolean;
             /** @example 1 */
             mcWrittenBias?: number;
             /** @example true */

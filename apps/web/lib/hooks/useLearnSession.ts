@@ -11,9 +11,9 @@
  * answers hit POST /sessions/:id/answer-written (studyMode
  * LEARN_WRITTEN). Both are idempotent via a client-generated attemptId.
  */
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   completeSession,
   getNextLearnBatch,
@@ -23,12 +23,13 @@ import {
   submitSessionAnswer,
   submitWrittenAnswer,
   type AnswerResponse,
+  type BatchStudyMode,
   type LearnBatchCard,
   type LearnResumeState,
   type ResolvedAnswerDirection,
   type SessionSummary,
   type WrittenAnswerResponse,
-} from "@/lib/api";
+} from '@/lib/api';
 
 /**
  * LearnBatchCard.answerDirection is typed as the full Prisma enum
@@ -38,17 +39,15 @@ import {
  * This helper narrows for the submit DTOs; anything unexpected just
  * degrades to undefined and the server falls back to the preference.
  */
-function resolvedDirectionOf(
-  card: LearnBatchCard,
-): ResolvedAnswerDirection | undefined {
-  return card.answerDirection === "TERM_TO_DEFINITION" ||
-    card.answerDirection === "DEFINITION_TO_TERM"
+function resolvedDirectionOf(card: LearnBatchCard): ResolvedAnswerDirection | undefined {
+  return card.answerDirection === 'TERM_TO_DEFINITION' ||
+    card.answerDirection === 'DEFINITION_TO_TERM'
     ? card.answerDirection
     : undefined;
 }
 
 export type LearnMcResult = {
-  kind: "mc";
+  kind: 'mc';
   correct: boolean;
   correctChoiceIndex: number;
   selectedChoiceIndex: number;
@@ -58,8 +57,8 @@ export type LearnMcResult = {
 };
 
 export type LearnWrittenResult = {
-  kind: "written";
-  matchType: WrittenAnswerResponse["evaluation"]["matchType"];
+  kind: 'written';
+  matchType: WrittenAnswerResponse['evaluation']['matchType'];
   similarity: number;
   editDistance: number;
   normalizedInput: string;
@@ -68,7 +67,7 @@ export type LearnWrittenResult = {
    *  either the primary definition or an author-provided alternate. */
   matchedAgainst: string;
   /** Segment-by-segment char diff for the feedback panel. */
-  diff: WrittenAnswerResponse["evaluation"]["diff"];
+  diff: WrittenAnswerResponse['evaluation']['diff'];
   correct: boolean;
   correctAnswer: string;
   graduated: boolean;
@@ -79,7 +78,7 @@ export type LearnCardResult = LearnMcResult | LearnWrittenResult;
 
 export type LearnAnswerRecord = {
   cardId: string;
-  promptType: LearnBatchCard["promptType"];
+  promptType: LearnBatchCard['promptType'];
   hintUsed: boolean;
   correct: boolean;
   graduated: boolean;
@@ -92,17 +91,23 @@ export type LearnAnswerRecord = {
 };
 
 type Status =
-  | "idle"
-  | "starting"
-  | "loading-batch"
-  | "active"
-  | "showing-feedback"
-  | "completing"
-  | "complete"
-  | "error";
+  | 'idle'
+  | 'starting'
+  | 'loading-batch'
+  | 'active'
+  | 'showing-feedback'
+  | 'completing'
+  | 'complete'
+  | 'error';
 
 interface UseLearnSessionOptions {
   moduleId: string;
+  /**
+   * LEARN (default) mixes multiple choice and typing per card. WRITE
+   * runs the same batch flow but the server makes every prompt typed,
+   * and answers are scored as WRITE attempts.
+   */
+  mode?: BatchStudyMode;
   /** Enabled once the caller knows the module has at least one non-mastered card. */
   enabled: boolean;
   batchSize?: number;
@@ -136,10 +141,12 @@ export interface UseLearnSessionReturn {
   error: string | null;
   summary: SessionSummary | null;
   currentCard: LearnBatchCard | null;
+  /** Every card in the current batch, in play order. */
+  batch: LearnBatchCard[];
   batchIndex: number;
   batchSize: number;
   totalAnswered: number;
-  latestProgress: AnswerResponse["setProgress"] | null;
+  latestProgress: AnswerResponse['setProgress'] | null;
   answers: LearnAnswerRecord[];
   /** Answers that belong to the current batch — reset every time the
    *  hook pulls a fresh batch. Feeds the round-up screen. */
@@ -150,14 +157,8 @@ export interface UseLearnSessionReturn {
    *  and another batch is coming. The UI uses this to decide whether
    *  to advance directly or show a round-up first. */
   atBatchBoundary: boolean;
-  submitMc: (input: {
-    selectedChoiceIndex: number;
-    hintUsed: boolean;
-  }) => Promise<void>;
-  submitWritten: (input: {
-    userAnswer: string;
-    hintUsed: boolean;
-  }) => Promise<void>;
+  submitMc: (input: { selectedChoiceIndex: number; hintUsed: boolean }) => Promise<void>;
+  submitWritten: (input: { userAnswer: string; hintUsed: boolean }) => Promise<void>;
   /** Send SKIPPED for the current card and move on. Server records the
    *  attempt but the mastery engine leaves the card untouched. */
   skipCurrent: () => Promise<void>;
@@ -174,31 +175,33 @@ export interface UseLearnSessionReturn {
   advance: () => Promise<void>;
   finish: () => Promise<void>;
   retry: () => void;
+  /** Restart the response timer for the current card — used after a
+   *  pre-round step (the matching warm-up) so it isn't counted. */
+  resetCardTimer: () => void;
 }
 
 function newAttemptId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID();
   }
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 }
 
 export function useLearnSession({
   moduleId,
+  mode = 'LEARN',
   enabled,
   batchSize = 10,
   resumeSessionId,
   initialState,
   dueFirst = false,
 }: UseLearnSessionOptions): UseLearnSessionReturn {
-  const [sessionId, setSessionId] = useState<string | null>(
-    resumeSessionId ?? null,
-  );
-  const [status, setStatus] = useState<Status>("idle");
+  const [sessionId, setSessionId] = useState<string | null>(resumeSessionId ?? null);
+  const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<SessionSummary | null>(null);
   const [batch, setBatch] = useState<LearnBatchCard[]>([]);
@@ -206,9 +209,7 @@ export function useLearnSession({
   const [hasMoreCards, setHasMoreCards] = useState(true);
   const [answers, setAnswers] = useState<LearnAnswerRecord[]>([]);
   const [lastResult, setLastResult] = useState<LearnCardResult | null>(null);
-  const [latestProgress, setLatestProgress] = useState<
-    AnswerResponse["setProgress"] | null
-  >(null);
+  const [latestProgress, setLatestProgress] = useState<AnswerResponse['setProgress'] | null>(null);
   // How many answers had been logged when the current batch was
   // loaded — used to slice `answers` down to the just-completed batch
   // for the round-up screen.
@@ -235,16 +236,14 @@ export function useLearnSession({
   useEffect(() => {
     if (!enabled || startedRef.current) return;
     startedRef.current = true;
-    setStatus("starting");
+    setStatus('starting');
     setError(null);
 
     (async () => {
       try {
         // Resume path: skip the POST /sessions round-trip; the server
         // has the session row already.
-        const startedSessionId =
-          resumeSessionId ??
-          (await startSession(moduleId, "LEARN")).sessionId;
+        const startedSessionId = resumeSessionId ?? (await startSession(moduleId, mode)).sessionId;
         setSessionId(startedSessionId);
 
         // Hydrate from the server-persisted snapshot when the caller
@@ -253,12 +252,10 @@ export function useLearnSession({
         // back to the fresh next-batch pull.
         if (resumeSessionId && initialState && initialState.batch.length > 0) {
           setBatch(initialState.batch);
-          setBatchIndex(
-            Math.min(initialState.batchIndex, initialState.batch.length - 1),
-          );
+          setBatchIndex(Math.min(initialState.batchIndex, initialState.batch.length - 1));
           setHasMoreCards(initialState.hasMoreCards);
           setBatchStartAnswerCount(0);
-          setStatus("active");
+          setStatus('active');
         } else {
           const first = await getNextLearnBatch(startedSessionId, batchSize, {
             dueFirst,
@@ -267,27 +264,24 @@ export function useLearnSession({
           setBatchIndex(0);
           setHasMoreCards(first.hasMoreCards);
           setBatchStartAnswerCount(0);
-          setStatus(first.cards.length > 0 ? "active" : "complete");
+          setStatus(first.cards.length > 0 ? 'active' : 'complete');
         }
       } catch (err) {
         startedRef.current = false;
         setError((err as Error).message);
-        setStatus("error");
+        setStatus('error');
       }
     })();
-  }, [
-    enabled,
-    moduleId,
-    batchSize,
-    attemptKey,
-    resumeSessionId,
-    initialState,
-    dueFirst,
-  ]);
+  }, [enabled, mode, moduleId, batchSize, attemptKey, resumeSessionId, initialState, dueFirst]);
 
   const retry = useCallback(() => {
     if (startedRef.current) return;
     setAttemptKey((k) => k + 1);
+  }, []);
+
+  const resetCardTimer = useCallback(() => {
+    if (typeof performance === 'undefined') return;
+    cardShownAtRef.current = performance.now();
   }, []);
 
   const currentCard = batch[batchIndex] ?? null;
@@ -298,7 +292,7 @@ export function useLearnSession({
   // restarts the clock.
   const currentCardId = currentCard?.cardId;
   useEffect(() => {
-    if (typeof performance === "undefined") return;
+    if (typeof performance === 'undefined') return;
     cardShownAtRef.current = currentCardId ? performance.now() : null;
   }, [currentCardId, batchIndex]);
 
@@ -321,7 +315,7 @@ export function useLearnSession({
   // an in-flight POST land during unmount, but we don't guarantee it.
   // The server-side abandoned-session sweep is the safety net.
   const sessionIdRef = useRef<string | null>(null);
-  const statusRef = useRef<Status>("idle");
+  const statusRef = useRef<Status>('idle');
   useEffect(() => {
     sessionIdRef.current = sessionId;
     statusRef.current = status;
@@ -331,7 +325,7 @@ export function useLearnSession({
       const id = sessionIdRef.current;
       const st = statusRef.current;
       if (!id) return;
-      if (st === "complete" || st === "completing" || st === "error") return;
+      if (st === 'complete' || st === 'completing' || st === 'error') return;
       const snapshot = currentStateRef.current;
       void pauseSession(id, snapshot ?? undefined).catch(() => {
         // Swallow — the sweep will mark it ABANDONED if pause fails.
@@ -340,7 +334,7 @@ export function useLearnSession({
   }, []);
 
   function elapsedMs(): number | undefined {
-    if (typeof performance === "undefined") return undefined;
+    if (typeof performance === 'undefined') return undefined;
     const start = cardShownAtRef.current;
     if (start === null) return undefined;
     return Math.max(0, Math.round(performance.now() - start));
@@ -355,16 +349,16 @@ export function useLearnSession({
     const isLastInBatch = batchIndex >= batch.length - 1;
     if (!isLastInBatch) {
       setBatchIndex((i) => i + 1);
-      setStatus("active");
+      setStatus('active');
       return;
     }
     if (!hasMoreCards) {
       setBatch([]);
       setBatchIndex(0);
-      setStatus("active"); // Page decides to call finish() from here.
+      setStatus('active'); // Page decides to call finish() from here.
       return;
     }
-    setStatus("loading-batch");
+    setStatus('loading-batch');
     try {
       const next = await getNextLearnBatch(sessionId, batchSize, { dueFirst });
       setBatch(next.cards);
@@ -374,20 +368,12 @@ export function useLearnSession({
       // round-up can slice out just that batch's answers on the next
       // boundary.
       setBatchStartAnswerCount(answers.length);
-      setStatus(next.cards.length > 0 ? "active" : "active");
+      setStatus(next.cards.length > 0 ? 'active' : 'active');
     } catch (err) {
       setError((err as Error).message);
-      setStatus("error");
+      setStatus('error');
     }
-  }, [
-    sessionId,
-    batch.length,
-    batchIndex,
-    hasMoreCards,
-    batchSize,
-    dueFirst,
-    answers.length,
-  ]);
+  }, [sessionId, batch.length, batchIndex, hasMoreCards, batchSize, dueFirst, answers.length]);
 
   const submitMc = useCallback(
     async ({
@@ -397,17 +383,12 @@ export function useLearnSession({
       selectedChoiceIndex: number;
       hintUsed: boolean;
     }) => {
-      if (!sessionId || !currentCard || currentCard.promptType !== "LEARN_MC")
-        return;
-      if (
-        currentCard.correctChoiceIndex === undefined ||
-        !currentCard.choices
-      )
-        return;
+      if (!sessionId || !currentCard || currentCard.promptType !== 'LEARN_MC') return;
+      if (currentCard.correctChoiceIndex === undefined || !currentCard.choices) return;
 
       const correctChoiceIndex = currentCard.correctChoiceIndex;
       const correct = selectedChoiceIndex === correctChoiceIndex;
-      const outcome = correct ? "CORRECT" : "INCORRECT";
+      const outcome = correct ? 'CORRECT' : 'INCORRECT';
       const attemptId = newAttemptId();
       const responseMs = elapsedMs();
 
@@ -415,7 +396,7 @@ export function useLearnSession({
         const res = await submitSessionAnswer(sessionId, {
           attemptId,
           cardId: currentCard.cardId,
-          studyMode: "LEARN_MC",
+          studyMode: 'LEARN_MC',
           outcome,
           hintUsed,
           responseMs,
@@ -426,7 +407,7 @@ export function useLearnSession({
           ...prev,
           {
             cardId: currentCard.cardId,
-            promptType: "LEARN_MC",
+            promptType: 'LEARN_MC',
             hintUsed,
             correct,
             graduated: res.graduated,
@@ -434,7 +415,7 @@ export function useLearnSession({
           },
         ]);
         setLastResult({
-          kind: "mc",
+          kind: 'mc',
           correct,
           correctChoiceIndex,
           selectedChoiceIndex,
@@ -442,7 +423,7 @@ export function useLearnSession({
           graduated: res.graduated,
           demoted: res.demoted,
         });
-        setStatus("showing-feedback");
+        setStatus('showing-feedback');
       } catch (err) {
         setError((err as Error).message);
       }
@@ -451,19 +432,8 @@ export function useLearnSession({
   );
 
   const submitWritten = useCallback(
-    async ({
-      userAnswer,
-      hintUsed,
-    }: {
-      userAnswer: string;
-      hintUsed: boolean;
-    }) => {
-      if (
-        !sessionId ||
-        !currentCard ||
-        currentCard.promptType !== "LEARN_WRITTEN"
-      )
-        return;
+    async ({ userAnswer, hintUsed }: { userAnswer: string; hintUsed: boolean }) => {
+      if (!sessionId || !currentCard || currentCard.promptType !== 'LEARN_WRITTEN') return;
 
       const attemptId = newAttemptId();
       const responseMs = elapsedMs();
@@ -471,7 +441,7 @@ export function useLearnSession({
         const res = await submitWrittenAnswer(sessionId, {
           attemptId,
           cardId: currentCard.cardId,
-          studyMode: "LEARN_WRITTEN",
+          studyMode: mode === 'WRITE' ? 'WRITE' : 'LEARN_WRITTEN',
           userAnswer,
           hintUsed,
           responseMs,
@@ -482,7 +452,7 @@ export function useLearnSession({
           ...prev,
           {
             cardId: currentCard.cardId,
-            promptType: "LEARN_WRITTEN",
+            promptType: 'LEARN_WRITTEN',
             hintUsed,
             correct: res.correct,
             graduated: res.graduated,
@@ -490,7 +460,7 @@ export function useLearnSession({
           },
         ]);
         setLastResult({
-          kind: "written",
+          kind: 'written',
           matchType: res.evaluation.matchType,
           similarity: res.evaluation.similarity,
           editDistance: res.evaluation.editDistance,
@@ -503,24 +473,24 @@ export function useLearnSession({
           graduated: res.graduated,
           demoted: res.demoted,
         });
-        setStatus("showing-feedback");
+        setStatus('showing-feedback');
       } catch (err) {
         setError((err as Error).message);
       }
     },
-    [sessionId, currentCard],
+    [sessionId, currentCard, mode],
   );
 
   const finish = useCallback(async () => {
-    if (!sessionId || status === "completing" || status === "complete") return;
-    setStatus("completing");
+    if (!sessionId || status === 'completing' || status === 'complete') return;
+    setStatus('completing');
     try {
       const res = await completeSession(sessionId);
       setSummary(res);
-      setStatus("complete");
+      setStatus('complete');
     } catch (err) {
       setError((err as Error).message);
-      setStatus("error");
+      setStatus('error');
     }
   }, [sessionId, status]);
 
@@ -537,8 +507,12 @@ export function useLearnSession({
         attemptId,
         cardId: currentCard.cardId,
         studyMode:
-          currentCard.promptType === "LEARN_MC" ? "LEARN_MC" : "LEARN_WRITTEN",
-        outcome: "SKIPPED",
+          mode === 'WRITE'
+            ? 'WRITE'
+            : currentCard.promptType === 'LEARN_MC'
+              ? 'LEARN_MC'
+              : 'LEARN_WRITTEN',
+        outcome: 'SKIPPED',
         hintUsed: false,
         responseMs,
         answerDirection: resolvedDirectionOf(currentCard),
@@ -560,14 +534,12 @@ export function useLearnSession({
     } catch (err) {
       setError((err as Error).message);
     }
-  }, [sessionId, currentCard, advance]);
+  }, [sessionId, currentCard, advance, mode]);
 
   const markCurrentCorrect = useCallback(async () => {
     if (!sessionId || !lastResult || lastResult.correct) return;
     const targetCardId =
-      lastResult.kind === "written" || lastResult.kind === "mc"
-        ? currentCard?.cardId
-        : null;
+      lastResult.kind === 'written' || lastResult.kind === 'mc' ? currentCard?.cardId : null;
     if (!targetCardId) return;
     try {
       const res = await markAnswerCorrect(sessionId, targetCardId);
@@ -578,10 +550,7 @@ export function useLearnSession({
         if (prev.length === 0) return prev;
         const last = prev[prev.length - 1];
         if (last.cardId !== targetCardId) return prev;
-        return [
-          ...prev.slice(0, -1),
-          { ...last, correct: true, graduated: res.graduated },
-        ];
+        return [...prev.slice(0, -1), { ...last, correct: true, graduated: res.graduated }];
       });
       // Update the visible feedback so the UI reflects the override.
       // Keep the diff/similarity fields for written results so the
@@ -610,7 +579,7 @@ export function useLearnSession({
     // forward monotonically.
     setBatch((prev) => (prev.length === 0 ? prev : [...prev, currentCard]));
     setLastResult(null);
-    setStatus("active");
+    setStatus('active');
     setBatchIndex((i) => i + 1);
   }, [currentCard]);
 
@@ -619,7 +588,7 @@ export function useLearnSession({
   // the round-up screen — advancing past this state fetches the next
   // batch.
   const atBatchBoundary =
-    status === "showing-feedback" &&
+    status === 'showing-feedback' &&
     batch.length > 0 &&
     batchIndex >= batch.length - 1 &&
     hasMoreCards;
@@ -632,6 +601,7 @@ export function useLearnSession({
     error,
     summary,
     currentCard,
+    batch,
     batchIndex,
     batchSize: batch.length,
     totalAnswered: answers.length,
@@ -649,5 +619,6 @@ export function useLearnSession({
     advance,
     finish,
     retry,
+    resetCardTimer,
   };
 }
