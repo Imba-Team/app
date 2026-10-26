@@ -2,6 +2,7 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { SrsService } from './srs.service';
+import { inUserLibrary } from './domain/library-scope';
 
 interface PrismaMock {
   srsCard: {
@@ -336,6 +337,43 @@ describe('SrsService', () => {
       expect(items).toHaveLength(1);
       expect(items[0].cardId).toBe(cardId);
       expect(items[0].term).toBe('Hola');
+    });
+
+    it('only includes cards from modules the user owns or has collected', async () => {
+      const prisma = makePrisma();
+      prisma.srsCard.findMany.mockResolvedValue([]);
+      prisma.srsCard.count.mockResolvedValue(0);
+      const svc = new SrsService(fakeLogger(), prisma as never, makeRedis());
+
+      await svc.getTodayQueue(userId, 50, 0);
+
+      const [args] = prisma.srsCard.findMany.mock.calls[0] as [
+        { where: { card?: unknown } },
+      ];
+      expect(args.where.card).toEqual(inUserLibrary(userId));
+    });
+  });
+
+  describe('library scope', () => {
+    it('forecast ignores modules removed from the library', async () => {
+      const prisma = makePrisma();
+      prisma.srsCard.groupBy.mockResolvedValue([]);
+      const svc = new SrsService(fakeLogger(), prisma as never, makeRedis());
+
+      await svc.getForecast(userId, 7);
+
+      const [args] = prisma.srsCard.groupBy.mock.calls[0] as [
+        { where: { card?: unknown } },
+      ];
+      expect(args.where.card).toEqual(inUserLibrary(userId));
+    });
+
+    it('inUserLibrary matches owned or collected modules', () => {
+      expect(inUserLibrary('u-1')).toEqual({
+        studySet: {
+          OR: [{ ownerId: 'u-1' }, { favourites: { some: { userId: 'u-1' } } }],
+        },
+      });
     });
   });
 });

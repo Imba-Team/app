@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { inUserLibrary } from './domain/library-scope';
 import { plainToInstance } from 'class-transformer';
 import { Redis } from 'ioredis';
 import { LoggerService } from 'src/common/logger/logger.service';
@@ -149,7 +150,7 @@ export class SrsService {
     const where: Prisma.SrsCardWhereInput = {
       userId,
       dueDate: { lt: upperBound },
-      card: { studySetId: setId },
+      card: { studySetId: setId, ...inUserLibrary(userId) },
     };
 
     const [rows, total] = await this.prisma.$transaction([
@@ -208,6 +209,7 @@ export class SrsService {
     const where: Prisma.SrsCardWhereInput = {
       userId,
       dueDate: { lt: upperBound },
+      card: inUserLibrary(userId),
     };
 
     const [rows, total] = await this.prisma.$transaction([
@@ -325,6 +327,7 @@ export class SrsService {
         where: {
           userId,
           dueDate: { lt: SrsService.addDays(today, 1) },
+          card: inUserLibrary(userId),
         },
       });
 
@@ -374,6 +377,7 @@ export class SrsService {
       where: {
         userId,
         dueDate: { lt: upperBound },
+        card: inUserLibrary(userId),
       },
       _count: { _all: true },
     });

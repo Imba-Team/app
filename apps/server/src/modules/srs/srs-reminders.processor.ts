@@ -2,6 +2,7 @@ import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue, UnrecoverableError } from 'bullmq';
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { inUserLibrary } from './domain/library-scope';
 import {
   SRS_REMINDERS_QUEUE,
   SrsRemindersJob,
@@ -104,7 +105,11 @@ export class SrsRemindersProcessor extends WorkerHost {
       const dayStart = startOfLocalDayInUtc(user.timezone ?? 'UTC', now);
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
       const dueCount = await this.prisma.srsCard.count({
-        where: { userId: user.id, dueDate: { lt: dayEnd } },
+        where: {
+          userId: user.id,
+          dueDate: { lt: dayEnd },
+          card: inUserLibrary(user.id),
+        },
       });
       if (dueCount === 0) continue;
 

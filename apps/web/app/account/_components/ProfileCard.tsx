@@ -11,13 +11,24 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { Camera, CheckCircle2, Loader2, Pencil, X } from 'lucide-react';
+import { Camera, CheckCircle2, ImageUp, Loader2, Pencil, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { buildAssetUrl } from '@/lib/env';
-import { useUpdateMe, useUpdateProfilePicture, type User } from '@/lib/hooks/useUser';
+import {
+  useRemoveProfilePicture,
+  useUpdateMe,
+  useUpdateProfilePicture,
+  type User,
+} from '@/lib/hooks/useUser';
 
 interface ProfileCardProps {
   user: User;
@@ -37,7 +48,8 @@ export default function ProfileCard({ user }: ProfileCardProps) {
 
   const updateMe = useUpdateMe();
   const updatePicture = useUpdateProfilePicture();
-  const uploading = updatePicture.isPending;
+  const removePicture = useRemoveProfilePicture();
+  const uploading = updatePicture.isPending || removePicture.isPending;
   const saving = updateMe.isPending;
 
   // Reset form to canonical values whenever the user record refreshes
@@ -154,20 +166,31 @@ export default function ProfileCard({ user }: ProfileCardProps) {
               onChange={handleUpload}
               disabled={uploading}
             />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              aria-label={uploading ? 'Uploading avatar' : 'Change avatar'}
-              className={cn(
-                'absolute -bottom-1 -right-1 size-8 rounded-full bg-white border border-gray-200 shadow-sm',
-                'flex items-center justify-center text-gray-600',
-                'hover:text-brand-500 hover:border-brand-500 transition-colors',
-                uploading && 'cursor-wait',
-              )}
-            >
-              {uploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
-            </button>
+            {user.profilePicture ? (
+              // With a photo set, offer replace or remove; without one the
+              // button goes straight to the file picker.
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <AvatarButton uploading={uploading} label="Change or remove avatar" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onSelect={() => fileInputRef.current?.click()}>
+                    <ImageUp className="h-4 w-4" />
+                    Upload new photo
+                  </DropdownMenuItem>
+                  <DropdownMenuItem variant="destructive" onSelect={() => removePicture.mutate()}>
+                    <Trash2 className="h-4 w-4" />
+                    Remove photo
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <AvatarButton
+                uploading={uploading}
+                label="Upload avatar"
+                onClick={() => fileInputRef.current?.click()}
+              />
+            )}
           </div>
 
           <div className="flex-1 min-w-0 space-y-3">
@@ -264,5 +287,29 @@ function ReadOnlyField({ label, children }: { label: string; children: React.Rea
       <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
       <div>{children}</div>
     </div>
+  );
+}
+
+function AvatarButton({
+  uploading,
+  label,
+  ...props
+}: { uploading: boolean; label: string } & React.ComponentProps<'button'>) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="icon-sm"
+      disabled={uploading}
+      aria-label={uploading ? 'Updating avatar' : label}
+      className={cn(
+        'absolute -bottom-1 -right-1 size-8 bg-white shadow-sm text-gray-600',
+        'hover:text-brand-500 hover:border-brand-500',
+        uploading && 'cursor-wait',
+      )}
+      {...props}
+    >
+      {uploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
+    </Button>
   );
 }

@@ -7,7 +7,7 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
-  Heart,
+  Bookmark,
   Layers,
   Loader2,
   Search,
@@ -356,12 +356,11 @@ function CommunityCard({
             </Avatar>
             <span className="truncate text-sm text-gray-600">{owner}</span>
           </div>
-          <span
-            className="inline-flex shrink-0 items-center gap-1 text-xs text-gray-500"
-            aria-label={`${hit.likeCount} likes`}
-          >
-            <Heart className="h-3.5 w-3.5" />
-            {hit.likeCount}
+          {/* likeCount in the search index is the number of users who saved
+              (collected) the module, so it's labelled as saves. */}
+          <span className="inline-flex shrink-0 items-center gap-1 text-xs text-gray-500">
+            <Bookmark className="h-3.5 w-3.5" aria-hidden />
+            {hit.likeCount} {hit.likeCount === 1 ? 'save' : 'saves'}
           </span>
         </div>
       </CardContent>

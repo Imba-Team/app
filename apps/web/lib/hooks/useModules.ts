@@ -16,7 +16,9 @@ import {
   type CommunitySearchParams,
 } from "@/lib/api";
 import { toast } from "sonner";
+import { dueQueueKeys } from "./useDueQueue";
 import { libraryKeys } from "./useLibrary";
+import { srsKeys } from "./useSrs";
 
 // ============================================
 // QUERY KEYS
@@ -120,6 +122,13 @@ function invalidateCollections(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: libraryKeys.folders() });
 }
 
+// Reviews only cover modules in the library, so collecting or removing a
+// module changes the review queue, forecast and per-module due counts.
+function invalidateReviews(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: srsKeys.all });
+  queryClient.invalidateQueries({ queryKey: dueQueueKeys.all });
+}
+
 export function useCreateModule() {
   const queryClient = useQueryClient();
 
@@ -197,6 +206,7 @@ export function useCollectModule() {
     mutationFn: (id: string) => collectModule(id),
     onSuccess: (_, id) => {
       invalidateCollections(queryClient);
+      invalidateReviews(queryClient);
       queryClient.invalidateQueries({ queryKey: moduleKeys.detail(id) });
       toast.success("Module added to collection");
     },
@@ -213,11 +223,12 @@ export function useUncollectModule() {
     mutationFn: (id: string) => uncollectModule(id),
     onSuccess: (_, id) => {
       invalidateCollections(queryClient);
+      invalidateReviews(queryClient);
       queryClient.invalidateQueries({ queryKey: moduleKeys.detail(id) });
-      toast.success("Module removed from collection");
+      toast.success("Removed from your library");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to uncollect module");
+      toast.error(error.message || "Failed to remove module from your library");
     },
   });
 }

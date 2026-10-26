@@ -812,10 +812,6 @@ function PreTestSetupScreen({
               <SummaryItem label="Strictness" value={strictnessLabel(prefs.strictness)} />
               <SummaryItem label="Starred only" value={prefs.starredOnly ? 'On' : 'Off'} />
               <SummaryItem label="Shuffle" value={prefs.shuffleEnabled ? 'On' : 'Off'} />
-              <SummaryItem
-                label="Per-question feedback"
-                value={prefs.showResultsPerQuestion ? 'On' : 'Off'}
-              />
             </dl>
           )}
 
