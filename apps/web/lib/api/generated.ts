@@ -1579,6 +1579,24 @@ export interface components {
             /** @description Old password */
             oldPassword: string;
         };
+        CommentAuthorDto: {
+            id: string;
+            /** @description Display name, falling back to username */
+            name: string;
+            profilePicture: string | null;
+            username: string;
+        };
+        CommentResponseDto: {
+            author: components["schemas"]["CommentAuthorDto"] | null;
+            content: string;
+            /** Format: date-time */
+            createdAt: string;
+            id: string;
+            isDeleted: boolean;
+            replyCount: number;
+            /** Format: date-time */
+            updatedAt: string;
+        };
         CreateCommentDto: {
             /** @example Great set, helped me with revision. */
             content: string;
@@ -2705,6 +2723,8 @@ export type SchemaAnswerResponseDto = components['schemas']['AnswerResponseDto']
 export type SchemaApplyPresetDto = components['schemas']['ApplyPresetDto'];
 export type SchemaCardProgressSummaryDto = components['schemas']['CardProgressSummaryDto'];
 export type SchemaChangePasswordDto = components['schemas']['ChangePasswordDto'];
+export type SchemaCommentAuthorDto = components['schemas']['CommentAuthorDto'];
+export type SchemaCommentResponseDto = components['schemas']['CommentResponseDto'];
 export type SchemaCreateCommentDto = components['schemas']['CreateCommentDto'];
 export type SchemaCreateFlashcardDto = components['schemas']['CreateFlashcardDto'];
 export type SchemaCreateFolderDto = components['schemas']['CreateFolderDto'];
@@ -3253,7 +3273,11 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["CommentResponseDto"];
+                    };
+                };
             };
         };
     };
@@ -4809,7 +4833,11 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["CommentResponseDto"][];
+                    };
+                };
             };
         };
     };
@@ -4832,7 +4860,11 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["CommentResponseDto"];
+                    };
+                };
             };
         };
     };
@@ -4855,7 +4887,11 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["CommentResponseDto"][];
+                    };
+                };
             };
         };
     };
@@ -4879,7 +4915,11 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["CommentResponseDto"];
+                    };
+                };
             };
         };
     };

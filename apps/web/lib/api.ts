@@ -361,6 +361,95 @@ export async function removeSetFromFolder(
 }
 
 // ============================================
+// COMMENTS (module discussion)
+// ============================================
+
+export type ModuleComment = Schemas['CommentResponseDto'];
+
+export interface CommentPage {
+  items: ModuleComment[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+// List endpoints return pagination in `meta`, which the response schema
+// doesn't model (same as the SRS queue).
+function toCommentPage(res: Envelope<ModuleComment[]>, fallback: string): CommentPage {
+  const items = unwrap(res, fallback);
+  const meta =
+    (res as unknown as { meta?: { total?: number; page?: number; totalPages?: number } }).meta ??
+    {};
+  return {
+    items,
+    total: meta.total ?? items.length,
+    page: meta.page ?? 1,
+    totalPages: meta.totalPages ?? 1,
+  };
+}
+
+export async function getModuleComments(moduleId: string, page = 1, limit = 20) {
+  try {
+    const res = await apiFetch('get', '/study-sets/{studySetId}/comments', {
+      path: { studySetId: moduleId },
+      query: { page, limit },
+    });
+    return toCommentPage(res, 'Failed to load comments');
+  } catch (error) {
+    throw extractError(error, 'Failed to load comments');
+  }
+}
+
+export async function getCommentReplies(moduleId: string, commentId: string, limit = 100) {
+  try {
+    const res = await apiFetch('get', '/study-sets/{studySetId}/comments/{commentId}/replies', {
+      path: { studySetId: moduleId, commentId },
+      query: { page: 1, limit },
+    });
+    return toCommentPage(res, 'Failed to load replies');
+  } catch (error) {
+    throw extractError(error, 'Failed to load replies');
+  }
+}
+
+export async function postComment(moduleId: string, content: string, parentCommentId?: string) {
+  try {
+    const res = parentCommentId
+      ? await apiFetch('post', '/study-sets/{studySetId}/comments/{commentId}/replies', {
+          path: { studySetId: moduleId, commentId: parentCommentId },
+          body: { content },
+        })
+      : await apiFetch('post', '/study-sets/{studySetId}/comments', {
+          path: { studySetId: moduleId },
+          body: { content },
+        });
+    return unwrap(res, 'Failed to post comment');
+  } catch (error) {
+    throw extractError(error, 'Failed to post comment');
+  }
+}
+
+export async function editComment(commentId: string, content: string) {
+  try {
+    const res = await apiFetch('patch', '/comments/{commentId}', {
+      path: { commentId },
+      body: { content },
+    });
+    return unwrap(res, 'Failed to edit comment');
+  } catch (error) {
+    throw extractError(error, 'Failed to edit comment');
+  }
+}
+
+export async function deleteComment(commentId: string): Promise<void> {
+  try {
+    await apiFetch('delete', '/comments/{commentId}', { path: { commentId } });
+  } catch (error) {
+    throw extractError(error, 'Failed to delete comment');
+  }
+}
+
+// ============================================
 // TERMS (flashcards)
 // ============================================
 

@@ -24,6 +24,9 @@ import { ImportFlashcardsDialog, type ImportedCard } from '@/components/import-f
 import { StudyPreferencesDialog } from '@/components/StudyPreferencesDialog';
 import { TestPreferencesDialog } from '@/components/TestPreferencesDialog';
 import { RemoveFromLibraryDialog } from '@/components/removeFromLibraryDialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useModuleComments } from '@/lib/hooks/useComments';
+import { ModuleDiscussion } from './_components/moduleDiscussion';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -113,6 +116,10 @@ export default function LearnPageClient({ id }: { id: string }) {
   const [preferencesOpen, setPreferencesOpen] = useState(false);
   const [testPreferencesOpen, setTestPreferencesOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
+  const [tab, setTab] = useState<'terms' | 'discussion'>('terms');
+  // Shares its cache with <ModuleDiscussion />; only used for the tab count.
+  const comments = useModuleComments(id);
+  const commentCount = comments.data?.pages[0]?.total;
 
   const loading = moduleLoading || termsLoading;
   const moduleInfo = moduleData?.data;
@@ -304,172 +311,197 @@ export default function LearnPageClient({ id }: { id: string }) {
       )}
 
       <section>
-        {loading ? (
-          <TermsSkeleton />
-        ) : (
-          <>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h3 className="text-xl font-bold text-neutral-700">Terms</h3>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as 'terms' | 'discussion')}>
+          {loading ? (
+            <TermsSkeleton />
+          ) : (
+            <>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <TabsList className="h-11 rounded-full border border-black/5 bg-white p-1">
+                  <TabsTrigger
+                    value="terms"
+                    className="rounded-full px-5 data-[state=active]:bg-neutral-900 data-[state=active]:text-white"
+                  >
+                    Terms
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="discussion"
+                    className="rounded-full px-5 data-[state=active]:bg-neutral-900 data-[state=active]:text-white"
+                  >
+                    Discussion{commentCount ? ` · ${commentCount}` : ''}
+                  </TabsTrigger>
+                </TabsList>
 
-              {/* Settings dropdown — collects destructive / advanced actions
+                {/* Settings dropdown — collects destructive / advanced actions
                   so they don't clutter the main surface. Reset lives here
                   because it's rare and should require an extra click.
                   Rendered whenever the viewer is the owner (so Import
                   stays reachable on an empty module) or whenever there
                   is progress to manage. */}
-              {(isOwner || (isCollected && allTerms.length > 0)) && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" aria-label="Term list settings">
-                      <Settings2 className="h-4 w-4" />
-                      Settings
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="min-w-56">
-                    <DropdownMenuLabel>Study settings</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    {isCollected && (
-                      <DropdownMenuItem onClick={() => setPreferencesOpen(true)}>
-                        <SlidersHorizontal className="mr-2 h-4 w-4" />
-                        Study preferences…
-                      </DropdownMenuItem>
-                    )}
-                    {isCollected && (
-                      <DropdownMenuItem onClick={() => setTestPreferencesOpen(true)}>
-                        <SlidersHorizontal className="mr-2 h-4 w-4" />
-                        Test preferences…
-                      </DropdownMenuItem>
-                    )}
-                    {isOwner && (
-                      <DropdownMenuItem onClick={() => setImportOpen(true)}>
-                        <Upload className="mr-2 h-4 w-4" />
-                        Import flashcards
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem asChild>
-                      <Link href={`/modules/${id}/sessions`}>
-                        <History className="mr-2 h-4 w-4" />
-                        Session history
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link href={`/modules/${id}/test-history`}>
-                        <History className="mr-2 h-4 w-4" />
-                        Test history
-                      </Link>
-                    </DropdownMenuItem>
-                    {isCollected && allTerms.length > 0 && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => setResetOpen(true)}
-                          className="text-rose-600 focus:bg-rose-50 focus:text-rose-600"
-                        >
-                          <RotateCcw className="mr-2 h-4 w-4" />
-                          Reset progress
+                {tab === 'terms' && (isOwner || (isCollected && allTerms.length > 0)) && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" aria-label="Term list settings">
+                        <Settings2 className="h-4 w-4" />
+                        Settings
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="min-w-56">
+                      <DropdownMenuLabel>Study settings</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {isCollected && (
+                        <DropdownMenuItem onClick={() => setPreferencesOpen(true)}>
+                          <SlidersHorizontal className="mr-2 h-4 w-4" />
+                          Study preferences…
                         </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
+                      )}
+                      {isCollected && (
+                        <DropdownMenuItem onClick={() => setTestPreferencesOpen(true)}>
+                          <SlidersHorizontal className="mr-2 h-4 w-4" />
+                          Test preferences…
+                        </DropdownMenuItem>
+                      )}
+                      {isOwner && (
+                        <DropdownMenuItem onClick={() => setImportOpen(true)}>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Import flashcards
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem asChild>
+                        <Link href={`/modules/${id}/sessions`}>
+                          <History className="mr-2 h-4 w-4" />
+                          Session history
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`/modules/${id}/test-history`}>
+                          <History className="mr-2 h-4 w-4" />
+                          Test history
+                        </Link>
+                      </DropdownMenuItem>
+                      {isCollected && allTerms.length > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => setResetOpen(true)}
+                            className="text-rose-600 focus:bg-rose-50 focus:text-rose-600"
+                          >
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            Reset progress
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
 
-            {/* Filter + search row. Hidden for modules with a single
+              <TabsContent value="terms">
+                {/* Filter + search row. Hidden for modules with a single
                 term (filtering is meaningless there) — but the search
                 stays available for guest-viewed modules too, because
                 the DTO-level `?q=` doesn't require a progress row. */}
-            {allTerms.length > 1 && (
-              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-                {isCollected && (
-                  <TermsFilterBar
-                    starredOnly={starredOnly}
-                    onStarredOnlyChange={setStarredOnly}
-                    sortField={sortField}
-                    sortDir={sortDir}
-                    onSortChange={(field, dir) => {
-                      setSortField(field);
-                      setSortDir(dir);
-                    }}
-                    status={status}
-                    onStatusChange={setStatus}
-                  />
-                )}
-                <div className="relative flex-1 sm:min-w-64">
-                  <Search
-                    size={16}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
-                  />
-                  <Input
-                    type="text"
-                    placeholder="Search terms and definitions…"
-                    className="pl-10 pr-10"
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                  />
-                  {termsFetching && debouncedSearch && (
-                    <Loader2
-                      size={16}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-neutral-400"
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-
-            {terms.length === 0 && hasActiveFilter ? (
-              <Card>
-                <CardContent className="flex flex-col items-center gap-2 py-6 text-center">
-                  <p className="font-semibold text-neutral-900">
-                    {debouncedSearch
-                      ? `No terms match “${debouncedSearch}”`
-                      : 'No terms in this bucket'}
-                  </p>
-                  <p className="text-sm text-neutral-500">
-                    {debouncedSearch
-                      ? 'Try a different search, or clear the filter.'
-                      : 'Study more, or switch back to All.'}
-                  </p>
-                  <div className="mt-2 flex gap-2">
-                    {debouncedSearch && (
-                      <Button variant="ghost" size="sm" onClick={() => setSearchInput('')}>
-                        Clear search
-                      </Button>
-                    )}
-                    {(starredOnly || status !== 'all') && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setStarredOnly(false);
-                          setStatus('all');
+                {allTerms.length > 1 && (
+                  <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+                    {isCollected && (
+                      <TermsFilterBar
+                        starredOnly={starredOnly}
+                        onStarredOnlyChange={setStarredOnly}
+                        sortField={sortField}
+                        sortDir={sortDir}
+                        onSortChange={(field, dir) => {
+                          setSortField(field);
+                          setSortDir(dir);
                         }}
-                      >
-                        Show all terms
-                      </Button>
+                        status={status}
+                        onStatusChange={setStatus}
+                      />
                     )}
+                    <div className="relative flex-1 sm:min-w-64">
+                      <Search
+                        size={16}
+                        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="Search terms and definitions…"
+                        className="pl-10 pr-10"
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                      />
+                      {termsFetching && debouncedSearch && (
+                        <Loader2
+                          size={16}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-neutral-400"
+                        />
+                      )}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {terms.map((t: Term) => (
-                  <TermItem
-                    isOwned={isOwner}
-                    isCollected={isCollected}
-                    key={t.id}
-                    term={t}
-                    onDelete={() => handleDeleteTerm(t.id)}
-                    onToggleStar={() => toggleStar.mutate({ id: t.id, isStarred: !t.isStarred })}
-                    onSaveEdit={submitEdit}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
+                )}
 
-        {isOwner && <AddTerm onSubmit={submitNewTerm} isSubmitting={createTerm.isPending} />}
+                {terms.length === 0 && hasActiveFilter ? (
+                  <Card>
+                    <CardContent className="flex flex-col items-center gap-2 py-6 text-center">
+                      <p className="font-semibold text-neutral-900">
+                        {debouncedSearch
+                          ? `No terms match “${debouncedSearch}”`
+                          : 'No terms in this bucket'}
+                      </p>
+                      <p className="text-sm text-neutral-500">
+                        {debouncedSearch
+                          ? 'Try a different search, or clear the filter.'
+                          : 'Study more, or switch back to All.'}
+                      </p>
+                      <div className="mt-2 flex gap-2">
+                        {debouncedSearch && (
+                          <Button variant="ghost" size="sm" onClick={() => setSearchInput('')}>
+                            Clear search
+                          </Button>
+                        )}
+                        {(starredOnly || status !== 'all') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setStarredOnly(false);
+                              setStatus('all');
+                            }}
+                          >
+                            Show all terms
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-3">
+                    {terms.map((t: Term) => (
+                      <TermItem
+                        isOwned={isOwner}
+                        isCollected={isCollected}
+                        key={t.id}
+                        term={t}
+                        onDelete={() => handleDeleteTerm(t.id)}
+                        onToggleStar={() =>
+                          toggleStar.mutate({ id: t.id, isStarred: !t.isStarred })
+                        }
+                        onSaveEdit={submitEdit}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {isOwner && (
+                  <AddTerm onSubmit={submitNewTerm} isSubmitting={createTerm.isPending} />
+                )}
+              </TabsContent>
+
+              <TabsContent value="discussion">
+                <ModuleDiscussion moduleId={id} isOwner={isOwner} />
+              </TabsContent>
+            </>
+          )}
+        </Tabs>
       </section>
 
       {isOwner && (

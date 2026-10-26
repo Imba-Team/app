@@ -16,6 +16,7 @@ import {
 } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 
+import { ApiOkEnvelope } from 'src/common/decorators/api-envelope.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { Role, Roles } from 'src/common/decorators/roles.decorator';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
@@ -38,6 +39,7 @@ export class CommentController {
   @Patch(':commentId')
   @HttpCode(200)
   @ApiOperation({ summary: 'Edit own comment' })
+  @ApiOkEnvelope(CommentResponseDto)
   @ApiParam({ name: 'commentId' })
   @ApiBody({ type: UpdateCommentDto })
   async updateComment(

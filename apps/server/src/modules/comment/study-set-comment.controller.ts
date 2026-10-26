@@ -18,6 +18,10 @@ import {
 } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 
+import {
+  ApiCreatedEnvelope,
+  ApiOkEnvelope,
+} from 'src/common/decorators/api-envelope.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { Role, Roles } from 'src/common/decorators/roles.decorator';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
@@ -41,6 +45,7 @@ export class StudySetCommentController {
   @Post()
   @HttpCode(201)
   @ApiOperation({ summary: 'Create a top-level comment' })
+  @ApiCreatedEnvelope(CommentResponseDto)
   @ApiBody({ type: CreateCommentDto })
   async createComment(
     @CurrentUser() user: IUser,
@@ -62,6 +67,7 @@ export class StudySetCommentController {
   @Post(':commentId/replies')
   @HttpCode(201)
   @ApiOperation({ summary: 'Reply to a comment' })
+  @ApiCreatedEnvelope(CommentResponseDto)
   @ApiBody({ type: CreateCommentDto })
   @ApiParam({ name: 'commentId' })
   async createReply(
@@ -88,6 +94,7 @@ export class StudySetCommentController {
   @Get()
   @HttpCode(200)
   @ApiOperation({ summary: 'List top-level comments for a study set' })
+  @ApiOkEnvelope(CommentResponseDto, { isArray: true })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
   async listComments(
@@ -120,6 +127,7 @@ export class StudySetCommentController {
   @Get(':commentId/replies')
   @HttpCode(200)
   @ApiOperation({ summary: 'List replies for a comment' })
+  @ApiOkEnvelope(CommentResponseDto, { isArray: true })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
   @ApiParam({ name: 'commentId' })

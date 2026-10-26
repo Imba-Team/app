@@ -10,9 +10,13 @@ class CommentAuthorDto {
   @Expose()
   username: string;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'Display name, falling back to username' })
   @Expose()
-  profilePicture: string;
+  name: string;
+
+  @ApiProperty({ type: String, nullable: true })
+  @Expose()
+  profilePicture: string | null;
 }
 
 export class CommentResponseDto {

@@ -4,8 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Comment, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
+import { UserStatus } from 'src/common/interfaces/user.interface';
+import { MediaService } from 'src/common/media/media.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { StudySetService } from 'src/modules/study-set/study-set.service';
 
@@ -14,22 +16,31 @@ import { CreateCommentDto } from './dtos/create-comment.dto';
 import { PaginationDto } from './dtos/pagination.dto';
 import { UpdateCommentDto } from './dtos/update-comment.dto';
 
-type CommentWithAuthor = Comment & {
+// One include for every comment query: the author fields needed for
+// display, and a reply count that ignores deleted replies (they're hidden).
+const commentInclude = {
   user: {
-    id: string;
-    username: string | null;
-    profilePicture: string | null;
-  };
-  _count?: {
-    replies: number;
-  };
-};
+    select: {
+      id: true,
+      username: true,
+      displayName: true,
+      profilePicture: true,
+      status: true,
+    },
+  },
+  _count: { select: { replies: { where: { isDeleted: false } } } },
+} satisfies Prisma.CommentInclude;
+
+type CommentWithAuthor = Prisma.CommentGetPayload<{
+  include: typeof commentInclude;
+}>;
 
 @Injectable()
 export class CommentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly studySetService: StudySetService,
+    private readonly media: MediaService,
   ) {}
 
   /**
@@ -115,20 +126,7 @@ export class CommentService {
         studySetId,
         parentCommentId: dto.parentCommentId ?? null,
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            profilePicture: true,
-          },
-        },
-        _count: {
-          select: {
-            replies: true,
-          },
-        },
-      },
+      include: commentInclude,
     });
 
     return this.mapComment(created);
@@ -162,20 +160,7 @@ export class CommentService {
         content: dto.content,
         updatedAt: new Date(),
       },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            profilePicture: true,
-          },
-        },
-        _count: {
-          select: {
-            replies: true,
-          },
-        },
-      },
+      include: commentInclude,
     });
 
     return this.mapComment(updated);
@@ -236,28 +221,18 @@ export class CommentService {
 
     const { page, limit, skip } = this.normalizePagination(pagination);
 
+    // A deleted comment only stays visible as a placeholder while it still
+    // has live replies; otherwise it's dropped (and not counted).
     const where: Prisma.CommentWhereInput = {
       studySetId,
       parentCommentId: null,
+      OR: [{ isDeleted: false }, { replies: { some: { isDeleted: false } } }],
     };
 
     const [comments, total] = await this.prisma.$transaction([
       this.prisma.comment.findMany({
         where,
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              profilePicture: true,
-            },
-          },
-          _count: {
-            select: {
-              replies: true,
-            },
-          },
-        },
+        include: commentInclude,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -296,23 +271,17 @@ export class CommentService {
 
     const { page, limit, skip } = this.normalizePagination(pagination);
 
+    // Replies can't have replies of their own, so deleted ones are simply hidden.
     const where: Prisma.CommentWhereInput = {
       parentCommentId,
       studySetId,
+      isDeleted: false,
     };
 
     const [replies, total] = await this.prisma.$transaction([
       this.prisma.comment.findMany({
         where,
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              profilePicture: true,
-            },
-          },
-        },
+        include: commentInclude,
         orderBy: { createdAt: 'asc' },
         skip,
         take: limit,
@@ -321,7 +290,7 @@ export class CommentService {
     ]);
 
     return {
-      data: replies.map((reply) => this.mapComment(reply, 0)),
+      data: replies.map((reply) => this.mapComment(reply)),
       total,
       page,
       limit,
@@ -349,24 +318,36 @@ export class CommentService {
     };
   }
 
-  private mapComment(
-    comment: CommentWithAuthor,
-    repliesCount = 0,
-  ): CommentResponseDto {
+  private mapComment(comment: CommentWithAuthor): CommentResponseDto {
     return {
       id: comment.id,
       content: comment.isDeleted ? '[deleted]' : comment.content,
       isDeleted: comment.isDeleted,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
-      author: comment.isDeleted
-        ? null
-        : {
-            id: comment.user.id,
-            username: comment.user.username ?? '',
-            profilePicture: comment.user.profilePicture ?? '',
-          },
-      replyCount: comment._count?.replies ?? repliesCount,
+      author: comment.isDeleted ? null : this.mapAuthor(comment.user),
+      replyCount: comment._count.replies,
+    };
+  }
+
+  private mapAuthor(
+    user: CommentWithAuthor['user'],
+  ): NonNullable<CommentResponseDto['author']> {
+    // Soft-deleted accounts are anonymised (MIM-5); show a neutral label
+    // instead of their generated `deleted_<id>` username.
+    if (user.status === UserStatus.DELETED) {
+      return {
+        id: user.id,
+        username: '',
+        name: 'Deleted user',
+        profilePicture: null,
+      };
+    }
+    return {
+      id: user.id,
+      username: user.username ?? '',
+      name: user.displayName || user.username || '',
+      profilePicture: this.media.resolveUrl(user.profilePicture),
     };
   }
 }
