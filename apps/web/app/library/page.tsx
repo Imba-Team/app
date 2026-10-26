@@ -122,11 +122,7 @@ export default function LibraryPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-lg bg-gray-100" />
-          ))}
-        </div>
+        <Skeleton aria-busy="true" className="h-64 w-full rounded-3xl bg-neutral-200/70" />
       ) : isEmpty ? (
         <EmptyState
           searching={q.length > 0}

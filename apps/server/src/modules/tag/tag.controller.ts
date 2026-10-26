@@ -101,6 +101,7 @@ export class TagController {
 
   @Patch(':id')
   @HttpCode(200)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Update a tag by ID' })
   @ApiBody({ type: UpdateTagDto })
   async update(

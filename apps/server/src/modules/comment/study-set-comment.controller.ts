@@ -91,10 +91,12 @@ export class StudySetCommentController {
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
   async listComments(
+    @CurrentUser() user: IUser,
     @Param('studySetId') studySetId: string,
     @Query() pagination: PaginationDto,
   ): Promise<ResponseDto<CommentResponseDto[]>> {
     const result = await this.commentService.listComments(
+      user.id,
       studySetId,
       pagination,
     );
@@ -122,11 +124,13 @@ export class StudySetCommentController {
   @ApiQuery({ name: 'limit', required: false, example: 20 })
   @ApiParam({ name: 'commentId' })
   async listReplies(
+    @CurrentUser() user: IUser,
     @Param('studySetId') studySetId: string,
     @Param('commentId') commentId: string,
     @Query() pagination: PaginationDto,
   ): Promise<ResponseDto<CommentResponseDto[]>> {
     const result = await this.commentService.listReplies(
+      user.id,
       studySetId,
       commentId,
       pagination,

@@ -3,7 +3,6 @@
  */
 
 import {
-  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -19,7 +18,7 @@ import { plainToInstance } from 'class-transformer';
 // Entities and enums
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { slugify } from 'src/common/utils/sligify';
+import createUniqueSlug, { slugify } from 'src/common/utils/sligify';
 import { SearchSyncService } from 'src/modules/search/search-sync.service';
 import { UsersService } from 'src/modules/users/user.service';
 
@@ -64,46 +63,63 @@ export class StudySetService {
     //Check the user existence
     await this.usersService.findById(userId);
 
-    const slug = slugify(dto.title);
-    const duplicate = await this.prisma.studySet.findFirst({
-      where: {
-        OR: [{ slug }, { title: dto.title }],
-      },
-    });
-
-    // If a duplicate exists, determine if it's a slug or title conflict for better logging and error messages
-    if (duplicate) {
-      if (duplicate.slug === slug) {
-        this.logger.warn(
-          `Duplicate study set slug attempt: slug=${slug}, userId=${userId}`,
-        );
-        throw new ConflictException('Study set slug already exists');
-      }
-      this.logger.warn(
-        `Duplicate study set title attempt: title="${dto.title}", userId=${userId}`,
-      );
-      throw new ConflictException('Study set title already exists');
-    }
-
-    const saved = await this.prisma.studySet.create({
-      data: {
-        slug,
-        title: dto.title,
-        description: dto.description,
-        language: dto.language,
-        visibility:
-          dto.isPrivate === true
-            ? StudySetVisibility.PRIVATE
-            : StudySetVisibility.PUBLIC,
-        ownerId: userId,
-      },
-    });
+    // Titles are free-form and may repeat across users (many people will
+    // have a "Biology" set). Only the slug must be unique, so collisions
+    // get a numeric suffix: biology, biology-2, biology-3, ...
+    const saved = await this.createWithUniqueSlug(dto.title, (slug) => ({
+      slug,
+      title: dto.title,
+      description: dto.description,
+      language: dto.language,
+      visibility:
+        dto.isPrivate === true
+          ? StudySetVisibility.PRIVATE
+          : StudySetVisibility.PUBLIC,
+      ownerId: userId,
+    }));
 
     this.logger.log(`Study set created: id=${saved.id}, userId=${userId}`);
 
     await this.searchSync.enqueueIndex(saved.id);
 
     return this.buildStudySetForUser(saved.id, userId);
+  }
+
+  /**
+   * Inserts a study set under the first free slug derived from `title`.
+   * Two concurrent creates can still pick the same candidate; the DB's
+   * unique index rejects the loser (P2002), which then retries with a
+   * fresh view of the taken slugs.
+   */
+  private async createWithUniqueSlug(
+    title: string,
+    buildData: (slug: string) => Prisma.StudySetUncheckedCreateInput,
+    maxAttempts = 3,
+  ): Promise<StudySet> {
+    const base = slugify(title);
+
+    for (let attempt = 1; ; attempt++) {
+      const taken = await this.prisma.studySet.findMany({
+        where: { slug: { startsWith: base } },
+        select: { slug: true },
+      });
+      const slug = createUniqueSlug(
+        title,
+        taken.map((s) => s.slug),
+      );
+
+      try {
+        return await this.prisma.studySet.create({ data: buildData(slug) });
+      } catch (error) {
+        const isSlugCollision =
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002';
+        if (!isSlugCollision || attempt >= maxAttempts) throw error;
+        this.logger.warn(
+          `Study set slug collision, retrying: slug=${slug}, attempt=${attempt}`,
+        );
+      }
+    }
   }
 
   async update(userId: string, studySetId: string, dto: UpdateStudySetDto) {
@@ -263,6 +279,8 @@ export class StudySetService {
     );
     const where: Prisma.StudySetWhereInput = {
       visibility: StudySetVisibility.PUBLIC,
+      // Community view — the caller's own sets belong in their library.
+      ownerId: { not: userId },
       ...(query.q
         ? {
             OR: [
@@ -526,10 +544,8 @@ export class StudySetService {
       return true;
     }
 
-    if (studySet.visibility !== StudySetVisibility.PRIVATE) {
-      return false;
-    }
-
+    // Edit rights come from the collaborator role alone — making a set
+    // public must not revoke an EDITOR's access (SRS §8.2).
     const collaborator = await this.prisma.studySetCollaborator.findUnique({
       where: {
         userId_studySetId: {

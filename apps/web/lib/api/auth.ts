@@ -87,6 +87,26 @@ export async function verifyEmail(token: string): Promise<{ email: string }> {
   }
 }
 
+export async function requestPasswordReset(email: string): Promise<void> {
+  try {
+    await apiClient.post('/auth/forgot-password', { email });
+  } catch (err) {
+    throw toAuthError(err, 'Could not send the reset link');
+  }
+}
+
+export async function resetPassword(payload: {
+  token: string;
+  password: string;
+  confirmPassword: string;
+}): Promise<void> {
+  try {
+    await apiClient.post('/auth/reset-password', payload);
+  } catch (err) {
+    throw toAuthError(err, 'Could not reset your password');
+  }
+}
+
 export async function resendVerification(email: string): Promise<void> {
   try {
     await apiClient.post('/auth/resend-verification', { email });

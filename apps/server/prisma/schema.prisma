@@ -92,6 +92,9 @@ model User {
   id                 String                 @id(map: "PK_cace4a159ff9f2512dd42373760") @default(uuid()) @db.Uuid
   email              String                 @unique(map: "UQ_e12875dfb3b1d92d7d7c5377e22") @db.VarChar
   username           String?                @unique(map: "UQ_78a916df40e02a9deb1c4b75edb") @db.VarChar
+  // Free-form name shown in the UI. Editing it never touches `username`,
+  // which stays stable for profile URLs. Null falls back to `username`.
+  displayName        String?                @db.VarChar
   password           String
   status             String?                @db.VarChar
   role               String                 @default("user") @db.VarChar

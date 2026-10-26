@@ -496,3 +496,62 @@ describe('AuthService.resolveGoogleUser', () => {
     expect(body.code).toBe('GOOGLE_LINK_CONFLICT');
   });
 });
+
+describe('AuthService.resetPassword', () => {
+  const resetDeps = () => {
+    const prisma = makePrisma();
+    prisma.refreshToken.updateMany.mockResolvedValue({ count: 2 });
+    const magicLink = {
+      verifyToken: jest
+        .fn()
+        .mockResolvedValue({ ok: true, data: { userId: 'u-1' } }),
+    };
+    const usersService = {
+      findById: jest.fn().mockResolvedValue({ id: 'u-1' }),
+      updatePassword: jest.fn().mockResolvedValue({ id: 'u-1' }),
+    };
+    const built = buildService({
+      prisma,
+      magicLink: magicLink as unknown as MagicLinkService,
+      usersService: usersService as unknown as UsersService,
+    });
+    return { ...built, magicLink, usersService };
+  };
+
+  it('rejects mismatched passwords without consuming the reset link', async () => {
+    const { svc, magicLink, usersService } = resetDeps();
+
+    await expect(
+      svc.resetPassword({
+        token: 'tok',
+        password: 'new-password-1',
+        confirmPassword: 'new-password-2',
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(magicLink.verifyToken).not.toHaveBeenCalled();
+    expect(usersService.updatePassword).not.toHaveBeenCalled();
+  });
+
+  it('sets the new password and signs out every session', async () => {
+    const { svc, prisma, magicLink, usersService } = resetDeps();
+
+    await svc.resetPassword({
+      token: 'tok',
+      password: 'new-password-1',
+      confirmPassword: 'new-password-1',
+    });
+
+    expect(magicLink.verifyToken).toHaveBeenCalledWith(
+      'tok',
+      MagicLinkPurpose.FORGOT_PASSWORD,
+    );
+    expect(usersService.updatePassword).toHaveBeenCalledWith(
+      'u-1',
+      'new-password-1',
+    );
+    const [revoke] = prisma.refreshToken.updateMany.mock.calls[0] as [
+      { where: unknown },
+    ];
+    expect(revoke.where).toEqual({ userId: 'u-1', revokedAt: null });
+  });
+});

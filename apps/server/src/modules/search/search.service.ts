@@ -118,7 +118,14 @@ export class SearchService implements OnModuleInit {
    * Public-set search. Always filtered to visibility=PUBLIC so private
    * documents never leak even if they were accidentally indexed.
    */
-  async searchSets(query: SearchSetsQueryDto): Promise<SearchSetsResponseDto> {
+  /**
+   * Community search: public sets, minus the caller's own (`excludeOwnerId`)
+   * — those already live in their library.
+   */
+  async searchSets(
+    query: SearchSetsQueryDto,
+    excludeOwnerId: string,
+  ): Promise<SearchSetsResponseDto> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const from = (page - 1) * limit;
@@ -150,7 +157,13 @@ export class SearchService implements OnModuleInit {
       index: STUDY_SETS_INDEX,
       from,
       size: limit,
-      query: { bool: { must, filter } },
+      query: {
+        bool: {
+          must,
+          filter,
+          must_not: [{ term: { ownerId: excludeOwnerId } }],
+        },
+      },
       sort: [{ _score: { order: 'desc' } }, { likeCount: { order: 'desc' } }],
       highlight: { fields: { title: {}, description: {} } },
     });

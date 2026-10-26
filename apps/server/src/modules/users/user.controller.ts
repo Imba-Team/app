@@ -210,11 +210,12 @@ export class UsersController {
   async deleteMe(
     @CurrentUser() user: IUser,
   ): Promise<ResponseDto<UserResponseDto | null>> {
-    const deletedUser = await this.usersService.delete(user.id);
-    // Clean up the avatar object too — the DB row is gone, so nothing
-    // else will ever reference it.
-    if (deletedUser?.profilePicture) {
-      await this.media.delete(deletedUser.profilePicture);
+    const { user: deletedUser, removedProfilePicture } =
+      await this.usersService.delete(user.id);
+    // The row is anonymised and no longer references the avatar, so the
+    // stored object can go.
+    if (removedProfilePicture) {
+      await this.media.delete(removedProfilePicture);
     }
     return {
       ok: true,

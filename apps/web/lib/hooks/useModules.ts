@@ -40,6 +40,7 @@ export const moduleKeys = {
       {
         q: params.q?.trim() || "",
         language: params.language || "",
+        tag: params.tag || "",
         page: params.page ?? 1,
         limit: params.limit ?? 20,
       },

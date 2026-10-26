@@ -9,6 +9,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { UserStatus } from 'src/common/interfaces/user.interface';
 import { LoggerService } from 'src/common/logger/logger.service';
 import { AuthService } from 'src/modules/auth/auth.service';
 import { UsersService } from 'src/modules/users/user.service';
@@ -44,7 +45,9 @@ export class JwtGuard implements CanActivate {
 
       const user = await this.userService.findById(decoded.sub);
 
-      if (!user) {
+      // A soft-deleted account keeps its row, so an access token minted
+      // before deletion would otherwise stay valid until it expires.
+      if (!user || user.status === UserStatus.DELETED) {
         this.logger.warn(`User not found for token with ID: ${decoded.sub}`);
         throw new HttpException(
           {

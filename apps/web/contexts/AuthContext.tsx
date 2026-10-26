@@ -84,6 +84,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isPublicPath =
       publicPaths.includes(pathname) ||
       pathname.startsWith('/auth/verify-email') ||
+      pathname.startsWith('/auth/forgot-password') ||
+      pathname.startsWith('/auth/reset-password') ||
       pathname.startsWith('/auth/callback');
 
     if (!isPublicPath && !isLoading && !isAuthenticated) {

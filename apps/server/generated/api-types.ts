@@ -537,7 +537,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search public study sets via Elasticsearch (title^3 + tags^2 + description, fuzziness AUTO). */
+        /** Search public study sets via Elasticsearch (title^3 + tags^2 + description, fuzziness AUTO). Excludes the caller's own sets — this is the community view. */
         get: operations["SearchController_searchSets"];
         put?: never;
         post?: never;
@@ -1314,7 +1314,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search public study sets */
+        /** Search public study sets (excludes the caller's own sets) */
         get: operations["StudySetController_publicStudySets"];
         put?: never;
         post?: never;
@@ -2634,7 +2634,7 @@ export interface components {
             /** @description True if the account is linked to a Google identity and can be signed in via "Continue with Google". */
             googleLinked: boolean;
             id: string;
-            /** @description Display name (maps from username) */
+            /** @description Display name; falls back to username when none is set */
             name: string;
             /**
              * @description BCP-47 language code. Currently one of "en", "ru", "az".
@@ -2785,7 +2785,7 @@ export interface operations {
             query?: {
                 limit?: unknown;
                 page?: unknown;
-                status?: "active" | "inactive";
+                status?: "active" | "inactive" | "deleted";
             };
             header?: never;
             path?: never;
@@ -2851,7 +2851,7 @@ export interface operations {
     AdminUsersController_update: {
         parameters: {
             query: {
-                status: "active" | "inactive";
+                status: "active" | "inactive" | "deleted";
             };
             header?: never;
             path: {

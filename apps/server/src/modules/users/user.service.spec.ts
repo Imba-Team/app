@@ -1,5 +1,8 @@
+import { NotFoundException } from '@nestjs/common';
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { Queue } from 'bullmq';
+import { SearchSyncJobPayload } from 'src/common/queue/queue.constants';
 import { UsersService } from './user.service';
 
 const noopLogger = () =>
@@ -31,6 +34,7 @@ const build = (prismaOverride?: PrismaMock) => {
   const svc = new UsersService(
     noopLogger(),
     prisma as unknown as PrismaService,
+    { add: jest.fn() } as unknown as Queue<SearchSyncJobPayload>,
   );
   return { svc, prisma };
 };
@@ -69,21 +73,19 @@ describe('UsersService.updateMyProfile', () => {
     status: 'active',
   };
 
-  it('writes only name (mapped to username) when bio is omitted', async () => {
+  it('writes name to displayName and never renames the username', async () => {
     const { svc, prisma } = build();
-    prisma.user.findUnique
-      .mockResolvedValueOnce(existing) // findById
-      .mockResolvedValueOnce(null); // allocateUsername collision check
+    prisma.user.findUnique.mockResolvedValue(existing);
     prisma.user.update.mockResolvedValue({
       ...existing,
-      username: 'jane-doe',
+      displayName: 'Jane Doe',
     });
 
-    await svc.updateMyProfile('u-1', { name: 'Jane Doe' });
+    await svc.updateMyProfile('u-1', { name: '  Jane Doe ' });
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: 'u-1' },
-      data: { username: 'jane-doe' },
+      data: { displayName: 'Jane Doe' },
     });
   });
 
@@ -168,5 +170,120 @@ describe('UsersService.setProfilePicture', () => {
       where: { id: 'u-1' },
       data: { profilePicture: null },
     });
+  });
+});
+
+// Section: delete — soft delete + anonymise (SRS FR-USER-05)
+
+const buildForDelete = () => {
+  const original = {
+    id: 'u-1',
+    email: 'jane@example.com',
+    username: 'jane',
+    password: 'old-hash',
+    status: 'active',
+    profilePicture: 'avatars/u-1.webp',
+    bio: 'Hi',
+    googleProviderId: 'g-123',
+    emailVerified: true,
+  };
+  const tx = {
+    studySet: {
+      findMany: jest.fn().mockResolvedValue([{ id: 'set-a' }, { id: 'set-b' }]),
+      updateMany: jest.fn().mockResolvedValue({ count: 3 }),
+    },
+    refreshToken: { updateMany: jest.fn().mockResolvedValue({ count: 2 }) },
+    magicLink: { deleteMany: jest.fn().mockResolvedValue({ count: 1 }) },
+    user: {
+      update: jest
+        .fn()
+        .mockImplementation(({ data }: { data: object }) =>
+          Promise.resolve({ ...original, ...data }),
+        ),
+    },
+  };
+  const prisma = {
+    user: { findUnique: jest.fn().mockResolvedValue(original) },
+    $transaction: jest
+      .fn()
+      .mockImplementation((fn: (t: typeof tx) => unknown) => fn(tx)),
+  };
+  const queue = { add: jest.fn().mockResolvedValue(undefined) };
+  const svc = new UsersService(
+    noopLogger(),
+    prisma as unknown as PrismaService,
+    queue as unknown as Queue<SearchSyncJobPayload>,
+  );
+  return { svc, prisma, tx, queue };
+};
+
+type UserUpdateArgs = { data: Record<string, unknown> };
+
+describe('UsersService.delete', () => {
+  it('soft-deletes and anonymises instead of removing the row', async () => {
+    const { svc, tx } = buildForDelete();
+
+    const { user } = await svc.delete('u-1');
+
+    const { data } = (tx.user.update.mock.calls[0] as [UserUpdateArgs])[0];
+    expect(data).toMatchObject({
+      status: 'deleted',
+      googleProviderId: null,
+      profilePicture: null,
+      bio: null,
+      emailVerified: false,
+    });
+    expect(data.email).toMatch(/^deleted_[a-f0-9]{12}@deleted\.local$/);
+    expect(data.username).toMatch(/^deleted_[a-f0-9]{12}$/);
+    expect(data.password).not.toBe('old-hash');
+    expect(user.email).not.toBe('jane@example.com');
+  });
+
+  it('makes every owned set private and drops published ones from search', async () => {
+    const { svc, tx, queue } = buildForDelete();
+
+    await svc.delete('u-1');
+
+    expect(tx.studySet.updateMany).toHaveBeenCalledWith({
+      where: { ownerId: 'u-1' },
+      data: { visibility: 'PRIVATE' },
+    });
+    expect(queue.add).toHaveBeenCalledTimes(2);
+    expect(queue.add).toHaveBeenCalledWith(
+      'search.delete_set',
+      { setId: 'set-a' },
+      { jobId: 'delete-set-a' },
+    );
+  });
+
+  it('revokes all sessions and removes pending magic links', async () => {
+    const { svc, tx } = buildForDelete();
+
+    await svc.delete('u-1');
+
+    const [revoke] = tx.refreshToken.updateMany.mock.calls[0] as [
+      { where: unknown; data: { revokedAt: unknown } },
+    ];
+    expect(revoke.where).toEqual({ userId: 'u-1', revokedAt: null });
+    expect(revoke.data.revokedAt).toBeInstanceOf(Date);
+    expect(tx.magicLink.deleteMany).toHaveBeenCalledWith({
+      where: { userId: 'u-1' },
+    });
+  });
+
+  it('hands back the old avatar key so the caller can delete the object', async () => {
+    const { svc } = buildForDelete();
+
+    const { removedProfilePicture } = await svc.delete('u-1');
+
+    expect(removedProfilePicture).toBe('avatars/u-1.webp');
+  });
+
+  it('404s for an unknown user without touching anything', async () => {
+    const { svc, prisma } = buildForDelete();
+    prisma.user.findUnique.mockResolvedValue(null);
+
+    await expect(svc.delete('nope')).rejects.toBeInstanceOf(NotFoundException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 });

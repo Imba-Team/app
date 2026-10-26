@@ -57,8 +57,8 @@ export default function SecurityCard() {
     const errors: Partial<Record<keyof FormState, string>> = {};
     if (!form.oldPassword) errors.oldPassword = "Current password is required";
     if (!form.newPassword) errors.newPassword = "New password is required";
-    else if (form.newPassword.length < 6)
-      errors.newPassword = "New password must be at least 6 characters";
+    else if (form.newPassword.length < 8)
+      errors.newPassword = "New password must be at least 8 characters";
     if (form.newPassword && form.newPassword === form.oldPassword)
       errors.newPassword = "New password must be different from current";
     if (form.newPassword !== form.confirmPassword)
@@ -117,7 +117,7 @@ export default function SecurityCard() {
               onToggleVisible={() => toggleVisible("new")}
               error={fieldError.newPassword}
               autoComplete="new-password"
-              hint="At least 6 characters."
+              hint="At least 8 characters."
             />
             <PasswordField
               id="pw-confirm"

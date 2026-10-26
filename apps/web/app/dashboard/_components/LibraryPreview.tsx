@@ -33,23 +33,11 @@ export function LibraryPreview() {
   const totalSets = sets.data?.length ?? 0;
   const isEmpty = !isLoading && rows.length === 0;
 
-  return (
-    <section>
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-neutral-700">Your library</h2>
-        <Link
-          href="/library"
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-brand-500"
-        >
-          <Button size="sm" variant="outline">
-            Open library <ArrowRight className="h-3 w-3" />
-          </Button>
-        </Link>
-      </div>
+  if (isLoading) return <LibraryPreviewSkeleton />;
 
-      {isLoading ? (
-        <Skeleton className="h-48 w-full rounded-lg bg-gray-100" />
-      ) : isEmpty ? (
+  return (
+    <SectionShell>
+      {isEmpty ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
             <p className="font-semibold text-gray-800">Your library is empty.</p>
@@ -90,6 +78,30 @@ export function LibraryPreview() {
           </CardContent>
         </Card>
       )}
+    </SectionShell>
+  );
+}
+
+function LibraryPreviewSkeleton() {
+  return (
+    <SectionShell>
+      <Skeleton className="h-48 w-full rounded-lg bg-gray-100" />
+    </SectionShell>
+  );
+}
+
+function SectionShell({ children }: { children: React.ReactNode }) {
+  return (
+    <section>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-xl font-bold text-neutral-700">Your library</h2>
+        <Button asChild size="sm" variant="outline">
+          <Link href="/library">
+            Open library <ArrowRight className="h-3 w-3" />
+          </Link>
+        </Button>
+      </div>
+      {children}
     </section>
   );
 }

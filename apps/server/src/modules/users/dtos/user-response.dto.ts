@@ -17,8 +17,16 @@ export class UserResponseDto {
   username: string;
 
   @Expose()
-  @ApiProperty({ description: 'Display name (maps from username)' })
-  @Transform(({ obj }) => (obj as { username?: string }).username ?? '')
+  @ApiProperty({
+    description: 'Display name; falls back to username when none is set',
+  })
+  @Transform(({ obj }) => {
+    const { displayName, username } = obj as {
+      displayName?: string | null;
+      username?: string | null;
+    };
+    return displayName || username || '';
+  })
   name: string;
 
   @Expose()

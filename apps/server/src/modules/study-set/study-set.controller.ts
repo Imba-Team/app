@@ -175,7 +175,9 @@ export class StudySetController {
   @Get('public')
   @HttpCode(200)
   @ApiQuery({ name: 'q', required: false })
-  @ApiOperation({ summary: 'Search public study sets' })
+  @ApiOperation({
+    summary: "Search public study sets (excludes the caller's own sets)",
+  })
   @ApiOkEnvelope(StudySetResponseDto, {
     isArray: true,
     description: 'Public study sets retrieved',
