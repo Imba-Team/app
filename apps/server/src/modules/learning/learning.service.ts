@@ -36,6 +36,7 @@ import {
 } from './dtos/answer-response.dto';
 import { ListSessionsQueryDto } from './dtos/list-sessions-query.dto';
 import { SessionHistoryItemDto } from './dtos/session-history-item.dto';
+import { SessionTotalsDto } from './dtos/session-totals.dto';
 import { SessionSummaryDto } from './dtos/session-summary.dto';
 import {
   ApplyResult,
@@ -547,6 +548,7 @@ export class LearningService {
           rating,
           today,
           attemptedAt,
+          { setId: card.studySetId, source: 'LEARN' },
         );
       }
 
@@ -740,6 +742,37 @@ export class LearningService {
     });
 
     return { items, total, limit, offset };
+  }
+
+  async getSessionTotals(
+    userId: string,
+    studySetId?: string,
+  ): Promise<SessionTotalsDto> {
+    const agg = await this.prisma.studySession.aggregate({
+      where: { userId, ...(studySetId ? { studySetId } : {}) },
+      _count: { _all: true },
+      _sum: {
+        cardsStudied: true,
+        correctAnswers: true,
+        incorrectAnswers: true,
+        durationSeconds: true,
+      },
+    });
+    const correct = agg._sum.correctAnswers ?? 0;
+    const incorrect = agg._sum.incorrectAnswers ?? 0;
+    const answered = correct + incorrect;
+    return plainToInstance(
+      SessionTotalsDto,
+      {
+        totalSessions: agg._count._all,
+        cardsStudied: agg._sum.cardsStudied ?? 0,
+        correctAnswers: correct,
+        incorrectAnswers: incorrect,
+        accuracy: answered > 0 ? Number((correct / answered).toFixed(4)) : null,
+        durationSeconds: agg._sum.durationSeconds ?? 0,
+      },
+      { excludeExtraneousValues: true },
+    );
   }
 
   async getNextBatch(
@@ -1372,6 +1405,7 @@ export class LearningService {
         'GOOD',
         today,
         now,
+        { setId: card.studySetId, source: 'LEARN' },
       );
 
       return {

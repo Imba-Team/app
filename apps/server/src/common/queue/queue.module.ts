@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import {
+  ANALYTICS_QUEUE,
   MAIL_QUEUE,
   SEARCH_SYNC_QUEUE,
   SRS_REMINDERS_QUEUE,
@@ -44,6 +45,7 @@ import { resolveRedisConnectionOptions } from '../redis/redis.config';
     BullModule.registerQueue({ name: MAIL_QUEUE }),
     BullModule.registerQueue({ name: SEARCH_SYNC_QUEUE }),
     BullModule.registerQueue({ name: SRS_REMINDERS_QUEUE }),
+    BullModule.registerQueue({ name: ANALYTICS_QUEUE }),
   ],
   exports: [BullModule],
 })

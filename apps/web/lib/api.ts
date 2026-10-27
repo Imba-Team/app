@@ -877,6 +877,41 @@ export async function getSessionHistory(params: {
   }
 }
 
+export type SessionTotals = Schemas['SessionTotalsDto'];
+
+/** All-time totals for the sessions `getSessionHistory` lists. */
+export async function getSessionTotals(studySetId?: string): Promise<SessionTotals> {
+  try {
+    const res = await apiFetch('get', '/sessions/totals', {
+      query: studySetId ? { studySetId } : {},
+    });
+    return unwrap(res, 'Failed to fetch session totals');
+  } catch (error) {
+    throw extractError(error, 'Failed to fetch session totals');
+  }
+}
+
+// ============================================
+// Analytics — progress page
+// ============================================
+
+export type MyProgress = Schemas['ProgressResponseDto'];
+export type ProgressDay = Schemas['ProgressDayDto'];
+export type MasteryPoint = Schemas['MasteryPointDto'];
+export type RetentionBucket = Schemas['RetentionBucketDto'];
+export type ProgressRange = 30 | 90;
+
+export async function getMyProgress(days: ProgressRange = 30): Promise<MyProgress> {
+  try {
+    const res = await apiFetch('get', '/analytics/me/progress', {
+      query: { days },
+    });
+    return unwrap(res, 'Failed to fetch progress');
+  } catch (error) {
+    throw extractError(error, 'Failed to fetch progress');
+  }
+}
+
 // ============================================
 // SRS (Sprint 1)
 // ============================================

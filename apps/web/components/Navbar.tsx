@@ -38,6 +38,7 @@ const AppLinks: NavLink[] = [
   { label: 'Library', href: '/library' },
   { label: 'Discover', href: '/discover' },
   { label: 'Review', href: '/srs' },
+  { label: 'Progress', href: '/progress' },
 ];
 
 const LandingLinks: NavLink[] = [

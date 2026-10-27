@@ -118,7 +118,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-neutral-900">Welcome back</h1>
-          <p className="text-sm text-gray-500 mt-2">Sign in to keep your streak going.</p>
+          <p className="text-sm text-gray-500 mt-2">Sign in to pick up where you left off.</p>
         </div>
 
         <GoogleButton disabled={isLocked} />

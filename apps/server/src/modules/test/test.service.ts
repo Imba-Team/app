@@ -327,6 +327,7 @@ export class TestService {
               this.ratingFor(pair.isCorrect),
               today,
               now,
+              { setId: attempt.studySetId, source: 'TEST' },
             );
           }
         } else {
@@ -337,6 +338,7 @@ export class TestService {
             this.ratingFor(result.isCorrect),
             today,
             now,
+            { setId: attempt.studySetId, source: 'TEST' },
           );
         }
       }
