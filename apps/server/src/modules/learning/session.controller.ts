@@ -31,6 +31,10 @@ import { MarkCorrectDto } from './dtos/mark-correct.dto';
 import { PauseSessionDto } from './dtos/pause-session.dto';
 import { SessionHistoryItemDto } from './dtos/session-history-item.dto';
 import { SessionSummaryDto } from './dtos/session-summary.dto';
+import {
+  SessionTotalsDto,
+  SessionTotalsQueryDto,
+} from './dtos/session-totals.dto';
 import { StartSessionResponseDto } from './dtos/start-session-response.dto';
 import { StartSessionDto } from './dtos/start-session.dto';
 import { SubmitAnswerDto } from './dtos/submit-answer.dto';
@@ -88,6 +92,25 @@ export class SessionController {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  @Get('totals')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'All-time totals for my study sessions',
+    description:
+      'Sums every session `GET /sessions` would list (optionally for one study set), not just one page.',
+  })
+  @ApiOkEnvelope(SessionTotalsDto, { description: 'Session totals retrieved' })
+  async totals(
+    @CurrentUser() user: IUser,
+    @Query() query: SessionTotalsQueryDto,
+  ): Promise<ResponseDto<SessionTotalsDto>> {
+    const data = await this.learningService.getSessionTotals(
+      user.id,
+      query.studySetId,
+    );
+    return { ok: true, message: 'Session totals retrieved', data };
   }
 
   @Post(':id/answer')

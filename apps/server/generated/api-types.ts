@@ -40,6 +40,26 @@ export interface paths {
         patch: operations["AdminUsersController_update"];
         trace?: never;
     };
+    "/analytics/me/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get my study progress
+         * @description Current and best study streak, per-day activity for the last `days` days (30 or 90), mastery over time and retention by review interval. Days are local to the user’s saved timezone.
+         */
+        get: operations["ProgressController_getMyProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/forgot-password": {
         parameters: {
             query?: never;
@@ -861,6 +881,26 @@ export interface paths {
          * @description Returns the most recent ACTIVE or PAUSED session — with resumeState — so the Learn entry page can render a Resume dialog before starting a new session. `null` when nothing is in flight. Sweeps long-idle rows to ABANDONED before responding.
          */
         get: operations["SessionController_inflight"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sessions/totals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * All-time totals for my study sessions
+         * @description Sums every session `GET /sessions` would list (optionally for one study set), not just one page.
+         */
+        get: operations["SessionController_totals"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1839,9 +1879,54 @@ export interface components {
              */
             cardId: string;
         };
+        MasteryPointDto: {
+            /**
+             * Format: date
+             * @example 2026-10-27
+             */
+            date: string;
+            learningCount: number;
+            masteredCount: number;
+            newCount: number;
+        };
         PauseSessionDto: {
             /** @description Opaque JSON blob (LearnResumeState on the client) — current batch, batchIndex, hasMoreCards flag, and anything else the client wants to restore. The server only round-trips it. Omit to pause without saving state (rare). */
             resumeState?: Record<string, never>;
+        };
+        ProgressDayDto: {
+            cardsAnswered: number;
+            correct: number;
+            /**
+             * Format: date
+             * @example 2026-10-27
+             */
+            date: string;
+            minutes: number;
+        };
+        ProgressResponseDto: {
+            /** @description One entry per local day in the range, oldest first. */
+            activity: components["schemas"]["ProgressDayDto"][];
+            bestStreak: number;
+            /** @description Consecutive study days up to today. */
+            currentStreak: number;
+            /** @enum {number} */
+            days: 30 | 90;
+            /** @description Nightly snapshots plus a live point for today, summed across sets. */
+            mastery: components["schemas"]["MasteryPointDto"][];
+            retention: components["schemas"]["RetentionBucketDto"][];
+            studiedToday: boolean;
+            /** @example Europe/Berlin */
+            timezone: string;
+            totals: components["schemas"]["ProgressTotalsDto"];
+        };
+        ProgressTotalsDto: {
+            /** @description correct / cardsAnswered (0–1); null with no answers. */
+            accuracy: number | null;
+            /** @description Cards answered in the range (all modes). */
+            cardsAnswered: number;
+            correct: number;
+            /** @description Minutes in completed sessions and tests. */
+            minutes: number;
         };
         PublicProfileDto: {
             bio: Record<string, never> | null;
@@ -1913,6 +1998,17 @@ export interface components {
             meta?: Record<string, never>;
             /** @example true */
             ok: boolean;
+        };
+        RetentionBucketDto: {
+            /**
+             * @description How long the card had been away: ≤1 day, 2–3 days, 4–7 days, 8–29 days, 30+ days.
+             * @enum {string}
+             */
+            bucket: "1d" | "3d" | "1w" | "1m" | "1m+";
+            rate: number | null;
+            /** @description Reviews rated anything but AGAIN. */
+            remembered: number;
+            total: number;
         };
         ReviewSrsCardDto: {
             /**
@@ -2059,6 +2155,16 @@ export interface components {
             startedAt: string;
             /** Format: uuid */
             studySetId: string;
+        };
+        SessionTotalsDto: {
+            /** @description correct / (correct + incorrect), 0–1; null with no answers. */
+            accuracy: number | null;
+            cardsStudied: number;
+            correctAnswers: number;
+            /** @description Summed duration of completed sessions. */
+            durationSeconds: number;
+            incorrectAnswers: number;
+            totalSessions: number;
         };
         SetPreferencesResponseDto: {
             /**
@@ -2754,13 +2860,18 @@ export type SchemaLearnBatchResponseDto = components['schemas']['LearnBatchRespo
 export type SchemaLibraryItemDto = components['schemas']['LibraryItemDto'];
 export type SchemaLoginRequestDto = components['schemas']['LoginRequestDto'];
 export type SchemaMarkCorrectDto = components['schemas']['MarkCorrectDto'];
+export type SchemaMasteryPointDto = components['schemas']['MasteryPointDto'];
 export type SchemaPauseSessionDto = components['schemas']['PauseSessionDto'];
+export type SchemaProgressDayDto = components['schemas']['ProgressDayDto'];
+export type SchemaProgressResponseDto = components['schemas']['ProgressResponseDto'];
+export type SchemaProgressTotalsDto = components['schemas']['ProgressTotalsDto'];
 export type SchemaPublicProfileDto = components['schemas']['PublicProfileDto'];
 export type SchemaRecentStudySetDto = components['schemas']['RecentStudySetDto'];
 export type SchemaRegisterRequestDto = components['schemas']['RegisterRequestDto'];
 export type SchemaResendVerificationRequestDto = components['schemas']['ResendVerificationRequestDto'];
 export type SchemaResetPasswordRequestDto = components['schemas']['ResetPasswordRequestDto'];
 export type SchemaResponseDto = components['schemas']['ResponseDto'];
+export type SchemaRetentionBucketDto = components['schemas']['RetentionBucketDto'];
 export type SchemaReviewSrsCardDto = components['schemas']['ReviewSrsCardDto'];
 export type SchemaRevokeSessionResponseDto = components['schemas']['RevokeSessionResponseDto'];
 export type SchemaSearchSetHitDto = components['schemas']['SearchSetHitDto'];
@@ -2769,6 +2880,7 @@ export type SchemaServiceHealthResponseDto = components['schemas']['ServiceHealt
 export type SchemaSessionDto = components['schemas']['SessionDto'];
 export type SchemaSessionHistoryItemDto = components['schemas']['SessionHistoryItemDto'];
 export type SchemaSessionSummaryDto = components['schemas']['SessionSummaryDto'];
+export type SchemaSessionTotalsDto = components['schemas']['SessionTotalsDto'];
 export type SchemaSetPreferencesResponseDto = components['schemas']['SetPreferencesResponseDto'];
 export type SchemaSetProgressSummaryDto = components['schemas']['SetProgressSummaryDto'];
 export type SchemaSrsCardDto = components['schemas']['SrsCardDto'];
@@ -2895,6 +3007,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    ProgressController_getMyProgress: {
+        parameters: {
+            query?: {
+                days?: 30 | 90;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Progress retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["ProgressResponseDto"];
+                    };
                 };
             };
         };
@@ -4188,6 +4324,31 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ResponseDto"] & {
                         data?: components["schemas"]["InflightSessionResponseDto"];
+                    };
+                };
+            };
+        };
+    };
+    SessionController_totals: {
+        parameters: {
+            query?: {
+                /** @description Optional — restrict totals to sessions on this study set. Omit for all of the user’s sessions. */
+                studySetId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session totals retrieved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["SessionTotalsDto"];
                     };
                 };
             };

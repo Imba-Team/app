@@ -85,3 +85,42 @@ export function localHour(
     return reference.getUTCHours();
   }
 }
+
+/** True when `Intl` recognises the IANA zone name. */
+export function isValidTimeZone(timeZone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The local calendar day of `reference` in the given zone, as
+ * `YYYY-MM-DD`. Used to bucket activity by the user's day. Falls back
+ * to the UTC day on unrecognised zones.
+ */
+export function localDateString(
+  timeZone: string,
+  reference: Date = new Date(),
+): string {
+  try {
+    // en-CA formats as YYYY-MM-DD.
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(reference);
+  } catch {
+    return reference.toISOString().slice(0, 10);
+  }
+}
+
+/** Shift a `YYYY-MM-DD` calendar date by whole days. */
+export function addDaysToDateString(date: string, days: number): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}

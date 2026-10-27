@@ -10,7 +10,7 @@
  * don't confuse an abandoned session with a completed one.
  */
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -29,7 +29,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useModule } from '@/lib/hooks/useModules';
-import { useSessionHistory } from '@/lib/hooks/useSessionHistory';
+import { useSessionHistory, useSessionTotals } from '@/lib/hooks/useSessionHistory';
 import type { SessionHistoryItem } from '@/lib/api';
 
 const pageSize = 20;
@@ -72,6 +72,15 @@ function formatDuration(seconds: number): string {
   return `${m}m ${s.toString().padStart(2, '0')}s`;
 }
 
+/** Coarser than formatDuration: all-time totals run to hours. */
+function formatTotalDuration(seconds: number): string {
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+}
+
 function formatWhen(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -101,26 +110,8 @@ export default function SessionsPageClient({ moduleId }: { moduleId: string }) {
     offset: page * pageSize,
   });
 
-  const totals = useMemo(() => {
-    if (!data) return null;
-    // Roll up the visible page. TDD notes analytics live in ClickHouse,
-    // so an all-time aggregate belongs in a future dashboard endpoint;
-    // for now, summarise the page the user is looking at.
-    const summed = data.items.reduce(
-      (acc, s) => {
-        acc.correct += s.correctAnswers;
-        acc.incorrect += s.incorrectAnswers;
-        acc.duration += s.durationSeconds;
-        return acc;
-      },
-      { correct: 0, incorrect: 0, duration: 0 },
-    );
-    const attempts = summed.correct + summed.incorrect;
-    return {
-      ...summed,
-      accuracy: attempts === 0 ? 0 : summed.correct / attempts,
-    };
-  }, [data]);
+  // All-time totals from the server, not just the page on screen.
+  const { data: totals } = useSessionTotals(moduleId);
 
   return (
     <main className="mx-auto w-full max-w-4xl space-y-6 px-6 py-8 sm:px-8">
@@ -140,17 +131,20 @@ export default function SessionsPageClient({ moduleId }: { moduleId: string }) {
             <p className="mt-1 text-neutral-500">{moduleData.data.title}</p>
           )}
         </div>
-        {totals && data && data.items.length > 0 && (
+        {totals && totals.totalSessions > 0 && (
           <div className="text-right text-sm text-neutral-500">
             <p>
               <span className="font-semibold text-neutral-800">
-                {data.total}
+                {totals.totalSessions}
               </span>{' '}
-              total sessions
+              {totals.totalSessions === 1 ? 'session' : 'sessions'}
+              {totals.durationSeconds > 0 && (
+                <> · {formatTotalDuration(totals.durationSeconds)} studied</>
+              )}
             </p>
-            <p>
-              {Math.round((totals.accuracy ?? 0) * 100)}% accuracy on this page
-            </p>
+            {totals.accuracy !== null && (
+              <p>{Math.round(totals.accuracy * 100)}% accuracy overall</p>
+            )}
           </div>
         )}
       </div>

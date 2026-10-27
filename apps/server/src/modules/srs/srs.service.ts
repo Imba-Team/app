@@ -16,6 +16,7 @@ import { ForecastBucketDto, ForecastResponseDto } from './dtos/forecast.dto';
 import { ReviewSrsCardDto } from './dtos/review-srs-card.dto';
 import { SrsCardDto } from './dtos/srs-card.dto';
 import { SrsReviewResponseDto } from './dtos/srs-review-response.dto';
+import { SrsReviewLogContext } from './domain/review-log';
 import { NEW_SRS_CARD, processReview, Sm2Rating } from './domain/sm2';
 import { startOfLocalDayInUtc } from 'src/common/time/timezone.util';
 
@@ -72,6 +73,10 @@ export class SrsService {
    * Learn transaction so the mastery write, the CardAttempt log, and
    * the SRS update all commit together.
    *
+   * Also appends an SrsReviewLog row in the same transaction, tagged
+   * with the calling flow (`log.source`) so analytics can tell Learn
+   * and Test ratings apart from /srs reviews.
+   *
    * Returns the updated schedule so the learning service can log or
    * echo it downstream — the frontend doesn't currently use it.
    */
@@ -81,7 +86,8 @@ export class SrsService {
     cardId: string,
     rating: Sm2Rating,
     today: Date,
-    now: Date = new Date(),
+    now: Date,
+    log: SrsReviewLogContext,
   ): Promise<{
     intervalDays: number;
     dueDate: Date;
@@ -121,6 +127,19 @@ export class SrsService {
       where: { userId_cardId: { userId, cardId } },
       create: { userId, cardId, ...write },
       update: write,
+    });
+
+    await tx.srsReviewLog.create({
+      data: {
+        userId,
+        cardId,
+        setId: log.setId,
+        rating,
+        source: log.source,
+        intervalBefore: existing?.intervalDays ?? 0,
+        intervalAfter: next.intervalDays,
+        reviewedAt: now,
+      },
     });
 
     return {
@@ -320,6 +339,19 @@ export class SrsService {
           isLeech: next.isLeech,
           dueDate: nextDue,
           lastReviewed: now,
+        },
+      });
+
+      await tx.srsReviewLog.create({
+        data: {
+          userId,
+          cardId: row.cardId,
+          setId: row.card.studySetId,
+          rating,
+          source: 'SRS',
+          intervalBefore: row.intervalDays,
+          intervalAfter: next.intervalDays,
+          reviewedAt: now,
         },
       });
 

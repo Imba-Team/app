@@ -89,99 +89,103 @@ enum TestQuestionType {
 }
 
 model User {
-  id                 String                 @id(map: "PK_cace4a159ff9f2512dd42373760") @default(uuid()) @db.Uuid
-  email              String                 @unique(map: "UQ_e12875dfb3b1d92d7d7c5377e22") @db.VarChar
-  username           String?                @unique(map: "UQ_78a916df40e02a9deb1c4b75edb") @db.VarChar
+  id                   String                    @id(map: "PK_cace4a159ff9f2512dd42373760") @default(uuid()) @db.Uuid
+  email                String                    @unique(map: "UQ_e12875dfb3b1d92d7d7c5377e22") @db.VarChar
+  username             String?                   @unique(map: "UQ_78a916df40e02a9deb1c4b75edb") @db.VarChar
   // Free-form name shown in the UI. Editing it never touches `username`,
   // which stays stable for profile URLs. Null falls back to `username`.
-  displayName        String?                @db.VarChar
-  password           String
-  status             String?                @db.VarChar
-  role               String                 @default("user") @db.VarChar
-  profilePicture     String?
-  bio                String?
-  emailVerified      Boolean                @default(false)
-  verifiedAt         DateTime?              @db.Timestamp(6)
-  googleProviderId   String?                @unique
+  displayName          String?                   @db.VarChar
+  password             String
+  status               String?                   @db.VarChar
+  role                 String                    @default("user") @db.VarChar
+  profilePicture       String?
+  bio                  String?
+  emailVerified        Boolean                   @default(false)
+  verifiedAt           DateTime?                 @db.Timestamp(6)
+  googleProviderId     String?                   @unique
   // IANA name (e.g. "Europe/Berlin"). Used by SRS to compute the user's
   // local "today" and by the reminder scheduler to fire at their local
   // morning instead of a fixed UTC hour.
-  timezone           String                 @default("UTC") @db.VarChar
+  timezone             String                    @default("UTC") @db.VarChar
   // BCP-47 language code. Currently persisted for future email/AI use
   // and to drive the <html lang> attribute; the app UI is still English.
-  preferredLanguage  String                 @default("en") @db.VarChar
-  createdAt          DateTime               @default(now()) @db.Timestamp(6)
-  updatedAt          DateTime               @default(now()) @updatedAt @db.Timestamp(6)
-  studySets          StudySet[]
-  comments           Comment[]
-  studySessions      StudySession[]
-  favouriteStudySets FavouriteStudySet[]
-  collaborators      StudySetCollaborator[]
-  folders            Folder[]
-  testAttempts       TestAttempt[]
-  cardProgress       UserCardProgress[]
-  setProgress        UserSetProgress[]
-  setPreferences     UserSetPreferences[]
-  testPreferences    UserTestPreferences[]
-  srsCards           SrsCard[]
-  cardAttempts       CardAttempt[]
-  magicLinks         MagicLink[]
-  refreshTokens      RefreshToken[]
+  preferredLanguage    String                    @default("en") @db.VarChar
+  createdAt            DateTime                  @default(now()) @db.Timestamp(6)
+  updatedAt            DateTime                  @default(now()) @updatedAt @db.Timestamp(6)
+  studySets            StudySet[]
+  comments             Comment[]
+  studySessions        StudySession[]
+  favouriteStudySets   FavouriteStudySet[]
+  collaborators        StudySetCollaborator[]
+  folders              Folder[]
+  testAttempts         TestAttempt[]
+  cardProgress         UserCardProgress[]
+  setProgress          UserSetProgress[]
+  setPreferences       UserSetPreferences[]
+  testPreferences      UserTestPreferences[]
+  srsCards             SrsCard[]
+  srsReviewLogs        SrsReviewLog[]
+  setProgressSnapshots UserSetProgressSnapshot[]
+  cardAttempts         CardAttempt[]
+  magicLinks           MagicLink[]
+  refreshTokens        RefreshToken[]
 
   @@map("user")
 }
 
 model StudySet {
-  id              String                 @id(map: "PK_9ffbc0a95bdd09c53487260fba9") @default(uuid()) @db.Uuid
-  slug            String                 @unique
-  title           String
-  description     String?
-  visibility      StudySetVisibility     @default(PUBLIC)
-  language        String?
-  viewCount       Int                    @default(0)
-  ownerId         String                 @db.Uuid
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
-  owner           User                   @relation(fields: [ownerId], references: [id], onDelete: Restrict)
-  flashcards      Flashcard[]
-  comments        Comment[]
-  studySessions   StudySession[]
-  favourites      FavouriteStudySet[]
-  collaborators   StudySetCollaborator[]
-  folderStudySets FolderStudySet[]
-  tags            StudySetTag[]
-  testAttempts    TestAttempt[]
-  cardProgress    UserCardProgress[]
-  setProgress     UserSetProgress[]
-  setPreferences  UserSetPreferences[]
-  testPreferences UserTestPreferences[]
+  id                   String                    @id(map: "PK_9ffbc0a95bdd09c53487260fba9") @default(uuid()) @db.Uuid
+  slug                 String                    @unique
+  title                String
+  description          String?
+  visibility           StudySetVisibility        @default(PUBLIC)
+  language             String?
+  viewCount            Int                       @default(0)
+  ownerId              String                    @db.Uuid
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+  owner                User                      @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  flashcards           Flashcard[]
+  comments             Comment[]
+  studySessions        StudySession[]
+  favourites           FavouriteStudySet[]
+  collaborators        StudySetCollaborator[]
+  folderStudySets      FolderStudySet[]
+  tags                 StudySetTag[]
+  testAttempts         TestAttempt[]
+  cardProgress         UserCardProgress[]
+  setProgress          UserSetProgress[]
+  setProgressSnapshots UserSetProgressSnapshot[]
+  setPreferences       UserSetPreferences[]
+  testPreferences      UserTestPreferences[]
 
   @@map("study_set")
 }
 
 model Flashcard {
-  id                   String                @id(map: "PK_e0aba0501d3bc532951efc9f791") @default(uuid()) @db.Uuid
-  term                 String
-  definition           String
+  id                    String                @id(map: "PK_e0aba0501d3bc532951efc9f791") @default(uuid()) @db.Uuid
+  term                  String
+  definition            String
   // Extra accepted answers for the written evaluator. Author-provided
   // synonyms/variants; the primary answer is `definition`.
-  alternateAnswers     String[]              @default([])
-  example              String?
-  phonetic             String?
-  orderIndex           Int                   @default(0)
-  imageUrl             String?
-  hint                 String?
-  status               String?
-  studySetId           String                @db.Uuid
-  createdAt            DateTime              @default(now())
-  updatedAt            DateTime              @updatedAt
-  studySet             StudySet              @relation(fields: [studySetId], references: [id], onDelete: Restrict)
-  cardProgress         UserCardProgress[]
-  srsCards             SrsCard[]
-  cardAttempts         CardAttempt[]
-  testQuestionAttempts TestQuestionAttempt[]
-  matchingPairAnchors  TestMatchingPair[]    @relation("MatchingPairAnchor")
-  matchingPairUserPicks TestMatchingPair[]   @relation("MatchingPairUserPick")
+  alternateAnswers      String[]              @default([])
+  example               String?
+  phonetic              String?
+  orderIndex            Int                   @default(0)
+  imageUrl              String?
+  hint                  String?
+  status                String?
+  studySetId            String                @db.Uuid
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  studySet              StudySet              @relation(fields: [studySetId], references: [id], onDelete: Restrict)
+  cardProgress          UserCardProgress[]
+  srsCards              SrsCard[]
+  srsReviewLogs         SrsReviewLog[]
+  cardAttempts          CardAttempt[]
+  testQuestionAttempts  TestQuestionAttempt[]
+  matchingPairAnchors   TestMatchingPair[]    @relation("MatchingPairAnchor")
+  matchingPairUserPicks TestMatchingPair[]    @relation("MatchingPairUserPick")
 
   @@map("flashcard")
 }
@@ -231,6 +235,27 @@ model UserSetProgress {
   @@map("user_set_progress")
 }
 
+/// End-of-day copy of UserSetProgress, one row per (user, set, local day).
+/// Written by the nightly analytics job so the progress page can chart
+/// mastery over time — UserSetProgress itself only holds current counts.
+model UserSetProgressSnapshot {
+  userId        String   @db.Uuid
+  setId         String   @db.Uuid
+  /// The user's local calendar day the counts describe.
+  date          DateTime @db.Date
+  newCount      Int
+  learningCount Int
+  masteredCount Int
+  createdAt     DateTime @default(now())
+
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  set  StudySet @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@id([userId, setId, date])
+  @@index([userId, date])
+  @@map("user_set_progress_snapshot")
+}
+
 /// Per-(user, set) study preferences. Overrides the module-level
 /// defaults for the Learn mastery engine (threshold, hint multiplier)
 /// and the batch algorithm (batch size, MC/written bias). Also stores
@@ -240,63 +265,63 @@ model UserSetProgress {
 /// Row is created lazily on first write — reads fall back to defaults
 /// so a learner can enter Learn mode without ever visiting the panel.
 model UserSetPreferences {
-  userId           String   @db.Uuid
-  setId            String   @db.Uuid
+  userId              String               @db.Uuid
+  setId               String               @db.Uuid
   /// Cards per Learn batch. 1–50. Default 10.
-  batchSize        Int      @default(10)
+  batchSize           Int                  @default(10)
   /// Multiplier on the weighted-streak threshold that flips a card
   /// from LEARN_MC (recognition) to LEARN_WRITTEN (recall). Values > 1
   /// make the switch happen sooner (written-heavy), values < 1 delay
   /// it (MC-heavy). 0 keeps a card on MC until mastery.
-  mcWrittenBias    Decimal  @default(1.00) @db.Decimal(3, 2)
+  mcWrittenBias       Decimal              @default(1.00) @db.Decimal(3, 2)
   /// Weighted-streak needed for a card to graduate to MASTERED.
   /// Lower = faster mastery. 1.0–10.0.
-  masteryThreshold Decimal  @default(3.00) @db.Decimal(4, 2)
+  masteryThreshold    Decimal              @default(3.00) @db.Decimal(4, 2)
   /// Credit multiplier applied when the learner used the hint. 0.0–1.0.
-  hintMultiplier   Decimal  @default(0.50) @db.Decimal(3, 2)
+  hintMultiplier      Decimal              @default(0.50) @db.Decimal(3, 2)
   /// Whether the client auto-advances past the feedback screen. When
   /// false (the default) the learner must click "Next" — keeps
   /// pacing in the learner's hands. Can be enabled via the settings
   /// panel for a hands-off run.
-  autoAdvance      Boolean  @default(false)
+  autoAdvance         Boolean              @default(false)
   /// Milliseconds to hold the feedback panel when auto-advancing.
-  autoAdvanceMs    Int      @default(1400)
+  autoAdvanceMs       Int                  @default(1400)
   /// Enable card audio (TTS). Kept as a preference now so the settings
   /// panel is complete; audio playback ships later.
-  audioEnabled     Boolean  @default(false)
+  audioEnabled        Boolean              @default(false)
   /// Enable UI sound effects (correct/incorrect tones, session-end
   /// jingle). Placeholder like audioEnabled — the toggle persists but
   /// no player is wired yet.
-  soundEffectsEnabled Boolean  @default(false)
+  soundEffectsEnabled Boolean              @default(false)
   /// Learn opens a round with a "match the pairs" warm-up for cards the
   /// learner is still recognising (MC stage). Practice only: the client
   /// runs it from the batch and records no attempts.
-  matchingEnabled  Boolean  @default(true)
+  matchingEnabled     Boolean              @default(true)
   /// Restrict the batch to cards the learner has starred. Empty
   /// starred pool triggers a UI empty state (frontend gates the
   /// session start on this).
-  starredOnly      Boolean  @default(false)
+  starredOnly         Boolean              @default(false)
   /// Whether the batch algorithm shuffles cards. False = deterministic
   /// order by Flashcard.orderIndex, useful for language decks with a
   /// curated progression. True = current behaviour (LEARNING first,
   /// shuffled within groups).
-  shuffleEnabled   Boolean  @default(true)
+  shuffleEnabled      Boolean              @default(true)
   /// Written-answer evaluator leniency tier.
   ///  - STRICT: literal match after case-insensitive + trim only.
   ///  - NORMAL: current defaults (punctuation strip, article strip,
   ///    diacritic fold, comma-variant split, token-set, 1-edit typo
   ///    tolerance on 6+ char words).
   ///  - LENIENT: NORMAL + wider typo tolerance (2 edits on 4+ chars).
-  strictness       StudyStrictness      @default(NORMAL)
+  strictness          StudyStrictness      @default(NORMAL)
   /// Which side of the card the learner types.
   ///  - TERM_TO_DEFINITION: prompt = term, expected = definition
   ///    (default; matches the historical flow).
   ///  - DEFINITION_TO_TERM: prompt = definition, expected = term.
   ///    alternateAnswers are ignored in this direction (they apply
   ///    to the definition side).
-  answerDirection  LearnAnswerDirection @default(TERM_TO_DEFINITION)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  answerDirection     LearnAnswerDirection @default(TERM_TO_DEFINITION)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   set  StudySet @relation(fields: [setId], references: [id], onDelete: Cascade)
@@ -311,37 +336,37 @@ model UserSetPreferences {
 /// tuning) and mixing them muddies the schema. Row is created lazily
 /// on first write — reads fall back to defaults.
 model UserTestPreferences {
-  userId              String               @db.Uuid
-  setId               String               @db.Uuid
+  userId                 String               @db.Uuid
+  setId                  String               @db.Uuid
   /// Target number of scoring slots per attempt. 5–50. When a
   /// matching question is included it consumes matchingPairCount
   /// slots; the remainder are single-card questions.
-  questionCount       Int                  @default(20)
+  questionCount          Int                  @default(20)
   /// Which question types the generator may pick from. Values are
   /// TestQuestionType strings (TEST_MC / TEST_WRITTEN / TEST_TF /
   /// TEST_MATCH). Stored as a string[] because Prisma doesn't
   /// support enum arrays cleanly on the client side.
-  allowedTypes        String[]             @default(["TEST_MC", "TEST_WRITTEN", "TEST_TF", "TEST_MATCH"])
+  allowedTypes           String[]             @default(["TEST_MC", "TEST_WRITTEN", "TEST_TF", "TEST_MATCH"])
   /// Which side the learner produces. MIXED rolls per card at
   /// generation time (never appears on a question row itself).
-  answerDirection     LearnAnswerDirection @default(TERM_TO_DEFINITION)
+  answerDirection        LearnAnswerDirection @default(TERM_TO_DEFINITION)
   /// Written-answer evaluator leniency. Defaults to NORMAL to match
   /// Learn; STRICT is worth surfacing as an easy toggle for tests.
-  strictness          StudyStrictness      @default(NORMAL)
+  strictness             StudyStrictness      @default(NORMAL)
   /// Restrict the pool to starred cards only.
-  starredOnly         Boolean              @default(false)
+  starredOnly            Boolean              @default(false)
   /// Whether to shuffle the card pool before question generation.
   /// False = follow orderIndex; true = randomize.
-  shuffleEnabled      Boolean              @default(true)
+  shuffleEnabled         Boolean              @default(true)
   /// Reveal correctness after each question (true) or only at the
   /// end on the results screen (false — closer to a real test).
-  showResultsPerQuestion Boolean           @default(false)
+  showResultsPerQuestion Boolean              @default(false)
   /// Pair count for a matching question, when TEST_MATCH is in
   /// allowedTypes. 4–8. Also the number of scoring slots the
   /// matching question consumes.
-  matchingPairCount   Int                  @default(5)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
+  matchingPairCount      Int                  @default(5)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
 
   user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   set  StudySet @relation(fields: [setId], references: [id], onDelete: Cascade)
@@ -373,6 +398,31 @@ model SrsCard {
   @@map("srs_card")
 }
 
+/// One row per SM-2 rating applied to a card, whichever flow produced it
+/// (the /srs review queue, a Learn answer, or a submitted test).
+/// Append-only. Powers streaks/activity (SRS rows) and the retention
+/// chart (rating vs. the interval the card had been away).
+model SrsReviewLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  cardId         String   @db.Uuid
+  setId          String   @db.Uuid
+  /// AGAIN | HARD | GOOD | EASY (Sm2Rating).
+  rating         String   @db.VarChar(8)
+  /// SRS | LEARN | TEST — which flow applied the rating.
+  source         String   @db.VarChar(16)
+  /// Interval in days the card had before this review; 0 = first review.
+  intervalBefore Int
+  intervalAfter  Int
+  reviewedAt     DateTime @default(now())
+
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card Flashcard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([userId, reviewedAt])
+  @@map("srs_review_log")
+}
+
 model StudySession {
   id               String             @id(map: "PK_d09225f8e9d2b6682e3b13c46e0") @default(uuid()) @db.Uuid
   userId           String             @db.Uuid
@@ -402,6 +452,7 @@ model StudySession {
   cardAttempts     CardAttempt[]
 
   @@index([userId, studySetId, mode, status])
+  @@index([userId, completedAt])
   @@map("study_session")
 }
 
@@ -436,6 +487,7 @@ model CardAttempt {
 
   @@index([userId, cardId, createdAt])
   @@index([sessionId, createdAt])
+  @@index([userId, createdAt])
   @@map("card_attempt")
 }
 
@@ -562,42 +614,42 @@ model TestAttempt {
 }
 
 model TestQuestionAttempt {
-  id                 String              @id(map: "PK_4b0beed24cd6196f6c6905183e2") @default(uuid()) @db.Uuid
-  testAttemptId      String              @db.Uuid
-  flashcardId        String              @db.Uuid
+  id                  String               @id(map: "PK_4b0beed24cd6196f6c6905183e2") @default(uuid()) @db.Uuid
+  testAttemptId       String               @db.Uuid
+  flashcardId         String               @db.Uuid
   /// Which shape of question was asked. Drives how the review page
   /// renders the row and how the grader interpreted the answer.
-  questionType       TestQuestionType
+  questionType        TestQuestionType
   /// Verbatim text the learner saw as the prompt (post-direction
   /// resolution). Stored so the review page can replay the exact
   /// question even if the underlying card has since been edited.
-  promptText         String
+  promptText          String
   /// Canonical expected answer at grading time. For matching, this
   /// is unused (per-pair correctness lives on TestMatchingPair).
-  expectedAnswer     String
+  expectedAnswer      String
   /// MC choices — empty for non-MC types.
-  choices            String[]            @default([])
+  choices             String[]             @default([])
   /// MC only — index into `choices` for the correct option.
-  correctChoiceIndex Int?
+  correctChoiceIndex  Int?
   /// Direction the question was asked in. MIXED is a preference,
   /// not a per-question value, so this is always a concrete value.
-  answerDirection    LearnAnswerDirection
+  answerDirection     LearnAnswerDirection
   /// Position within the test (1-indexed). Drives review order.
-  orderIndex         Int
+  orderIndex          Int
   /// Learner's raw input. For MC this is the selected choice's
   /// text (also captured via selectedChoiceIndex); for TF it's
   /// "true" / "false"; for written it's what they typed; for
   /// matching it's null (see TestMatchingPair).
-  userAnswer         String?
+  userAnswer          String?
   /// MC only — which choice they picked.
   selectedChoiceIndex Int?
   /// Written-mode similarity from the evaluator (0.000–1.000).
   /// Kept for the review UI's "you were close" affordance.
-  similarity         Decimal?            @db.Decimal(4, 3)
-  isCorrect          Boolean             @default(false)
-  testAttempt        TestAttempt         @relation(fields: [testAttemptId], references: [id], onDelete: Cascade)
-  flashcard          Flashcard           @relation(fields: [flashcardId], references: [id], onDelete: Restrict)
-  matchingPairs      TestMatchingPair[]
+  similarity          Decimal?             @db.Decimal(4, 3)
+  isCorrect           Boolean              @default(false)
+  testAttempt         TestAttempt          @relation(fields: [testAttemptId], references: [id], onDelete: Cascade)
+  flashcard           Flashcard            @relation(fields: [flashcardId], references: [id], onDelete: Restrict)
+  matchingPairs       TestMatchingPair[]
 
   @@index([testAttemptId, orderIndex])
   @@map("test_question_attempt")

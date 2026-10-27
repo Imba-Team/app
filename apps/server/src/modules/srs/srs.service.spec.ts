@@ -10,7 +10,11 @@ interface PrismaMock {
     findUnique: jest.Mock;
     count: jest.Mock;
     update: jest.Mock;
+    upsert: jest.Mock;
     groupBy: jest.Mock;
+  };
+  srsReviewLog: {
+    create: jest.Mock;
   };
   user: {
     findUnique: jest.Mock;
@@ -25,7 +29,11 @@ const makePrisma = (): PrismaMock => {
       findUnique: jest.fn(),
       count: jest.fn(),
       update: jest.fn(),
+      upsert: jest.fn().mockResolvedValue({}),
       groupBy: jest.fn(),
+    },
+    srsReviewLog: {
+      create: jest.fn().mockResolvedValue({}),
     },
     user: {
       // Default: unknown user → SrsService falls back to UTC. Tests
@@ -134,6 +142,19 @@ describe('SrsService', () => {
         addDays(startOfUtcDay(), 1).toISOString().slice(0, 10),
       );
       expect(result.remainingDueToday).toBe(0);
+
+      // Every review is appended to the log in the same transaction.
+      expect(prisma.srsReviewLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          userId,
+          cardId,
+          setId: studySetId,
+          rating: 'GOOD',
+          source: 'SRS',
+          intervalBefore: 0,
+          intervalAfter: 1,
+        }) as unknown,
+      });
     });
 
     it('AGAIN increments lapses and resets interval to 1 day', async () => {
@@ -269,6 +290,68 @@ describe('SrsService', () => {
 
       expect(result.remainingDueToday).toBe(4);
       expect(prisma.srsCard.findUnique).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('applyReviewByCard', () => {
+    it('logs the review with the calling flow and the previous interval', async () => {
+      const prisma = makePrisma();
+      prisma.srsCard.findUnique.mockResolvedValue({
+        easeFactor: new Prisma.Decimal('2.50'),
+        intervalDays: 6,
+        repetitions: 2,
+        lapses: 0,
+      });
+      const svc = new SrsService(fakeLogger(), prisma as never, makeRedis());
+      const now = new Date('2026-10-27T10:00:00Z');
+
+      await svc.applyReviewByCard(
+        prisma as never,
+        userId,
+        cardId,
+        'AGAIN',
+        startOfUtcDay(now),
+        now,
+        { setId: studySetId, source: 'TEST' },
+      );
+
+      expect(prisma.srsReviewLog.create).toHaveBeenCalledWith({
+        data: {
+          userId,
+          cardId,
+          setId: studySetId,
+          rating: 'AGAIN',
+          source: 'TEST',
+          intervalBefore: 6,
+          intervalAfter: 1,
+          reviewedAt: now,
+        },
+      });
+    });
+
+    it('records a first review with intervalBefore 0', async () => {
+      const prisma = makePrisma();
+      prisma.srsCard.findUnique.mockResolvedValue(null);
+      const svc = new SrsService(fakeLogger(), prisma as never, makeRedis());
+      const now = new Date('2026-10-27T10:00:00Z');
+
+      const result = await svc.applyReviewByCard(
+        prisma as never,
+        userId,
+        cardId,
+        'GOOD',
+        startOfUtcDay(now),
+        now,
+        { setId: studySetId, source: 'LEARN' },
+      );
+
+      expect(result.firstReview).toBe(true);
+      expect(prisma.srsReviewLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          source: 'LEARN',
+          intervalBefore: 0,
+        }) as unknown,
+      });
     });
   });
 

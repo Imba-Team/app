@@ -47,3 +47,23 @@ export interface SrsRemindUserPayload {
   userId: string;
   dueCount: number;
 }
+
+export const ANALYTICS_QUEUE = 'analytics';
+
+export const AnalyticsJob = {
+  /**
+   * Hourly fan-out: picks users whose local day just ended and enqueues
+   * one snapshot job each. Registered as a repeatable job at boot.
+   */
+  SNAPSHOT_HOURLY: 'analytics.snapshot_hourly',
+  /** Copy one user's per-set mastery counts into the snapshot table. */
+  SNAPSHOT_USER: 'analytics.snapshot_user',
+} as const;
+
+export type AnalyticsJobName = (typeof AnalyticsJob)[keyof typeof AnalyticsJob];
+
+export interface AnalyticsSnapshotUserPayload {
+  userId: string;
+  /** The user's local day being recorded, `YYYY-MM-DD`. */
+  date: string;
+}

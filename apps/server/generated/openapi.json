@@ -3407,6 +3407,56 @@
         ]
       }
     },
+    "/sessions/totals": {
+      "get": {
+        "description": "Sums every session `GET /sessions` would list (optionally for one study set), not just one page.",
+        "operationId": "SessionController_totals",
+        "parameters": [
+          {
+            "name": "studySetId",
+            "required": false,
+            "in": "query",
+            "description": "Optional — restrict totals to sessions on this study set. Omit for all of the user’s sessions.",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session totals retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/SessionTotalsDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "All-time totals for my study sessions",
+        "tags": [
+          "Learning"
+        ]
+      }
+    },
     "/sessions/{id}/answer": {
       "post": {
         "description": "Applies the outcome to the card mastery engine and returns the updated card + set progress.",
@@ -4798,6 +4848,59 @@
             }
           }
         },
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
+    "/analytics/me/progress": {
+      "get": {
+        "description": "Current and best study streak, per-day activity for the last `days` days (30 or 90), mastery over time and retention by review interval. Days are local to the user’s saved timezone.",
+        "operationId": "ProgressController_getMyProgress",
+        "parameters": [
+          {
+            "name": "days",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 30,
+              "type": "number",
+              "enum": [
+                30,
+                90
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Progress retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/ProgressResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get my study progress",
         "tags": [
           "analytics"
         ]
@@ -6260,6 +6363,40 @@
           "durationSeconds",
           "accuracy",
           "startedAt"
+        ]
+      },
+      "SessionTotalsDto": {
+        "type": "object",
+        "properties": {
+          "totalSessions": {
+            "type": "number"
+          },
+          "cardsStudied": {
+            "type": "number"
+          },
+          "correctAnswers": {
+            "type": "number"
+          },
+          "incorrectAnswers": {
+            "type": "number"
+          },
+          "accuracy": {
+            "type": "number",
+            "nullable": true,
+            "description": "correct / (correct + incorrect), 0–1; null with no answers."
+          },
+          "durationSeconds": {
+            "type": "number",
+            "description": "Summed duration of completed sessions."
+          }
+        },
+        "required": [
+          "totalSessions",
+          "cardsStudied",
+          "correctAnswers",
+          "incorrectAnswers",
+          "accuracy",
+          "durationSeconds"
         ]
       },
       "CardProgressSummaryDto": {
@@ -7750,6 +7887,176 @@
           "correctCount",
           "incorrectCount",
           "createdAt"
+        ]
+      },
+      "ProgressTotalsDto": {
+        "type": "object",
+        "properties": {
+          "cardsAnswered": {
+            "type": "number",
+            "description": "Cards answered in the range (all modes)."
+          },
+          "correct": {
+            "type": "number"
+          },
+          "minutes": {
+            "type": "number",
+            "description": "Minutes in completed sessions and tests."
+          },
+          "accuracy": {
+            "type": "number",
+            "nullable": true,
+            "description": "correct / cardsAnswered (0–1); null with no answers."
+          }
+        },
+        "required": [
+          "cardsAnswered",
+          "correct",
+          "minutes",
+          "accuracy"
+        ]
+      },
+      "ProgressDayDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-27"
+          },
+          "cardsAnswered": {
+            "type": "number"
+          },
+          "correct": {
+            "type": "number"
+          },
+          "minutes": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "date",
+          "cardsAnswered",
+          "correct",
+          "minutes"
+        ]
+      },
+      "MasteryPointDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-10-27"
+          },
+          "newCount": {
+            "type": "number"
+          },
+          "learningCount": {
+            "type": "number"
+          },
+          "masteredCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "date",
+          "newCount",
+          "learningCount",
+          "masteredCount"
+        ]
+      },
+      "RetentionBucketDto": {
+        "type": "object",
+        "properties": {
+          "bucket": {
+            "type": "string",
+            "enum": [
+              "1d",
+              "3d",
+              "1w",
+              "1m",
+              "1m+"
+            ],
+            "description": "How long the card had been away: ≤1 day, 2–3 days, 4–7 days, 8–29 days, 30+ days."
+          },
+          "total": {
+            "type": "number"
+          },
+          "remembered": {
+            "type": "number",
+            "description": "Reviews rated anything but AGAIN."
+          },
+          "rate": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "bucket",
+          "total",
+          "remembered",
+          "rate"
+        ]
+      },
+      "ProgressResponseDto": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "type": "number",
+            "enum": [
+              30,
+              90
+            ]
+          },
+          "timezone": {
+            "type": "string",
+            "example": "Europe/Berlin"
+          },
+          "currentStreak": {
+            "type": "number",
+            "description": "Consecutive study days up to today."
+          },
+          "bestStreak": {
+            "type": "number"
+          },
+          "studiedToday": {
+            "type": "boolean"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/ProgressTotalsDto"
+          },
+          "activity": {
+            "description": "One entry per local day in the range, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProgressDayDto"
+            }
+          },
+          "mastery": {
+            "description": "Nightly snapshots plus a live point for today, summed across sets.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MasteryPointDto"
+            }
+          },
+          "retention": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RetentionBucketDto"
+            }
+          }
+        },
+        "required": [
+          "days",
+          "timezone",
+          "currentStreak",
+          "bestStreak",
+          "studiedToday",
+          "totals",
+          "activity",
+          "mastery",
+          "retention"
         ]
       }
     }
