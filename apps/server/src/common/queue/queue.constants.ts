@@ -17,6 +17,9 @@ export interface MailJobPayload {
 export const SEARCH_SYNC_QUEUE = 'search-sync';
 
 export const SearchSyncJob = {
+  /** Bring one set's search document in line with Postgres (index or delete). */
+  SYNC_SET: 'search.sync_set',
+  /** Legacy names — still processed so jobs queued before the switch drain. */
   INDEX_SET: 'search.index_set',
   DELETE_SET: 'search.delete_set',
 } as const;
@@ -27,6 +30,21 @@ export type SearchSyncJobName =
 export interface SearchSyncJobPayload {
   setId: string;
 }
+
+/**
+ * Job options for a set's sync job. One deduplication id per set:
+ * - adds while a job is waiting fold into it (it reads Postgres when it runs)
+ * - an add while a job is active queues exactly one follow-up
+ *   (`keepLastIfActive`), so changes made mid-run aren't lost
+ * - the key is cleared on completion, so the next change always syncs
+ *
+ * Don't use a fixed `jobId` here: BullMQ ignores adds while a job with
+ * that id exists, and completed jobs are retained for 24h, so later
+ * syncs were silently dropped (MIM-45).
+ */
+export const searchSyncJobOptions = (setId: string) => ({
+  deduplication: { id: `set-${setId}`, keepLastIfActive: true },
+});
 
 export const SRS_REMINDERS_QUEUE = 'srs-reminders';
 

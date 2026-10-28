@@ -8,6 +8,7 @@ import { plainToInstance } from 'class-transformer';
 
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { SearchSyncService } from 'src/modules/search/search-sync.service';
 import { StudySetService } from 'src/modules/study-set/study-set.service';
 
 import { CreateFlashcardDto } from './dtos/create-flashcard.dto';
@@ -24,6 +25,7 @@ export class FlashcardService {
     private readonly logger: LoggerService,
     private readonly prisma: PrismaService,
     private readonly studySetService: StudySetService,
+    private readonly searchSync: SearchSyncService,
   ) {
     this.logger.setContext(FlashcardService.name);
   }
@@ -55,6 +57,8 @@ export class FlashcardService {
     this.logger.log(
       `Flashcard created: id=${saved.id}, studySetId=${studySetId}`,
     );
+    // cardCount in the search document.
+    await this.searchSync.enqueueSync(studySetId);
     return this.toResponse(saved);
   }
 
@@ -177,6 +181,7 @@ export class FlashcardService {
     await this.prisma.flashcard.delete({ where: { id: flashcardId } });
 
     this.logger.log(`Flashcard deleted: id=${flashcardId}`);
+    await this.searchSync.enqueueSync(flashcard.studySetId);
   }
 
   private async ensureCanEdit(userId: string, studySetId: string) {

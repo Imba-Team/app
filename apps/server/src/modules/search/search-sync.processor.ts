@@ -28,14 +28,15 @@ export class SearchSyncProcessor extends WorkerHost {
   ): Promise<void> {
     const { setId } = job.data;
     switch (job.name) {
+      // INDEX_SET / DELETE_SET are legacy names: the sync reads Postgres,
+      // so it does the right thing for jobs queued before the switch too.
+      case SearchSyncJob.SYNC_SET:
       case SearchSyncJob.INDEX_SET:
-        await this.searchService.indexSet(setId);
-        this.logger.log(`[job=${job.id}] indexed setId=${setId}`);
+      case SearchSyncJob.DELETE_SET: {
+        const action = await this.searchService.syncSet(setId);
+        this.logger.log(`[job=${job.id}] ${action} setId=${setId}`);
         return;
-      case SearchSyncJob.DELETE_SET:
-        await this.searchService.deleteSet(setId);
-        this.logger.log(`[job=${job.id}] deleted setId=${setId}`);
-        return;
+      }
       default:
         throw new UnrecoverableError(`Unknown search-sync job: ${job.name}`);
     }

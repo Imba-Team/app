@@ -21,6 +21,7 @@ import {
   SEARCH_SYNC_QUEUE,
   SearchSyncJob,
   SearchSyncJobPayload,
+  searchSyncJobOptions,
 } from 'src/common/queue/queue.constants';
 
 export interface DeletedAccount {
@@ -96,12 +97,39 @@ export class UsersService {
       return user;
     }
     const username = await this.allocateUsername(user.email, user.id);
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: user.id },
       data: {
         username,
       },
     });
+    await this.syncOwnedSets(user.id);
+    return updated;
+  }
+
+  /**
+   * Re-sync the search documents of every set the user owns (they embed
+   * `ownerUsername`). Uses the raw queue: SearchModule imports UsersModule,
+   * so injecting SearchSyncService here would be a module cycle.
+   */
+  private async syncOwnedSets(userId: string): Promise<void> {
+    const sets = await this.prisma.studySet.findMany({
+      where: { ownerId: userId },
+      select: { id: true },
+    });
+    await this.enqueueSetSyncs(sets.map((s) => s.id));
+  }
+
+  private async enqueueSetSyncs(setIds: string[]): Promise<void> {
+    await Promise.all(
+      setIds.map((setId) =>
+        this.searchSyncQueue.add(
+          SearchSyncJob.SYNC_SET,
+          { setId },
+          searchSyncJobOptions(setId),
+        ),
+      ),
+    );
   }
 
   async findAll(
@@ -232,10 +260,12 @@ export class UsersService {
       return existing;
     }
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data: patch,
     });
+    if (patch.username !== undefined) await this.syncOwnedSets(id);
+    return updated;
   }
 
   /**
@@ -290,17 +320,9 @@ export class UsersService {
       },
     );
 
-    // After commit: the index workers read Postgres, so they must see the
-    // sets as private. Same jobId scheme as SearchSyncService.enqueueDelete.
-    await Promise.all(
-      unpublishedSetIds.map((setId) =>
-        this.searchSyncQueue.add(
-          SearchSyncJob.DELETE_SET,
-          { setId },
-          { jobId: `delete-${setId}` },
-        ),
-      ),
-    );
+    // After commit: the sync workers read Postgres, so they must see the
+    // sets as private (and drop them from the index).
+    await this.enqueueSetSyncs(unpublishedSetIds);
 
     this.logger.log(
       `Account soft-deleted: userId=${id}, setsUnpublished=${unpublishedSetIds.length}`,

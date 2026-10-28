@@ -9,6 +9,7 @@ import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { cleanText } from 'src/common/text/clean-text';
 import { textLimits } from 'src/common/text/text-limits';
+import { SearchSyncService } from 'src/modules/search/search-sync.service';
 import { StudySetService } from 'src/modules/study-set/study-set.service';
 
 import {
@@ -43,6 +44,7 @@ export class CsvImportService {
     private readonly logger: LoggerService,
     private readonly prisma: PrismaService,
     private readonly studySetService: StudySetService,
+    private readonly searchSync: SearchSyncService,
   ) {
     this.logger.setContext(CsvImportService.name);
   }
@@ -161,6 +163,7 @@ export class CsvImportService {
 
     if (toCreate.length) {
       await this.prisma.flashcard.createMany({ data: toCreate });
+      await this.searchSync.enqueueSync(studySetId);
       this.logger.log(
         `CSV import: studySetId=${studySetId}, imported=${toCreate.length}, skipped=${errors.length}`,
       );

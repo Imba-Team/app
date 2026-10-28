@@ -80,7 +80,7 @@ export class StudySetService {
 
     this.logger.log(`Study set created: id=${saved.id}, userId=${userId}`);
 
-    await this.searchSync.enqueueIndex(saved.id);
+    await this.searchSync.enqueueSync(saved.id);
 
     return this.buildStudySetForUser(saved.id, userId);
   }
@@ -140,7 +140,7 @@ export class StudySetService {
         data: patch,
       });
       this.logger.log(`Study set updated: id=${studySetId}, userId=${userId}`);
-      await this.searchSync.enqueueIndex(studySetId);
+      await this.searchSync.enqueueSync(studySetId);
     }
     return this.buildStudySetForUser(studySetId, userId);
   }
@@ -166,12 +166,8 @@ export class StudySetService {
       `Study set visibility updated: id=${studySetId}, private=${visibilityDto.isPrivate}`,
     );
 
-    // Going private removes the doc from the index; going public re-adds it.
-    if (visibilityDto.isPrivate) {
-      await this.searchSync.enqueueDelete(studySetId);
-    } else {
-      await this.searchSync.enqueueIndex(studySetId);
-    }
+    // The sync drops private sets from the index and (re)adds public ones.
+    await this.searchSync.enqueueSync(studySetId);
 
     return this.buildStudySetForUser(studySetId, userId);
   }
@@ -268,7 +264,7 @@ export class StudySetService {
       this.prisma.studySet.delete({ where: { id: studySetId } }),
     ]);
 
-    await this.searchSync.enqueueDelete(studySetId);
+    await this.searchSync.enqueueSync(studySetId);
     this.logger.log(`Study set deleted: id=${studySetId}, userId=${userId}`);
   }
 

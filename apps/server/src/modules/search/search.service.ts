@@ -197,17 +197,18 @@ export class SearchService implements OnModuleInit {
   }
 
   /**
-   * Pulls the canonical row from Postgres and (re)indexes it. Called by
-   * the BullMQ sync processor — never invoke directly from a request path,
-   * always go through SearchSyncService so retries + backoff apply.
+   * Converge one set's search document with Postgres: index it (with
+   * fresh card/like counts) when it exists and is PUBLIC, delete it
+   * otherwise. Called by the BullMQ sync processor — never invoke
+   * directly from a request path, always go through SearchSyncService so
+   * retries, backoff and per-set ordering apply.
    */
-  async indexSet(setId: string): Promise<void> {
+  async syncSet(setId: string): Promise<'indexed' | 'deleted'> {
     const doc = await this.loadIndexableSet(setId);
-    if (!doc) {
-      // Set was deleted between enqueue and consume — drop the index entry
-      // to converge with Postgres.
+    // Search only ever returns PUBLIC sets; keep everything else out.
+    if (!doc || doc.visibility !== StudySetVisibility.PUBLIC) {
       await this.deleteSet(setId);
-      return;
+      return 'deleted';
     }
 
     await this.es.index({
@@ -216,6 +217,7 @@ export class SearchService implements OnModuleInit {
       document: doc,
       refresh: false,
     });
+    return 'indexed';
   }
 
   async deleteSet(setId: string): Promise<void> {

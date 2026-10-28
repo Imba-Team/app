@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from 'src/modules/auth/auth.module';
+import { SearchModule } from 'src/modules/search/search.module';
 import { StudySetModule } from 'src/modules/study-set/study-set.module';
 import { UsersModule } from 'src/modules/users/user.module';
 
@@ -8,7 +9,7 @@ import { StudySetTagController } from './study-set-tag.controller';
 import { StudySetTagService } from './study-set-tag.service';
 
 @Module({
-  imports: [TagModule, AuthModule, UsersModule, StudySetModule],
+  imports: [TagModule, AuthModule, UsersModule, StudySetModule, SearchModule],
   controllers: [StudySetTagController],
   providers: [StudySetTagService],
   exports: [StudySetTagService],

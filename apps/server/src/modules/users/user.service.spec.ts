@@ -249,10 +249,11 @@ describe('UsersService.delete', () => {
       data: { visibility: 'PRIVATE' },
     });
     expect(queue.add).toHaveBeenCalledTimes(2);
+    // One per-set sync job; the worker sees the set is private and drops it.
     expect(queue.add).toHaveBeenCalledWith(
-      'search.delete_set',
+      'search.sync_set',
       { setId: 'set-a' },
-      { jobId: 'delete-set-a' },
+      { deduplication: { id: 'set-set-a', keepLastIfActive: true } },
     );
   });
 

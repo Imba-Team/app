@@ -11,6 +11,7 @@ import { IUser } from 'src/common/interfaces/user.interface';
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { slugify } from 'src/common/utils/sligify';
+import { SearchSyncService } from 'src/modules/search/search-sync.service';
 import { StudySetService } from 'src/modules/study-set/study-set.service';
 
 import { CreateStudySetTagDto } from './dto/create-study-set-tag.dto';
@@ -21,6 +22,7 @@ export class StudySetTagService {
     private readonly logger: LoggerService,
     private readonly prisma: PrismaService,
     private readonly studySetService: StudySetService,
+    private readonly searchSync: SearchSyncService,
   ) {
     this.logger.setContext(StudySetTagService.name);
   }
@@ -56,12 +58,14 @@ export class StudySetTagService {
       throw new ConflictException('Tag is already attached to this study set');
     }
 
-    return this.prisma.studySetTag.create({
+    const created = await this.prisma.studySetTag.create({
       data: {
         studySetId,
         tagId: tag.id,
       },
     });
+    await this.searchSync.enqueueSync(studySetId);
+    return created;
   }
 
   async removeTagFromStudySet(user: IUser, studySetId: string, tagId: string) {
@@ -91,6 +95,7 @@ export class StudySetTagService {
         },
       },
     });
+    await this.searchSync.enqueueSync(studySetId);
   }
 
   async listTagsForStudySet(user: IUser, studySetId: string) {

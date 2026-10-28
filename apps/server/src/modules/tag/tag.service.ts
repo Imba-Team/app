@@ -8,6 +8,7 @@ import { Prisma, Tag } from '@prisma/client';
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { slugify } from 'src/common/utils/sligify';
+import { SearchSyncService } from 'src/modules/search/search-sync.service';
 
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
@@ -17,6 +18,7 @@ export class TagService {
   constructor(
     private readonly logger: LoggerService,
     private readonly prisma: PrismaService,
+    private readonly searchSync: SearchSyncService,
   ) {
     this.logger.setContext(TagService.name);
   }
@@ -138,13 +140,21 @@ export class TagService {
       throw new ConflictException('Tag name already exists');
     }
 
-    return this.prisma.tag.update({
+    const updated = await this.prisma.tag.update({
       where: { id },
       data: {
         name,
         slug,
       },
     });
+
+    // Every set carrying this tag embeds its name in its search document.
+    const links = await this.prisma.studySetTag.findMany({
+      where: { tagId: id },
+      select: { studySetId: true },
+    });
+    await this.searchSync.enqueueSyncMany(links.map((l) => l.studySetId));
+    return updated;
   }
 
   async delete(id: string): Promise<void> {

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from 'src/modules/auth/auth.module';
+import { SearchModule } from 'src/modules/search/search.module';
 import { StudySetModule } from 'src/modules/study-set/study-set.module';
 import { UsersModule } from 'src/modules/users/user.module';
 
@@ -11,7 +12,7 @@ import { FlashcardService } from './flashcard.service';
 import { SetFlashcardsController } from './set-flashcards.controller';
 
 @Module({
-  imports: [AuthModule, UsersModule, StudySetModule],
+  imports: [AuthModule, UsersModule, StudySetModule, SearchModule],
   controllers: [
     FlashcardController,
     SetFlashcardsController,

@@ -208,6 +208,8 @@ export function useCollectModule() {
       invalidateCollections(queryClient);
       invalidateReviews(queryClient);
       queryClient.invalidateQueries({ queryKey: moduleKeys.detail(id) });
+      // Discover shows the save count.
+      queryClient.invalidateQueries({ queryKey: moduleKeys.community() });
       toast.success("Module added to collection");
     },
     onError: (error: Error) => {
@@ -225,6 +227,7 @@ export function useUncollectModule() {
       invalidateCollections(queryClient);
       invalidateReviews(queryClient);
       queryClient.invalidateQueries({ queryKey: moduleKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: moduleKeys.community() });
       toast.success("Removed from your library");
     },
     onError: (error: Error) => {

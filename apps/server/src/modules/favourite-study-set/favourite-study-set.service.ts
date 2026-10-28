@@ -8,6 +8,7 @@ import { StudySetVisibility } from '@prisma/client';
 
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { SearchSyncService } from 'src/modules/search/search-sync.service';
 import { StudySetService } from 'src/modules/study-set/study-set.service';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class FavouriteStudySetService {
     private readonly logger: LoggerService,
     private readonly studySetService: StudySetService,
     private readonly prisma: PrismaService,
+    private readonly searchSync: SearchSyncService,
   ) {
     this.logger.setContext(FavouriteStudySetService.name);
   }
@@ -56,6 +58,8 @@ export class FavouriteStudySetService {
     this.logger.log(
       `Study set saved to library: studySetId=${studySetId}, userId=${currentUserId}`,
     );
+    // likeCount ("saves") in the search document.
+    await this.searchSync.enqueueSync(studySetId);
 
     return this.studySetService.getById(currentUserId, studySetId);
   }
@@ -72,12 +76,13 @@ export class FavouriteStudySetService {
       );
     }
 
-    await this.prisma.favouriteStudySet.deleteMany({
+    const { count } = await this.prisma.favouriteStudySet.deleteMany({
       where: {
         userId: currentUserId,
         studySetId,
       },
     });
+    if (count > 0) await this.searchSync.enqueueSync(studySetId);
 
     this.logger.log(
       `Study set removed from library: studySetId=${studySetId}, userId=${currentUserId}`,

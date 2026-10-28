@@ -64,3 +64,76 @@ describe('SearchService.searchSets', () => {
     expect(args.highlight).toMatchObject({ encoder: 'html' });
   });
 });
+
+describe('SearchService.syncSet (MIM-45)', () => {
+  const row = (overrides: Record<string, unknown> = {}) => ({
+    id: 's-1',
+    slug: 'spanish',
+    title: 'Spanish',
+    description: null,
+    language: 'Spanish',
+    ownerId: 'u-1',
+    owner: { username: 'emin' },
+    visibility: StudySetVisibility.PUBLIC,
+    tags: [{ tag: { name: 'languages' } }],
+    _count: { flashcards: 12, favourites: 3 },
+    createdAt: new Date('2026-01-01T00:00:00Z'),
+    updatedAt: new Date('2026-01-02T00:00:00Z'),
+    ...overrides,
+  });
+
+  const buildSync = (found: unknown) => {
+    const es = {
+      index: jest.fn().mockResolvedValue({}),
+      delete: jest.fn().mockResolvedValue({}),
+    };
+    const prisma = {
+      studySet: { findUnique: jest.fn().mockResolvedValue(found) },
+    };
+    const svc = new SearchService(
+      noopLogger(),
+      es as unknown as ElasticsearchService,
+      prisma as unknown as PrismaService,
+    );
+    return { svc, es };
+  };
+
+  it('indexes a public set with fresh card and save counts', async () => {
+    const { svc, es } = buildSync(row());
+
+    expect(await svc.syncSet('s-1')).toBe('indexed');
+
+    expect(es.index).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 's-1',
+        document: expect.objectContaining({
+          cardCount: 12,
+          likeCount: 3,
+          tags: ['languages'],
+          ownerUsername: 'emin',
+        }) as unknown,
+      }),
+    );
+    expect(es.delete).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['deleted', null],
+    ['private', row({ visibility: StudySetVisibility.PRIVATE })],
+    ['unlisted', row({ visibility: StudySetVisibility.UNLISTED })],
+  ])('drops a %s set from the index', async (_label, found) => {
+    const { svc, es } = buildSync(found);
+
+    expect(await svc.syncSet('s-1')).toBe('deleted');
+
+    expect(es.delete).toHaveBeenCalledWith({ index: 'mimir_sets', id: 's-1' });
+    expect(es.index).not.toHaveBeenCalled();
+  });
+
+  it('treats an already-missing document as deleted', async () => {
+    const { svc, es } = buildSync(null);
+    es.delete.mockRejectedValue({ meta: { statusCode: 404 } });
+
+    await expect(svc.syncSet('s-1')).resolves.toBe('deleted');
+  });
+});

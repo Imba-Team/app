@@ -1,6 +1,7 @@
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { textLimits } from 'src/common/text/text-limits';
+import { SearchSyncService } from 'src/modules/search/search-sync.service';
 import { StudySetService } from 'src/modules/study-set/study-set.service';
 
 import { CsvImportService } from './csv-import.service';
@@ -22,12 +23,14 @@ const build = () => {
     },
   };
   const studySets = { canEdit: jest.fn().mockResolvedValue(true) };
+  const searchSync = { enqueueSync: jest.fn().mockResolvedValue(undefined) };
   const svc = new CsvImportService(
     noopLogger(),
     prisma as unknown as PrismaService,
     studySets as unknown as StudySetService,
+    searchSync as unknown as SearchSyncService,
   );
-  return { svc, prisma };
+  return { svc, prisma, searchSync };
 };
 
 const mapping = { term: 0, definition: 1, example: 2, phonetic: 3, hint: 4 };
@@ -76,5 +79,37 @@ describe('CsvImportService.import (MIM-49)', () => {
       { data: { term: string; definition: string }[] },
     ];
     expect(data[0]).toMatchObject({ term: 'List<String>', definition: 'café' });
+  });
+});
+
+describe('CsvImportService.import search sync (MIM-45)', () => {
+  it('re-syncs the set once after importing cards', async () => {
+    const { svc, searchSync } = build();
+
+    await svc.import(
+      'u-1',
+      's-1',
+      csv([
+        ['a', 'b', '', '', ''],
+        ['c', 'd', '', '', ''],
+      ]),
+      { mapping, hasHeader: false, delimiter: ',' },
+    );
+
+    expect(searchSync.enqueueSync).toHaveBeenCalledTimes(1);
+    expect(searchSync.enqueueSync).toHaveBeenCalledWith('s-1');
+  });
+
+  it('does not sync when every row was rejected', async () => {
+    const { svc, prisma, searchSync } = build();
+
+    await svc.import('u-1', 's-1', csv([['', 'no term', '', '', '']]), {
+      mapping,
+      hasHeader: false,
+      delimiter: ',',
+    });
+
+    expect(prisma.flashcard.createMany).not.toHaveBeenCalled();
+    expect(searchSync.enqueueSync).not.toHaveBeenCalled();
   });
 });

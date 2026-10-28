@@ -8,6 +8,7 @@ import {
   SEARCH_SYNC_QUEUE,
   SearchSyncJob,
   SearchSyncJobPayload,
+  searchSyncJobOptions,
 } from 'src/common/queue/queue.constants';
 
 const REINDEX_BATCH_SIZE = 500;
@@ -24,39 +25,28 @@ export class SearchSyncService {
   }
 
   /**
-   * Re-index a single set. Safe to call on create, update, and visibility
-   * changes — the processor reads the canonical row from Postgres. Using
-   * setId as the jobId deduplicates rapid bursts (e.g. multiple PATCHes
-   * within the queue's window) into a single re-index.
+   * Re-sync one set's search document after anything it indexes changed:
+   * the set itself, its visibility, its cards, favourites or tags, or its
+   * owner's username. The processor reads the canonical row from Postgres
+   * and indexes or deletes accordingly, so callers never pick an action.
    */
-  async enqueueIndex(setId: string): Promise<void> {
-    // BullMQ >=5 rejects ":" in custom job IDs (reserved as key separator).
+  async enqueueSync(setId: string): Promise<void> {
     await this.queue.add(
-      SearchSyncJob.INDEX_SET,
+      SearchSyncJob.SYNC_SET,
       { setId },
-      { jobId: `index-${setId}` },
+      searchSyncJobOptions(setId),
     );
-    this.logger.debug(`enqueued INDEX_SET setId=${setId}`);
+    this.logger.debug(`enqueued SYNC_SET setId=${setId}`);
   }
 
-  async enqueueDelete(setId: string): Promise<void> {
-    await this.queue.add(
-      SearchSyncJob.DELETE_SET,
-      { setId },
-      { jobId: `delete-${setId}` },
-    );
-    this.logger.debug(`enqueued DELETE_SET setId=${setId}`);
+  async enqueueSyncMany(setIds: Iterable<string>): Promise<void> {
+    await Promise.all([...new Set(setIds)].map((id) => this.enqueueSync(id)));
   }
 
   /**
-   * Enqueue an INDEX_SET job for every study set in Postgres. Used to
-   * bring the ES index up to date after a mapping change or after
-   * introducing sync-on-write (any rows created before that point have
-   * no index entry).
-   *
-   * Idempotent: each job carries `jobId=index-<setId>`, so re-running
-   * while jobs from a previous invocation are still in the queue folds
-   * duplicates. Returns the number enqueued for the caller to log.
+   * Enqueue a sync for every study set in Postgres. Used to bring the ES
+   * index up to date after a mapping change, or as a one-off backfill.
+   * Returns the number enqueued for the caller to log.
    */
   async enqueueReindexAllSets(): Promise<number> {
     let cursor: string | undefined;
@@ -71,7 +61,7 @@ export class SearchSyncService {
       });
       if (batch.length === 0) break;
 
-      await Promise.all(batch.map((row) => this.enqueueIndex(row.id)));
+      await this.enqueueSyncMany(batch.map((row) => row.id));
       enqueued += batch.length;
       cursor = batch[batch.length - 1].id;
     }

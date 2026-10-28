@@ -80,7 +80,7 @@ const buildForCreate = (takenSlugs: string[]) => {
     },
   };
   const usersService = { findById: jest.fn().mockResolvedValue({ id: 'u-2' }) };
-  const searchSync = { enqueueIndex: jest.fn().mockResolvedValue(undefined) };
+  const searchSync = { enqueueSync: jest.fn().mockResolvedValue(undefined) };
   const svc = new StudySetService(
     noopLogger(),
     prisma as unknown as PrismaService,
