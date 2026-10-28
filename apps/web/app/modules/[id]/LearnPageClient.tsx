@@ -146,6 +146,8 @@ export default function LearnPageClient({ id }: { id: string }) {
   const loading = moduleLoading || termsLoading;
   const moduleInfo = moduleData?.data;
   const isOwner = !!moduleInfo?.isOwner;
+  // Owners and EDITOR collaborators can change the set and its cards.
+  const canEdit = !!moduleInfo?.canEdit;
   const isCollected = !!moduleInfo?.isCollected;
   const { data: dueQueue } = useDueQueue(id, isCollected);
   const dueCount = dueQueue?.total ?? 0;
@@ -242,7 +244,7 @@ export default function LearnPageClient({ id }: { id: string }) {
           </Link>
         </Button>
         <div className="flex items-center gap-1">
-          {isOwner && (
+          {canEdit && (
             <>
               <Button variant="ghost" size="sm" onClick={() => setImportOpen(true)}>
                 <Upload className="h-4 w-4" />
@@ -278,6 +280,8 @@ export default function LearnPageClient({ id }: { id: string }) {
             ownerImg: moduleInfo.ownerImg ?? '',
             isOwner: moduleInfo.isOwner,
             isCollected: moduleInfo.isCollected,
+            language: moduleInfo.language,
+            tags: moduleInfo.tags,
           }}
         />
       ) : (
@@ -364,7 +368,7 @@ export default function LearnPageClient({ id }: { id: string }) {
                   Rendered whenever the viewer is the owner (so Import
                   stays reachable on an empty module) or whenever there
                   is progress to manage. */}
-                {tab === 'terms' && (isOwner || (isCollected && allTerms.length > 0)) && (
+                {tab === 'terms' && (canEdit || (isCollected && allTerms.length > 0)) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" aria-label="Term list settings">
@@ -387,7 +391,7 @@ export default function LearnPageClient({ id }: { id: string }) {
                           Test preferences…
                         </DropdownMenuItem>
                       )}
-                      {isOwner && (
+                      {canEdit && (
                         <DropdownMenuItem onClick={() => setImportOpen(true)}>
                           <Upload className="mr-2 h-4 w-4" />
                           Import flashcards
@@ -503,7 +507,7 @@ export default function LearnPageClient({ id }: { id: string }) {
                   <div className="space-y-3">
                     {terms.map((t: Term) => (
                       <TermItem
-                        isOwned={isOwner}
+                        isOwned={canEdit}
                         isCollected={isCollected}
                         key={t.id}
                         term={t}
@@ -517,7 +521,7 @@ export default function LearnPageClient({ id }: { id: string }) {
                   </div>
                 )}
 
-                {isOwner && (
+                {canEdit && (
                   <AddTerm onSubmit={submitNewTerm} isSubmitting={createTerm.isPending} />
                 )}
               </TabsContent>
@@ -530,7 +534,7 @@ export default function LearnPageClient({ id }: { id: string }) {
         </Tabs>
       </section>
 
-      {isOwner && (
+      {canEdit && (
         <ImportFlashcardsDialog
           open={importOpen}
           onOpenChange={(open) => !importing && setImportOpen(open)}

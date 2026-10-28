@@ -158,6 +158,9 @@ describe('StudySetTagService search sync', () => {
       prisma as unknown as PrismaService,
       {} as StudySetService,
       searchSync as unknown as SearchSyncService,
+      {
+        findOrCreateByName: jest.fn().mockResolvedValue(tag),
+      } as unknown as TagService,
     );
     return { svc, searchSync };
   };

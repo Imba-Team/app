@@ -20,6 +20,7 @@ import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import createUniqueSlug, { slugify } from 'src/common/utils/sligify';
 import { SearchSyncService } from 'src/modules/search/search-sync.service';
+import { TagService } from 'src/modules/tag/tag.service';
 import { UsersService } from 'src/modules/users/user.service';
 
 // DTOs
@@ -43,6 +44,16 @@ type OwnerProjection = {
   username: string | null;
   profilePicture: string | null;
 };
+type TagProjection = { id: string; name: string; slug: string };
+
+/** Stored language: trimmed, with empty meaning "none". */
+function normalizeLanguage(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+const byName = (a: TagProjection, b: TagProjection) =>
+  a.name.localeCompare(b.name);
 
 @Injectable()
 export class StudySetService {
@@ -51,6 +62,7 @@ export class StudySetService {
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
     private readonly searchSync: SearchSyncService,
+    private readonly tagService: TagService,
   ) {
     this.logger.setContext(StudySetService.name);
   }
@@ -70,7 +82,7 @@ export class StudySetService {
       slug,
       title: dto.title,
       description: dto.description,
-      language: dto.language,
+      language: normalizeLanguage(dto.language),
       visibility:
         dto.isPrivate === true
           ? StudySetVisibility.PRIVATE
@@ -79,6 +91,17 @@ export class StudySetService {
     }));
 
     this.logger.log(`Study set created: id=${saved.id}, userId=${userId}`);
+
+    if (dto.tags?.length) {
+      const tags = await this.tagService.findOrCreateMany(dto.tags);
+      await this.prisma.$transaction((tx) =>
+        this.tagService.replaceStudySetTags(
+          tx,
+          saved.id,
+          tags.map((t) => t.id),
+        ),
+      );
+    }
 
     await this.searchSync.enqueueSync(saved.id);
 
@@ -122,22 +145,55 @@ export class StudySetService {
     }
   }
 
+  /**
+   * Owners and EDITOR collaborators may change the set's details and tags
+   * (SRS FR-SET-04, FR-TAG-03); visibility stays owner-only. `tags`, when
+   * given, replaces the whole tag list in the same transaction.
+   */
   async update(userId: string, studySetId: string, dto: UpdateStudySetDto) {
     this.logger.debug(`Updating study set: id=${studySetId}, userId=${userId}`);
-    await this.ensureOwnedStudySet(userId, studySetId);
+    const studySet = await this.findStudySetOrFail(studySetId);
+    const isOwner = studySet.ownerId === userId;
+    if (!isOwner && !(await this.canEdit(userId, studySetId))) {
+      this.logger.warn(
+        `Forbidden update attempt: studySetId=${studySetId}, userId=${userId}`,
+      );
+      throw new ForbiddenException(
+        'You can only modify study sets you own or edit',
+      );
+    }
+    if (dto.isPrivate !== undefined && !isOwner) {
+      throw new ForbiddenException(
+        'Only the owner can change who can see this study set',
+      );
+    }
+
     const patch: Prisma.StudySetUpdateInput = {};
     if (dto.title !== undefined) patch.title = dto.title;
     if (dto.description !== undefined) patch.description = dto.description;
-    if (dto.language !== undefined) patch.language = dto.language;
+    if (dto.language !== undefined) {
+      patch.language = normalizeLanguage(dto.language);
+    }
     if (dto.isPrivate !== undefined) {
       patch.visibility = dto.isPrivate
         ? StudySetVisibility.PRIVATE
         : StudySetVisibility.PUBLIC;
     }
-    if (Object.keys(patch).length) {
-      await this.prisma.studySet.update({
-        where: { id: studySetId },
-        data: patch,
+    // Resolve (and create) tags before the transaction: a unique-constraint
+    // race inside it would abort the whole transaction.
+    const tagIds =
+      dto.tags !== undefined
+        ? (await this.tagService.findOrCreateMany(dto.tags)).map((t) => t.id)
+        : undefined;
+
+    if (Object.keys(patch).length || tagIds) {
+      await this.prisma.$transaction(async (tx) => {
+        if (Object.keys(patch).length) {
+          await tx.studySet.update({ where: { id: studySetId }, data: patch });
+        }
+        if (tagIds) {
+          await this.tagService.replaceStudySetTags(tx, studySetId, tagIds);
+        }
       });
       this.logger.log(`Study set updated: id=${studySetId}, userId=${userId}`);
       await this.searchSync.enqueueSync(studySetId);
@@ -472,14 +528,26 @@ export class StudySetService {
         })));
     const flashcards = studySet.flashcards || [];
 
-    const owner = await this.prisma.user.findUnique({
-      where: { id: ownerUserId },
-      select: {
-        id: true,
-        username: true,
-        profilePicture: true,
-      },
-    });
+    const [owner, tagLinks, collaborator] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: ownerUserId },
+        select: {
+          id: true,
+          username: true,
+          profilePicture: true,
+        },
+      }),
+      this.prisma.studySetTag.findMany({
+        where: { studySetId: studySet.id },
+        select: { tag: { select: { id: true, name: true, slug: true } } },
+      }),
+      isOwner
+        ? Promise.resolve(null)
+        : this.prisma.studySetCollaborator.findUnique({
+            where: { userId_studySetId: { userId, studySetId: studySet.id } },
+            select: { role: true },
+          }),
+    ]);
 
     return plainToInstance(
       StudySetResponseDto,
@@ -489,12 +557,16 @@ export class StudySetService {
         title: studySet.title,
         description: studySet.description ?? '',
         isPrivate: studySet.visibility === StudySetVisibility.PRIVATE,
+        language: studySet.language ?? null,
+        tags: tagLinks.map((l) => l.tag).sort(byName),
         ownerId: ownerUserId,
         ownerName: owner?.username ?? undefined,
         ownerImg: owner?.profilePicture,
         isOwner,
+        canEdit: isOwner || collaborator?.role === CollaboratorRole.EDITOR,
         isCollected,
         flashcardsCount: flashcards.length,
+        viewCount: studySet.viewCount,
         createdAt: studySet.createdAt,
         updatedAt: studySet.updatedAt,
       },
@@ -587,24 +659,47 @@ export class StudySetService {
     const studySetIds = studySets.map((m) => m.id);
     const ownerIds = [...new Set(studySets.map((m) => m.ownerId))];
 
-    const [ownerUsers, favoriteLinks] = await Promise.all([
-      ownerIds.length
-        ? this.prisma.user.findMany({
-            where: { id: { in: ownerIds } },
-            select: {
-              id: true,
-              username: true,
-              profilePicture: true,
-            },
-          })
-        : Promise.resolve([] as OwnerProjection[]),
-      this.prisma.favouriteStudySet.findMany({
-        where: { userId, studySetId: { in: studySetIds } },
-      }),
-    ]);
+    const [ownerUsers, favoriteLinks, tagLinks, editorLinks] =
+      await Promise.all([
+        ownerIds.length
+          ? this.prisma.user.findMany({
+              where: { id: { in: ownerIds } },
+              select: {
+                id: true,
+                username: true,
+                profilePicture: true,
+              },
+            })
+          : Promise.resolve([] as OwnerProjection[]),
+        this.prisma.favouriteStudySet.findMany({
+          where: { userId, studySetId: { in: studySetIds } },
+        }),
+        this.prisma.studySetTag.findMany({
+          where: { studySetId: { in: studySetIds } },
+          select: {
+            studySetId: true,
+            tag: { select: { id: true, name: true, slug: true } },
+          },
+        }),
+        this.prisma.studySetCollaborator.findMany({
+          where: {
+            userId,
+            role: CollaboratorRole.EDITOR,
+            studySetId: { in: studySetIds },
+          },
+          select: { studySetId: true },
+        }),
+      ]);
 
     const ownerMap = new Map(ownerUsers.map((o) => [o.id, o]));
     const favoritedIds = new Set(favoriteLinks.map((f) => f.studySetId));
+    const editableIds = new Set(editorLinks.map((c) => c.studySetId));
+    const tagsBySet = new Map<string, TagProjection[]>();
+    for (const link of tagLinks) {
+      const list = tagsBySet.get(link.studySetId) ?? [];
+      list.push(link.tag);
+      tagsBySet.set(link.studySetId, list);
+    }
 
     return studySets.map((studySet) => {
       this.withSortedFlashcards(studySet);
@@ -622,12 +717,16 @@ export class StudySetService {
           title: studySet.title,
           description: studySet.description ?? '',
           isPrivate: studySet.visibility === StudySetVisibility.PRIVATE,
+          language: studySet.language ?? null,
+          tags: (tagsBySet.get(studySet.id) ?? []).sort(byName),
           ownerId: ownerUserId,
           ownerName: owner?.username ?? undefined,
           ownerImg: owner?.profilePicture,
           isOwner,
+          canEdit: isOwner || editableIds.has(studySet.id),
           isCollected,
           flashcardsCount: flashcards.length,
+          viewCount: studySet.viewCount,
           createdAt: studySet.createdAt,
           updatedAt: studySet.updatedAt,
         },

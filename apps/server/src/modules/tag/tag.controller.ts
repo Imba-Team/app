@@ -19,12 +19,17 @@ import {
 } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 
+import { ApiOkEnvelope } from 'src/common/decorators/api-envelope.decorator';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { Roles, Role } from 'src/common/decorators/roles.decorator';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
+import { IUser } from 'src/common/interfaces/user.interface';
 import { JwtGuard } from 'src/guards/jwt.guard';
 import { RolesGuard } from 'src/guards/roles.guard';
 
 import { CreateTagDto } from './dto/create-tag.dto';
+import { SuggestTagsQueryDto } from './dto/suggest-tags-query.dto';
+import { TagListItemDto } from './dto/tag-list-item.dto';
 import { TagResponseDto } from './dto/tag-response.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
 import { TagService } from './tag.service';
@@ -84,6 +89,28 @@ export class TagController {
         totalPages: result.totalPages,
       },
     };
+  }
+
+  // Declared before `:id` so "suggest" isn't captured as an id.
+  @Get('suggest')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Suggest tags for the tag input',
+    description:
+      'Tags used on public sets or on your own sets, most-used first. Open to every signed-in user.',
+  })
+  @ApiOkEnvelope(TagListItemDto, { isArray: true })
+  async suggest(
+    @CurrentUser() user: IUser,
+    @Query() query: SuggestTagsQueryDto,
+  ): Promise<ResponseDto<TagListItemDto[]>> {
+    // ValidationPipe runs without `transform`, so coerce here.
+    const limit = query.limit !== undefined ? Number(query.limit) : 8;
+    const tags = await this.tagService.suggest(user.id, query.q, limit);
+    const data = plainToInstance(TagListItemDto, tags, {
+      excludeExtraneousValues: true,
+    });
+    return { ok: true, message: 'Tag suggestions fetched', data };
   }
 
   @Get(':id')

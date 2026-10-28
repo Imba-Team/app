@@ -1136,3 +1136,24 @@ export async function getTestHistory(
   }
 }
 
+
+// ============================================
+// Tags
+// ============================================
+
+export type Tag = Schemas['TagListItemDto'];
+
+/**
+ * Tag suggestions for the tag input: tags on public sets or the caller's
+ * own sets, most-used first. Omit `q` for the most popular tags.
+ */
+export async function getTagSuggestions(q?: string, limit = 8): Promise<Tag[]> {
+  try {
+    const res = await apiFetch('get', '/tags/suggest', {
+      query: { ...(q ? { q } : {}), limit },
+    });
+    return unwrap(res, 'Failed to fetch tag suggestions');
+  } catch (error) {
+    throw extractError(error, 'Failed to fetch tag suggestions');
+  }
+}

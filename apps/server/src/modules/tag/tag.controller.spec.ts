@@ -35,4 +35,14 @@ describe('TagController role requirements', () => {
   it('still lets a regular user create tags', () => {
     expect(guard.canActivate(contextFor('create', Role.USER))).toBe(true);
   });
+
+  it('lets a regular user get tag suggestions (MIM-37)', () => {
+    expect(guard.canActivate(contextFor('suggest', Role.USER))).toBe(true);
+  });
+
+  it('keeps the full tag listing admin-only', () => {
+    expect(() => guard.canActivate(contextFor('findAll', Role.USER))).toThrow(
+      ForbiddenException,
+    );
+  });
 });

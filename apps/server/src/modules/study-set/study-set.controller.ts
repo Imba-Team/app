@@ -65,7 +65,11 @@ export class StudySetController {
 
   @Patch(':id')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Update own study set' })
+  @ApiOperation({
+    summary: 'Update a study set',
+    description:
+      'Owner or EDITOR collaborator. `isPrivate` is owner-only. `tags` replaces the whole tag list.',
+  })
   @ApiBody({ type: UpdateStudySetDto })
   @ApiOkEnvelope(StudySetResponseDto, { description: 'Study set updated' })
   async update(

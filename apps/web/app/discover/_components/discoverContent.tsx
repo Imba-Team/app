@@ -31,28 +31,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { CommunityModule as CommunitySearchHit } from '@/lib/api';
 import { useCommunityModules } from '@/lib/hooks/useModules';
 import { useDebouncedValue } from '@/lib/hooks/useDebouncedValue';
+import { languageOptions } from '@/lib/languages';
 
 const pageSize = 20;
 const visibleTagCount = 3;
-
-// A small fixed list of common languages. The API accepts any string,
-// so we could later replace this with a tags-style endpoint that
-// returns the languages actually present in the corpus.
-const languageOptions: { value: string; label: string }[] = [
-  { value: 'English', label: 'English' },
-  { value: 'Spanish', label: 'Spanish' },
-  { value: 'French', label: 'French' },
-  { value: 'German', label: 'German' },
-  { value: 'Italian', label: 'Italian' },
-  { value: 'Portuguese', label: 'Portuguese' },
-  { value: 'Russian', label: 'Russian' },
-  { value: 'Turkish', label: 'Turkish' },
-  { value: 'Azerbaijani', label: 'Azerbaijani' },
-  { value: 'Arabic', label: 'Arabic' },
-  { value: 'Chinese', label: 'Chinese' },
-  { value: 'Japanese', label: 'Japanese' },
-  { value: 'Korean', label: 'Korean' },
-];
 
 // Radix Select doesn't allow "" as an item value, so we use a
 // sentinel and translate at query-build time.

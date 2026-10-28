@@ -1,4 +1,4 @@
-import SetEditClient from "./SetEditClient";
+import { SetEditClient } from "./SetEditClient";
 
 export default async function SetEditPage({
   params,

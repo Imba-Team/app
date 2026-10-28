@@ -10,9 +10,9 @@ import { Role } from 'src/common/decorators/roles.decorator';
 import { IUser } from 'src/common/interfaces/user.interface';
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { slugify } from 'src/common/utils/sligify';
 import { SearchSyncService } from 'src/modules/search/search-sync.service';
 import { StudySetService } from 'src/modules/study-set/study-set.service';
+import { TagService } from 'src/modules/tag/tag.service';
 
 import { CreateStudySetTagDto } from './dto/create-study-set-tag.dto';
 
@@ -23,6 +23,7 @@ export class StudySetTagService {
     private readonly prisma: PrismaService,
     private readonly studySetService: StudySetService,
     private readonly searchSync: SearchSyncService,
+    private readonly tagService: TagService,
   ) {
     this.logger.setContext(StudySetTagService.name);
   }
@@ -30,20 +31,16 @@ export class StudySetTagService {
   async addTagToStudySet(user: IUser, dto: CreateStudySetTagDto) {
     const { studySetId, tagName } = dto;
 
-    const [studySet, tag] = await Promise.all([
-      this.prisma.studySet.findUnique({ where: { id: studySetId } }),
-      this.findOrCreateTagByName(tagName),
-    ]);
-
+    const studySet = await this.prisma.studySet.findUnique({
+      where: { id: studySetId },
+    });
     if (!studySet) {
       throw new NotFoundException('Study set not found');
     }
 
-    if (!tag) {
-      throw new NotFoundException('Tag not found');
-    }
-
-    this.assertCanModifyStudySetTags(user, studySet.ownerId);
+    // Check before creating anything, so a forbidden request can't add tags.
+    await this.assertCanModifyStudySetTags(user, studySet.id, studySet.ownerId);
+    const tag = await this.tagService.findOrCreateByName(tagName);
 
     const existing = await this.prisma.studySetTag.findUnique({
       where: {
@@ -85,7 +82,11 @@ export class StudySetTagService {
       throw new NotFoundException('Study set tag relation not found');
     }
 
-    this.assertCanModifyStudySetTags(user, existing.studySet.ownerId);
+    await this.assertCanModifyStudySetTags(
+      user,
+      studySetId,
+      existing.studySet.ownerId,
+    );
 
     await this.prisma.studySetTag.delete({
       where: {
@@ -166,37 +167,17 @@ export class StudySetTagService {
     });
   }
 
-  // Write access: only the owner can modify tag relations, while admin can moderate any study set.
-  private assertCanModifyStudySetTags(user: IUser, ownerId: string): void {
-    if (user.role === Role.ADMIN) {
-      return;
-    }
-
-    if (user.id !== ownerId) {
-      throw new ForbiddenException(
-        'You can only manage tags for your own study sets',
-      );
-    }
-  }
-  // Normalizes the incoming tag name into a slug and reuses an existing tag before creating a new one.
-  private async findOrCreateTagByName(name: string) {
-    const slug = slugify(name);
-
-    const existing = await this.prisma.tag.findFirst({
-      where: {
-        OR: [{ name }, { slug }],
-      },
-    });
-
-    if (existing) {
-      return existing;
-    }
-
-    return this.prisma.tag.create({
-      data: {
-        name,
-        slug,
-      },
-    });
+  // Write access: the owner and EDITOR collaborators (SRS FR-TAG-03);
+  // admins can moderate any study set.
+  private async assertCanModifyStudySetTags(
+    user: IUser,
+    studySetId: string,
+    ownerId: string,
+  ): Promise<void> {
+    if (user.role === Role.ADMIN || user.id === ownerId) return;
+    if (await this.studySetService.canEdit(user.id, studySetId)) return;
+    throw new ForbiddenException(
+      'You can only manage tags for study sets you own or edit',
+    );
   }
 }

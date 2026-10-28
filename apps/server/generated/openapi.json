@@ -1010,6 +1010,7 @@
     },
     "/study-sets/{id}": {
       "patch": {
+        "description": "Owner or EDITOR collaborator. `isPrivate` is owner-only. `tags` replaces the whole tag list.",
         "operationId": "StudySetController_update",
         "parameters": [
           {
@@ -1059,7 +1060,7 @@
             "bearer": []
           }
         ],
-        "summary": "Update own study set",
+        "summary": "Update a study set",
         "tags": [
           "Study Sets"
         ]
@@ -1587,6 +1588,234 @@
         "summary": "Enqueue an INDEX_SET job for every study set in Postgres. Admin only. Used to backfill after a mapping change or when sync-on-write was introduced.",
         "tags": [
           "Search"
+        ]
+      }
+    },
+    "/tags": {
+      "post": {
+        "operationId": "TagController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTagDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a tag",
+        "tags": [
+          "Tags"
+        ]
+      },
+      "get": {
+        "operationId": "TagController_findAll",
+        "parameters": [
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all tags with pagination",
+        "tags": [
+          "Tags"
+        ]
+      }
+    },
+    "/tags/suggest": {
+      "get": {
+        "description": "Tags used on public sets or on your own sets, most-used first. Open to every signed-in user.",
+        "operationId": "TagController_suggest",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Text to match against tag names. Omit for the most popular tags.",
+            "schema": {
+              "maxLength": 50,
+              "example": "bio",
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 20,
+              "default": 8,
+              "example": 8,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TagListItemDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Suggest tags for the tag input",
+        "tags": [
+          "Tags"
+        ]
+      }
+    },
+    "/tags/{id}": {
+      "get": {
+        "operationId": "TagController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a tag by ID",
+        "tags": [
+          "Tags"
+        ]
+      },
+      "patch": {
+        "operationId": "TagController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTagDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a tag by ID",
+        "tags": [
+          "Tags"
+        ]
+      },
+      "delete": {
+        "operationId": "TagController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a tag by ID",
+        "tags": [
+          "Tags"
         ]
       }
     },
@@ -2302,168 +2531,6 @@
         ]
       }
     },
-    "/tags": {
-      "post": {
-        "operationId": "TagController_create",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateTagDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Create a tag",
-        "tags": [
-          "Tags"
-        ]
-      },
-      "get": {
-        "operationId": "TagController_findAll",
-        "parameters": [
-          {
-            "name": "search",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {}
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {}
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get all tags with pagination",
-        "tags": [
-          "Tags"
-        ]
-      }
-    },
-    "/tags/{id}": {
-      "get": {
-        "operationId": "TagController_findOne",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Get a tag by ID",
-        "tags": [
-          "Tags"
-        ]
-      },
-      "patch": {
-        "operationId": "TagController_update",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTagDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Update a tag by ID",
-        "tags": [
-          "Tags"
-        ]
-      },
-      "delete": {
-        "operationId": "TagController_delete",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Delete a tag by ID",
-        "tags": [
-          "Tags"
-        ]
-      }
-    },
     "/study-set-tags": {
       "post": {
         "operationId": "StudySetTagController_addTagToStudySet",
@@ -2480,7 +2547,25 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/StudySetTagResponseDto"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2500,7 +2585,26 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "null",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2529,7 +2633,28 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TagListItemDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2558,7 +2683,28 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ResponseDto"
+                    },
+                    {
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/StudySetListItemDto"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
         "security": [
@@ -5304,6 +5450,25 @@
           "wasCurrent"
         ]
       },
+      "TagListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ]
+      },
       "StudySetResponseDto": {
         "type": "object",
         "properties": {
@@ -5323,6 +5488,18 @@
             "type": "boolean",
             "description": "true = private, false = public"
           },
+          "language": {
+            "type": "string",
+            "nullable": true,
+            "example": "German"
+          },
+          "tags": {
+            "description": "Tags on the set, sorted by name.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TagListItemDto"
+            }
+          },
           "ownerId": {
             "type": "string",
             "description": "Owner id"
@@ -5336,6 +5513,11 @@
           "isOwner": {
             "type": "boolean",
             "example": false
+          },
+          "canEdit": {
+            "type": "boolean",
+            "example": false,
+            "description": "The caller may edit the set: owner or EDITOR collaborator. Visibility and deletion stay owner-only."
           },
           "isCollected": {
             "type": "boolean",
@@ -5365,8 +5547,11 @@
           "title",
           "description",
           "isPrivate",
+          "language",
+          "tags",
           "ownerId",
           "isOwner",
+          "canEdit",
           "flashcardsCount",
           "viewCount",
           "createdAt",
@@ -5388,8 +5573,22 @@
           },
           "language": {
             "type": "string",
+            "nullable": true,
             "example": "German",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Trimmed on save; empty string or null clears it."
+          },
+          "tags": {
+            "example": [
+              "biology",
+              "exam prep"
+            ],
+            "maxItems": 10,
+            "description": "The set's complete tag list. On update it replaces the current tags; omit it to leave them unchanged. Names are matched case-insensitively and created on first use.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "isPrivate": {
             "type": "boolean",
@@ -5416,8 +5615,22 @@
           },
           "language": {
             "type": "string",
+            "nullable": true,
             "example": "German",
-            "maxLength": 50
+            "maxLength": 50,
+            "description": "Trimmed on save; empty string or null clears it."
+          },
+          "tags": {
+            "example": [
+              "biology",
+              "exam prep"
+            ],
+            "maxItems": 10,
+            "description": "The set's complete tag list. On update it replaces the current tags; omit it to leave them unchanged. Names are matched case-insensitively and created on first use.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "isPrivate": {
             "type": "boolean",
@@ -5485,6 +5698,18 @@
             "type": "boolean",
             "description": "true = private, false = public"
           },
+          "language": {
+            "type": "string",
+            "nullable": true,
+            "example": "German"
+          },
+          "tags": {
+            "description": "Tags on the set, sorted by name.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TagListItemDto"
+            }
+          },
           "ownerId": {
             "type": "string",
             "description": "Owner id"
@@ -5498,6 +5723,11 @@
           "isOwner": {
             "type": "boolean",
             "example": false
+          },
+          "canEdit": {
+            "type": "boolean",
+            "example": false,
+            "description": "The caller may edit the set: owner or EDITOR collaborator. Visibility and deletion stay owner-only."
           },
           "isCollected": {
             "type": "boolean",
@@ -5543,8 +5773,11 @@
           "title",
           "description",
           "isPrivate",
+          "language",
+          "tags",
           "ownerId",
           "isOwner",
+          "canEdit",
           "flashcardsCount",
           "viewCount",
           "createdAt",
@@ -5646,6 +5879,27 @@
           "page",
           "limit"
         ]
+      },
+      "CreateTagDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "biology"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateTagDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "biology"
+          }
+        }
       },
       "FlashcardSearchHitDto": {
         "type": "object",
@@ -5978,26 +6232,24 @@
           "isFavourited"
         ]
       },
-      "CreateTagDto": {
+      "StudySetTagResponseDto": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string",
-            "example": "biology"
+          "id": {
+            "type": "string"
+          },
+          "studySetId": {
+            "type": "string"
+          },
+          "tagId": {
+            "type": "string"
           }
         },
         "required": [
-          "name"
+          "id",
+          "studySetId",
+          "tagId"
         ]
-      },
-      "UpdateTagDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "example": "biology"
-          }
-        }
       },
       "CreateStudySetTagDto": {
         "type": "object",
@@ -6015,6 +6267,38 @@
         "required": [
           "studySetId",
           "tagName"
+        ]
+      },
+      "StudySetListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "object"
+          },
+          "isPrivate": {
+            "type": "boolean",
+            "description": "true = private, false = public"
+          },
+          "ownerId": {
+            "type": "string",
+            "description": "Owner id"
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "isPrivate",
+          "ownerId"
         ]
       },
       "FolderStudySetItemDto": {

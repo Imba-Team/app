@@ -1157,7 +1157,10 @@ export interface paths {
         delete: operations["StudySetController_remove"];
         options?: never;
         head?: never;
-        /** Update own study set */
+        /**
+         * Update a study set
+         * @description Owner or EDITOR collaborator. `isPrivate` is owner-only. `tags` replaces the whole tag list.
+         */
         patch: operations["StudySetController_update"];
         trace?: never;
     };
@@ -1419,6 +1422,26 @@ export interface paths {
         head?: never;
         /** Update a tag by ID */
         patch: operations["TagController_update"];
+        trace?: never;
+    };
+    "/tags/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Suggest tags for the tag input
+         * @description Tags used on public sets or on your own sets, most-used first. Open to every signed-in user.
+         */
+        get: operations["TagController_suggest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/test-attempts": {
@@ -1690,8 +1713,19 @@ export interface components {
              * @example false
              */
             isPrivate?: boolean;
-            /** @example German */
-            language?: string;
+            /**
+             * @description Trimmed on save; empty string or null clears it.
+             * @example German
+             */
+            language?: string | null;
+            /**
+             * @description The set's complete tag list. On update it replaces the current tags; omit it to leave them unchanged. Names are matched case-insensitively and created on first use.
+             * @example [
+             *       "biology",
+             *       "exam prep"
+             *     ]
+             */
+            tags?: string[];
             /** @example Advanced Biology */
             title: string;
         };
@@ -1940,6 +1974,11 @@ export interface components {
             username: string;
         };
         RecentStudySetDto: {
+            /**
+             * @description The caller may edit the set: owner or EDITOR collaborator. Visibility and deletion stay owner-only.
+             * @example false
+             */
+            canEdit: boolean;
             /** Format: date-time */
             createdAt: string;
             description: string;
@@ -1952,6 +1991,8 @@ export interface components {
             isOwner: boolean;
             /** @description true = private, false = public */
             isPrivate: boolean;
+            /** @example German */
+            language: string | null;
             /**
              * Format: date-time
              * @description Last time the caller opened a study session for this set. Null if they have never studied it (owned/favourited but untouched).
@@ -1964,6 +2005,8 @@ export interface components {
             /** @description Per-user mastery breakdown, sourced from UserSetProgress. Null if no session has ever been started for this set. */
             progress?: components["schemas"]["StudySetProgressDto"] | null;
             slug: string;
+            /** @description Tags on the set, sorted by name. */
+            tags: components["schemas"]["TagListItemDto"][];
             title: string;
             /** Format: date-time */
             updatedAt: string;
@@ -2326,6 +2369,16 @@ export interface components {
              */
             totalQuestions: number;
         };
+        StudySetListItemDto: {
+            description?: Record<string, never>;
+            id: string;
+            /** @description true = private, false = public */
+            isPrivate: boolean;
+            /** @description Owner id */
+            ownerId: string;
+            slug: string;
+            title: string;
+        };
         StudySetProgressDto: {
             /** @example 7 */
             learningCount: number;
@@ -2337,6 +2390,11 @@ export interface components {
             totalCards: number;
         };
         StudySetResponseDto: {
+            /**
+             * @description The caller may edit the set: owner or EDITOR collaborator. Visibility and deletion stay owner-only.
+             * @example false
+             */
+            canEdit: boolean;
             /** Format: date-time */
             createdAt: string;
             description: string;
@@ -2349,11 +2407,15 @@ export interface components {
             isOwner: boolean;
             /** @description true = private, false = public */
             isPrivate: boolean;
+            /** @example German */
+            language: string | null;
             /** @description Owner id */
             ownerId: string;
             ownerImg?: string;
             ownerName?: string;
             slug: string;
+            /** @description Tags on the set, sorted by name. */
+            tags: components["schemas"]["TagListItemDto"][];
             title: string;
             /** Format: date-time */
             updatedAt: string;
@@ -2362,6 +2424,11 @@ export interface components {
              * @example 0
              */
             viewCount: number;
+        };
+        StudySetTagResponseDto: {
+            id: string;
+            studySetId: string;
+            tagId: string;
         };
         SubmitAnswerDto: {
             /**
@@ -2442,6 +2509,11 @@ export interface components {
             studyMode: "WRITE" | "LEARN_WRITTEN" | "TEST_WRITTEN" | "AI_FILL_BLANK" | "AI_GUESS_WORD";
             /** @description The learner-typed answer, exactly as entered. */
             userAnswer: string;
+        };
+        TagListItemDto: {
+            id: string;
+            name: string;
+            slug: string;
         };
         TestAttemptResultDto: {
             /** Format: uuid */
@@ -2716,8 +2788,19 @@ export interface components {
              * @example false
              */
             isPrivate?: boolean;
-            /** @example German */
-            language?: string;
+            /**
+             * @description Trimmed on save; empty string or null clears it.
+             * @example German
+             */
+            language?: string | null;
+            /**
+             * @description The set's complete tag list. On update it replaces the current tags; omit it to leave them unchanged. Names are matched case-insensitively and created on first use.
+             * @example [
+             *       "biology",
+             *       "exam prep"
+             *     ]
+             */
+            tags?: string[];
             /** @example Advanced Biology */
             title?: string;
         };
@@ -2895,13 +2978,16 @@ export type SchemaStartSessionDto = components['schemas']['StartSessionDto'];
 export type SchemaStartSessionResponseDto = components['schemas']['StartSessionResponseDto'];
 export type SchemaStartTestAttemptDto = components['schemas']['StartTestAttemptDto'];
 export type SchemaStartTestAttemptResponseDto = components['schemas']['StartTestAttemptResponseDto'];
+export type SchemaStudySetListItemDto = components['schemas']['StudySetListItemDto'];
 export type SchemaStudySetProgressDto = components['schemas']['StudySetProgressDto'];
 export type SchemaStudySetResponseDto = components['schemas']['StudySetResponseDto'];
+export type SchemaStudySetTagResponseDto = components['schemas']['StudySetTagResponseDto'];
 export type SchemaSubmitAnswerDto = components['schemas']['SubmitAnswerDto'];
 export type SchemaSubmitTestAttemptDto = components['schemas']['SubmitTestAttemptDto'];
 export type SchemaSubmitTestMatchingPickDto = components['schemas']['SubmitTestMatchingPickDto'];
 export type SchemaSubmitTestQuestionAnswerDto = components['schemas']['SubmitTestQuestionAnswerDto'];
 export type SchemaSubmitWrittenAnswerDto = components['schemas']['SubmitWrittenAnswerDto'];
+export type SchemaTagListItemDto = components['schemas']['TagListItemDto'];
 export type SchemaTestAttemptResultDto = components['schemas']['TestAttemptResultDto'];
 export type SchemaTestHistoryItemDto = components['schemas']['TestHistoryItemDto'];
 export type SchemaTestMatchingPairDto = components['schemas']['TestMatchingPairDto'];
@@ -4613,7 +4699,11 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["StudySetTagResponseDto"];
+                    };
+                };
             };
         };
     };
@@ -4630,7 +4720,11 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: null | null;
+                    };
+                };
             };
         };
     };
@@ -4649,7 +4743,11 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["TagListItemDto"][];
+                    };
+                };
             };
         };
     };
@@ -4668,7 +4766,11 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["StudySetListItemDto"][];
+                    };
+                };
             };
         };
     };
@@ -5297,6 +5399,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    TagController_suggest: {
+        parameters: {
+            query?: {
+                limit?: number;
+                /** @description Text to match against tag names. Omit for the most popular tags. */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponseDto"] & {
+                        data?: components["schemas"]["TagListItemDto"][];
+                    };
+                };
             };
         };
     };

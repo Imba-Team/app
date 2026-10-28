@@ -15,6 +15,7 @@ export const textLimits = {
   setDescription: 2000,
   language: 50,
   tagName: 50,
+  maxTags: 10,
   displayName: 50,
   searchQuery: 200,
 } as const;

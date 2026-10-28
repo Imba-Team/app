@@ -12,6 +12,10 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { StudySetVisibility } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 
+import {
+  ApiCreatedEnvelope,
+  ApiOkEnvelope,
+} from 'src/common/decorators/api-envelope.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { Role, Roles } from 'src/common/decorators/roles.decorator';
 import { ResponseDto } from 'src/common/interfaces/response.dto';
@@ -23,7 +27,7 @@ import { CreateStudySetTagDto } from './dto/create-study-set-tag.dto';
 import { StudySetListItemDto } from './dto/study-set-list-item.dto';
 import { StudySetTagParamsDto } from './dto/study-set-tag-params.dto';
 import { StudySetTagResponseDto } from './dto/study-set-tag-response.dto';
-import { TagListItemDto } from './dto/tag-list-item.dto';
+import { TagListItemDto } from 'src/modules/tag/dto/tag-list-item.dto';
 import { StudySetTagService } from './study-set-tag.service';
 
 @ApiTags('Study Set Tags')
@@ -38,6 +42,7 @@ export class StudySetTagController {
   @HttpCode(201)
   @ApiOperation({ summary: 'Add a tag to a study set' })
   @ApiBody({ type: CreateStudySetTagDto })
+  @ApiCreatedEnvelope(StudySetTagResponseDto)
   async addTagToStudySet(
     @CurrentUser() user: IUser,
     @Body() dto: CreateStudySetTagDto,
@@ -56,6 +61,7 @@ export class StudySetTagController {
   @Delete(':studySetId/:tagId')
   @HttpCode(200)
   @ApiOperation({ summary: 'Remove a tag from a study set' })
+  @ApiOkEnvelope()
   async removeTagFromStudySet(
     @CurrentUser() user: IUser,
     @Param() params: StudySetTagParamsDto,
@@ -72,6 +78,7 @@ export class StudySetTagController {
   @Get('study-sets/:studySetId/tags')
   @HttpCode(200)
   @ApiOperation({ summary: 'List tags for a given study set' })
+  @ApiOkEnvelope(TagListItemDto, { isArray: true })
   async listTagsForStudySet(
     @CurrentUser() user: IUser,
     @Param('studySetId') studySetId: string,
@@ -90,6 +97,7 @@ export class StudySetTagController {
   @Get('tags/:tagId/study-sets')
   @HttpCode(200)
   @ApiOperation({ summary: 'List study sets for a given tag' })
+  @ApiOkEnvelope(StudySetListItemDto, { isArray: true })
   async listStudySetsForTag(
     @CurrentUser() user: IUser,
     @Param('tagId') tagId: string,

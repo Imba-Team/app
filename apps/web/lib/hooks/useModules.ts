@@ -136,6 +136,8 @@ export function useCreateModule() {
     mutationFn: (data: CreateModuleData) => createModule(data),
     onSuccess: () => {
       invalidateCollections(queryClient);
+      // Discover shows the set's tags and language.
+      queryClient.invalidateQueries({ queryKey: moduleKeys.community() });
       toast.success("Module created successfully!");
     },
     onError: (error: Error) => {
@@ -155,6 +157,7 @@ export function useUpdateModule() {
       queryClient.invalidateQueries({
         queryKey: moduleKeys.detail(variables.id),
       });
+      queryClient.invalidateQueries({ queryKey: moduleKeys.community() });
       toast.success("Module updated successfully!");
     },
     onError: (error: Error) => {

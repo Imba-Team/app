@@ -29,6 +29,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { LanguageSelect } from '@/components/languageSelect';
+import { TagInput } from '@/components/tagInput';
 import { createTerm } from '@/lib/api';
 import { useAddSetsToFolder, useFolders } from '@/lib/hooks/useLibrary';
 import { useCreateModule } from '@/lib/hooks/useModules';
@@ -75,6 +77,8 @@ export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Prop
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
+  const [language, setLanguage] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
   const [folderId, setFolderId] = useState<string>(defaultFolderId ?? noFolder);
   const [cards, setCards] = useState<DraftCard[]>(() => [emptyCard(), emptyCard(), emptyCard()]);
   const [saving, setSaving] = useState(false);
@@ -152,6 +156,8 @@ export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Prop
         title: title.trim(),
         description: description.trim(),
         isPrivate,
+        ...(language ? { language } : {}),
+        ...(tags.length ? { tags } : {}),
       });
       const moduleId = created.id;
 
@@ -248,6 +254,26 @@ export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Prop
                 disabled={saving}
                 className={cn(fieldClass, 'min-h-24')}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="module-language" className="text-neutral-500">
+                Language <span className="text-neutral-500">(optional)</span>
+              </Label>
+              <LanguageSelect
+                id="module-language"
+                value={language}
+                onChange={setLanguage}
+                disabled={saving}
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="module-tags" className="text-neutral-500">
+                Tags <span className="text-neutral-500">(optional)</span>
+              </Label>
+              <TagInput id="module-tags" value={tags} onChange={setTags} disabled={saving} />
             </div>
 
             <div className="space-y-2">

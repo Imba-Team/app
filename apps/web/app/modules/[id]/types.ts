@@ -15,6 +15,8 @@ export type ModuleInfo = {
   ownerName: string;
   isCollected?: boolean;
   isOwner?: boolean;
+  language?: string | null;
+  tags?: { id: string; name: string }[];
 };
 
 export type ModuleResponse = {

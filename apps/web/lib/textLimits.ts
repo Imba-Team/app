@@ -9,5 +9,7 @@ export const textLimits = {
   setTitle: 200,
   setDescription: 2000,
   language: 50,
+  tagName: 50,
+  maxTags: 10,
   displayName: 50,
 } as const;

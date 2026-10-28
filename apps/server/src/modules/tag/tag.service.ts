@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, Tag } from '@prisma/client';
+import { Prisma, StudySetVisibility, Tag } from '@prisma/client';
 
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
@@ -48,24 +48,109 @@ export class TagService {
     });
   }
 
-  async findOrCreateByName(name: string): Promise<Tag> {
+  /**
+   * The tag called `rawName` (matched by name or slug, so "Biology" and
+   * "biology" are one tag), created on first use. Two users creating the
+   * same new tag at once is handled: the loser's unique-constraint error
+   * becomes a re-read.
+   */
+  async findOrCreateByName(rawName: string): Promise<Tag> {
+    const name = rawName.trim();
     const slug = slugify(name);
+    const find = () =>
+      this.prisma.tag.findFirst({ where: { OR: [{ slug }, { name }] } });
 
-    const existing = await this.prisma.tag.findFirst({
-      where: {
-        OR: [{ slug }, { name }],
-      },
-    });
+    const existing = await find();
+    if (existing) return existing;
 
-    if (existing) {
-      return existing;
+    try {
+      return await this.prisma.tag.create({ data: { name, slug } });
+    } catch (error) {
+      const isRace =
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002';
+      const winner = isRace ? await find() : null;
+      if (!winner) throw error;
+      return winner;
     }
+  }
 
-    return this.prisma.tag.create({
-      data: {
-        name,
-        slug,
+  /**
+   * Resolve tag names to Tag rows, creating missing ones. Names are
+   * trimmed and de-duplicated by slug, keeping the first spelling.
+   */
+  async findOrCreateMany(names: string[]): Promise<Tag[]> {
+    const bySlug = new Map<string, string>();
+    for (const raw of names) {
+      const name = raw.trim();
+      const slug = slugify(name);
+      if (slug && !bySlug.has(slug)) bySlug.set(slug, name);
+    }
+    const tags: Tag[] = [];
+    // Sequential so names that slugify alike can't race each other.
+    for (const name of bySlug.values()) {
+      tags.push(await this.findOrCreateByName(name));
+    }
+    return tags;
+  }
+
+  /**
+   * Make `tagIds` the set's exact tag list. Runs inside the caller's
+   * transaction so it lands together with the set's other changes.
+   */
+  async replaceStudySetTags(
+    tx: Prisma.TransactionClient,
+    studySetId: string,
+    tagIds: string[],
+  ): Promise<void> {
+    await tx.studySetTag.deleteMany({
+      where: { studySetId, tagId: { notIn: tagIds } },
+    });
+    if (tagIds.length) {
+      await tx.studySetTag.createMany({
+        data: tagIds.map((tagId) => ({ studySetId, tagId })),
+        skipDuplicates: true,
+      });
+    }
+  }
+
+  /**
+   * Tag suggestions for the tag input (MIM-37), most-used first. Only
+   * tags the user could already see are suggested: ones on a public set
+   * or on one of the user's own sets — private sets' tags don't leak.
+   */
+  async suggest(
+    userId: string,
+    q: string | undefined,
+    limit: number,
+  ): Promise<Pick<Tag, 'id' | 'name' | 'slug'>[]> {
+    const query = q?.trim();
+    const visibleTo: Prisma.TagWhereInput = {
+      studySetTag: {
+        some: {
+          studySet: {
+            OR: [
+              { visibility: StudySetVisibility.PUBLIC },
+              { ownerId: userId },
+            ],
+          },
+        },
       },
+    };
+    const matches: Prisma.TagWhereInput = query
+      ? {
+          OR: [
+            { name: { contains: query, mode: 'insensitive' } },
+            { slug: { contains: slugify(query) } },
+          ],
+        }
+      : {};
+
+    return this.prisma.tag.findMany({
+      where: { AND: [visibleTo, matches] },
+      orderBy: [{ studySetTag: { _count: 'desc' } }, { name: 'asc' }],
+      take: limit,
+      select: { id: true, name: true, slug: true },
     });
   }
 

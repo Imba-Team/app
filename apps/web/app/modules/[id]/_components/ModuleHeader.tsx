@@ -1,7 +1,9 @@
 'use client';
 
-import { Globe, Lock } from 'lucide-react';
+import Link from 'next/link';
+import { Globe, Languages, Lock } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { buildAssetUrl } from '@/lib/env';
 import { cn } from '@/lib/utils';
@@ -36,10 +38,29 @@ export default function ModuleHeader({ module }: ModuleHeaderProps) {
               <Chip tone="neutral" icon={module.isPrivate ? <Lock className="h-3 w-3" /> : <Globe className="h-3 w-3" />}>
                 {module.isPrivate ? 'Private' : 'Public'}
               </Chip>
+              {module.language && (
+                <Chip tone="neutral" icon={<Languages className="h-3 w-3" />}>
+                  {module.language}
+                </Chip>
+              )}
               {completedPct !== null && (
                 <Chip tone="emerald">{completedPct}% mastered</Chip>
               )}
             </div>
+
+            {module.tags && module.tags.length > 0 && (
+              <ul aria-label="Tags" className="mt-3 flex flex-wrap gap-1.5">
+                {module.tags.map((tag) => (
+                  <li key={tag.id}>
+                    <Badge asChild variant="outline" className="font-normal text-neutral-600">
+                      <Link href={`/discover?tag=${encodeURIComponent(tag.name)}`}>
+                        #{tag.name}
+                      </Link>
+                    </Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1">

@@ -1,7 +1,9 @@
+import { ForbiddenException } from '@nestjs/common';
 import { CollaboratorRole, Prisma, StudySetVisibility } from '@prisma/client';
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
 import { SearchSyncService } from 'src/modules/search/search-sync.service';
+import { TagService } from 'src/modules/tag/tag.service';
 import { UsersService } from 'src/modules/users/user.service';
 import { PublicSetSort } from './dtos/search-study-sets.dto';
 import { StudySetService } from './study-set.service';
@@ -23,6 +25,7 @@ const build = () => {
     prisma as unknown as PrismaService,
     {} as UsersService,
     {} as SearchSyncService,
+    {} as TagService,
   );
   // Per-user decoration (favourites, progress) is out of scope here.
   jest
@@ -86,6 +89,7 @@ const buildForCreate = (takenSlugs: string[]) => {
     prisma as unknown as PrismaService,
     usersService as unknown as UsersService,
     searchSync as unknown as SearchSyncService,
+    {} as TagService,
   );
   jest
     .spyOn(
@@ -184,6 +188,7 @@ const buildForCanEdit = (
     prisma as unknown as PrismaService,
     {} as UsersService,
     {} as SearchSyncService,
+    {} as TagService,
   );
   return { svc };
 };
@@ -218,5 +223,228 @@ describe('StudySetService.canEdit', () => {
     const { svc } = buildForCanEdit(StudySetVisibility.PUBLIC, null);
 
     await expect(svc.canEdit('owner', 'set-1')).resolves.toBe(true);
+  });
+});
+
+describe('StudySetService.update (MIM-44)', () => {
+  type Role = CollaboratorRole | null;
+  const buildForUpdate = (collaboratorRole: Role = null) => {
+    const set = {
+      id: 'set-1',
+      slug: 'biology',
+      title: 'Biology',
+      description: null,
+      language: 'German',
+      ownerId: 'owner',
+      visibility: StudySetVisibility.PUBLIC,
+      viewCount: 7,
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+      updatedAt: new Date('2026-01-02T00:00:00Z'),
+      flashcards: [],
+    };
+    const tx = { studySet: { update: jest.fn().mockResolvedValue(set) } };
+    const prisma = {
+      studySet: { findUnique: jest.fn().mockResolvedValue(set) },
+      studySetCollaborator: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(
+            collaboratorRole ? { role: collaboratorRole } : null,
+          ),
+      },
+      favouriteStudySet: { findUnique: jest.fn().mockResolvedValue(null) },
+      user: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'owner',
+          username: 'owner',
+          profilePicture: null,
+        }),
+      },
+      studySetTag: {
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            { tag: { id: 't-2', name: 'Zoology', slug: 'zoology' } },
+            { tag: { id: 't-1', name: 'Biology', slug: 'biology' } },
+          ]),
+      },
+      $transaction: jest
+        .fn()
+        .mockImplementation((fn: (t: typeof tx) => unknown) => fn(tx)),
+    };
+    const searchSync = { enqueueSync: jest.fn().mockResolvedValue(undefined) };
+    const tagService = {
+      findOrCreateMany: jest
+        .fn()
+        .mockImplementation((names: string[]) =>
+          Promise.resolve(names.map((n) => ({ id: `id-${n}`, name: n }))),
+        ),
+      replaceStudySetTags: jest.fn().mockResolvedValue(undefined),
+    };
+    const svc = new StudySetService(
+      noopLogger(),
+      prisma as unknown as PrismaService,
+      {} as UsersService,
+      searchSync as unknown as SearchSyncService,
+      tagService as unknown as TagService,
+    );
+    return { svc, prisma, tx, searchSync, tagService };
+  };
+  type UpdateArgs = { data: Record<string, unknown> };
+  const updatedData = (tx: { studySet: { update: jest.Mock } }) =>
+    (tx.studySet.update.mock.calls[0] as [UpdateArgs])[0].data;
+
+  it('lets the owner update every field, with tags replaced in the same transaction', async () => {
+    const { svc, tx, searchSync, tagService } = buildForUpdate();
+
+    await svc.update('owner', 'set-1', {
+      title: 'Biology 101',
+      description: 'Cells',
+      language: '  Spanish ',
+      isPrivate: true,
+      tags: ['cells', 'exam'],
+    });
+
+    expect(updatedData(tx)).toEqual({
+      title: 'Biology 101',
+      description: 'Cells',
+      language: 'Spanish',
+      visibility: StudySetVisibility.PRIVATE,
+    });
+    expect(tagService.findOrCreateMany).toHaveBeenCalledWith(['cells', 'exam']);
+    expect(tagService.replaceStudySetTags).toHaveBeenCalledWith(tx, 'set-1', [
+      'id-cells',
+      'id-exam',
+    ]);
+    expect(searchSync.enqueueSync).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([[''], ['   '], [null]])(
+    'clears the language for %j',
+    async (language) => {
+      const { svc, tx } = buildForUpdate();
+      await svc.update('owner', 'set-1', { language });
+      expect(updatedData(tx)).toEqual({ language: null });
+    },
+  );
+
+  it('leaves tags alone when the field is omitted, and clears them for []', async () => {
+    const omitted = buildForUpdate();
+    await omitted.svc.update('owner', 'set-1', { title: 'New' });
+    expect(omitted.tagService.replaceStudySetTags).not.toHaveBeenCalled();
+
+    const cleared = buildForUpdate();
+    await cleared.svc.update('owner', 'set-1', { tags: [] });
+    expect(cleared.tx.studySet.update).not.toHaveBeenCalled();
+    expect(cleared.tagService.replaceStudySetTags).toHaveBeenCalledWith(
+      cleared.tx,
+      'set-1',
+      [],
+    );
+    expect(cleared.searchSync.enqueueSync).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets an EDITOR change details and tags', async () => {
+    const { svc, tx, tagService } = buildForUpdate(CollaboratorRole.EDITOR);
+
+    const result = await svc.update('editor', 'set-1', {
+      title: 'Edited',
+      tags: ['cells'],
+    });
+
+    expect(updatedData(tx)).toEqual({ title: 'Edited' });
+    expect(tagService.replaceStudySetTags).toHaveBeenCalled();
+    expect(result).toMatchObject({ isOwner: false, canEdit: true });
+  });
+
+  it('keeps visibility owner-only, even for an EDITOR', async () => {
+    const { svc, prisma } = buildForUpdate(CollaboratorRole.EDITOR);
+
+    await expect(
+      svc.update('editor', 'set-1', { isPrivate: true }),
+    ).rejects.toThrow(ForbiddenException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['a VIEWER', CollaboratorRole.VIEWER],
+    ['a stranger', null],
+  ])('rejects %s', async (_label, role) => {
+    const { svc, prisma, tagService } = buildForUpdate(role);
+
+    await expect(
+      svc.update('someone', 'set-1', { title: 'Hijack', tags: ['x1'] }),
+    ).rejects.toThrow(ForbiddenException);
+    expect(tagService.findOrCreateMany).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('returns language, name-sorted tags, canEdit and viewCount', async () => {
+    const { svc } = buildForUpdate();
+
+    const result = await svc.update('owner', 'set-1', {});
+
+    expect(result).toMatchObject({
+      language: 'German',
+      tags: [
+        { id: 't-1', name: 'Biology', slug: 'biology' },
+        { id: 't-2', name: 'Zoology', slug: 'zoology' },
+      ],
+      isOwner: true,
+      canEdit: true,
+      viewCount: 7,
+    });
+  });
+});
+
+describe('StudySetService.create with tags and language (MIM-44)', () => {
+  it('normalises the language and attaches the tags', async () => {
+    const tx = {};
+    const prisma = {
+      studySet: {
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest
+          .fn()
+          .mockImplementation(({ data }: { data: object }) =>
+            Promise.resolve({ id: 'new-set', ...data }),
+          ),
+      },
+      $transaction: jest
+        .fn()
+        .mockImplementation((fn: (t: typeof tx) => unknown) => fn(tx)),
+    };
+    const tagService = {
+      findOrCreateMany: jest.fn().mockResolvedValue([{ id: 't-1' }]),
+      replaceStudySetTags: jest.fn().mockResolvedValue(undefined),
+    };
+    const svc = new StudySetService(
+      noopLogger(),
+      prisma as unknown as PrismaService,
+      {
+        findById: jest.fn().mockResolvedValue({ id: 'u-1' }),
+      } as unknown as UsersService,
+      { enqueueSync: jest.fn() } as unknown as SearchSyncService,
+      tagService as unknown as TagService,
+    );
+    jest
+      .spyOn(
+        svc as unknown as { buildStudySetForUser: () => Promise<unknown> },
+        'buildStudySetForUser',
+      )
+      .mockResolvedValue({ id: 'new-set' });
+
+    await svc.create('u-1', {
+      title: 'Spanish',
+      language: ' Spanish ',
+      tags: ['languages'],
+    });
+
+    const [{ data }] = prisma.studySet.create.mock.calls[0] as [
+      { data: { language: string | null } },
+    ];
+    expect(data.language).toBe('Spanish');
+    expect(tagService.replaceStudySetTags).toHaveBeenCalledWith(tx, 'new-set', [
+      't-1',
+    ]);
   });
 });

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose } from 'class-transformer';
+import { Expose, Type } from 'class-transformer';
+import { TagListItemDto } from 'src/modules/tag/dto/tag-list-item.dto';
 
 export class StudySetResponseDto {
   @ApiProperty()
@@ -22,6 +23,18 @@ export class StudySetResponseDto {
   @Expose()
   isPrivate: boolean;
 
+  @ApiProperty({ type: String, nullable: true, example: 'German' })
+  @Expose()
+  language: string | null;
+
+  @ApiProperty({
+    type: [TagListItemDto],
+    description: 'Tags on the set, sorted by name.',
+  })
+  @Expose()
+  @Type(() => TagListItemDto)
+  tags: TagListItemDto[];
+
   @ApiProperty({ description: 'Owner id' })
   @Expose()
   ownerId: string;
@@ -37,6 +50,14 @@ export class StudySetResponseDto {
   @ApiProperty({ example: false })
   @Expose()
   isOwner: boolean;
+
+  @ApiProperty({
+    example: false,
+    description:
+      'The caller may edit the set: owner or EDITOR collaborator. Visibility and deletion stay owner-only.',
+  })
+  @Expose()
+  canEdit: boolean;
 
   @ApiProperty({ example: true, required: false })
   @Expose()
