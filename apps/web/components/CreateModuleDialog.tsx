@@ -33,6 +33,7 @@ import { createTerm } from '@/lib/api';
 import { useAddSetsToFolder, useFolders } from '@/lib/hooks/useLibrary';
 import { useCreateModule } from '@/lib/hooks/useModules';
 import { termKeys } from '@/lib/hooks/useTerms';
+import { textLimits } from '@/lib/textLimits';
 import { cn } from '@/lib/utils';
 
 const noFolder = '__none__';
@@ -226,6 +227,7 @@ export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Prop
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                maxLength={textLimits.setTitle}
                 placeholder="e.g. Advanced Biology"
                 disabled={saving}
               />
@@ -240,6 +242,7 @@ export function CreateModuleDialog({ open, onOpenChange, defaultFolderId }: Prop
                 id="module-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                maxLength={textLimits.setDescription}
                 placeholder="What is this module for?"
                 rows={3}
                 disabled={saving}
@@ -507,6 +510,7 @@ function FlashcardRow({
             data-card-term={index}
             value={card.term}
             onChange={(e) => onChange({ term: e.target.value })}
+            maxLength={textLimits.cardTerm}
             onKeyDown={handleTermKey}
             placeholder="Enter the term"
             rows={2}
@@ -520,6 +524,7 @@ function FlashcardRow({
             ref={defRef}
             value={card.definition}
             onChange={(e) => onChange({ definition: e.target.value })}
+            maxLength={textLimits.cardDefinition}
             onKeyDown={handleDefKey}
             placeholder="Enter the definition"
             rows={2}

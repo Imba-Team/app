@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Plus, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { textLimits } from '@/lib/textLimits';
 
 // Shared field styles so the Term and Definition inputs render at
 // identical size/typography — asymmetry between them makes the form
@@ -134,6 +135,7 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
             id="new-term"
             value={newTerm}
             onChange={(e) => setNewTerm(e.target.value)}
+            maxLength={textLimits.cardTerm}
             onKeyDown={(e) => {
               // Term is typically short, so Enter should advance to
               // the Definition field like a single-line input. Users
@@ -166,6 +168,7 @@ export default function AddTerm({ onSubmit, isSubmitting = false }: AddTermProps
             id="new-def"
             value={newDef}
             onChange={(e) => setNewDef(e.target.value)}
+            maxLength={textLimits.cardDefinition}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();

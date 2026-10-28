@@ -3,6 +3,7 @@ import {
   IsIn,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
   Validate,
@@ -10,6 +11,7 @@ import {
   ValidatorConstraint,
   ValidatorConstraintInterface,
 } from 'class-validator';
+import { noAngleBracketsPattern } from 'src/common/text/text-limits';
 
 export const SUPPORTED_LANGUAGES = ['en', 'ru', 'az'] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
@@ -65,6 +67,7 @@ export class UpdateMyProfileDto {
   @IsString()
   @MinLength(2)
   @MaxLength(50)
+  @Matches(noAngleBracketsPattern, { message: 'name must not contain < or >' })
   name?: string;
 
   @ApiPropertyOptional({

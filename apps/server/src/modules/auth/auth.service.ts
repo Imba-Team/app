@@ -22,6 +22,8 @@ import { ForgotPasswordRequestDto } from './dtos/forgot-password.dto';
 import { MagicLinkService, MagicLinkPurpose } from './magic-link.service';
 import { ResetPasswordRequestDto } from './dtos/reset-password.dto';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { cleanText } from 'src/common/text/clean-text';
+import { textLimits } from 'src/common/text/text-limits';
 import { LoginAttemptsService } from './login-attempts.service';
 
 export const ACCESS_COOKIE = 'token';
@@ -523,7 +525,8 @@ export class AuthService {
     const placeholderPassword = crypto.randomBytes(48).toString('base64url');
     const created = await this.usersService.create({
       email: profile.email,
-      name: profile.displayName ?? profile.email.split('@')[0],
+      // Google names skip the register DTO; apply the same rules here.
+      name: this.googleDisplayName(profile.displayName, profile.email),
       password: placeholderPassword,
     });
     return this.prisma.user.update({
@@ -541,6 +544,22 @@ export class AuthService {
    * Finalise a Google login: the user is already resolved by the
    * strategy, so we just need to issue a session and set cookies.
    */
+  /**
+   * The Google profile name, cleaned like a registered username: no
+   * control/bidi characters or angle brackets, at most 50 characters.
+   * Falls back to the email's local part.
+   */
+  private googleDisplayName(
+    displayName: string | undefined,
+    email: string,
+  ): string {
+    const name = cleanText(displayName ?? '')
+      .replace(/[<>]/g, '')
+      .trim()
+      .slice(0, textLimits.displayName);
+    return name || email.split('@')[0];
+  }
+
   async loginViaGoogle(
     user: { id: string; email: string },
     req: Request,

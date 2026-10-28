@@ -1661,7 +1661,10 @@ export interface components {
             example?: string;
             /** @example Starts with "photo-" */
             hint?: string;
-            /** @example https://cdn.mimir.app/cards/abc.jpg */
+            /**
+             * @description An absolute http(s) URL or a storage object name.
+             * @example https://cdn.mimir.app/cards/abc.jpg
+             */
             imageUrl?: string;
             /**
              * @description Position within the set. Auto-assigned if omitted.
@@ -1695,7 +1698,7 @@ export interface components {
         CreateStudySetTagDto: {
             /** Format: uuid */
             studySetId: string;
-            /** @example JavaScrript */
+            /** @example JavaScript */
             tagName: string;
         };
         CreateTagDto: {
@@ -2030,7 +2033,7 @@ export interface components {
             cardCount: number;
             description: string | null;
             /**
-             * @description Highlighted fragments from matched fields, keyed by field name.
+             * @description Highlighted fragments from matched fields, keyed by field name. HTML: the stored text is HTML-escaped and matches are wrapped in <em>, so fragments are safe to render as HTML.
              * @example {
              *       "title": [
              *         "<em>Photo</em>synthesis"
@@ -2633,7 +2636,10 @@ export interface components {
             example?: string;
             /** @example Starts with "photo-" */
             hint?: string;
-            /** @example https://cdn.mimir.app/cards/abc.jpg */
+            /**
+             * @description An absolute http(s) URL or a storage object name.
+             * @example https://cdn.mimir.app/cards/abc.jpg
+             */
             imageUrl?: string;
             /**
              * @description Position within the set. Auto-assigned if omitted.

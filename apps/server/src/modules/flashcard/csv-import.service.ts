@@ -7,6 +7,8 @@ import { parse } from 'csv-parse/sync';
 
 import { LoggerService } from 'src/common/logger/logger.service';
 import { PrismaService } from 'src/common/prisma/prisma.service';
+import { cleanText } from 'src/common/text/clean-text';
+import { textLimits } from 'src/common/text/text-limits';
 import { StudySetService } from 'src/modules/study-set/study-set.service';
 
 import {
@@ -20,8 +22,6 @@ import {
 export const CSV_MAX_BYTES = 5 * 1024 * 1024;
 export const CSV_MAX_ROWS = 1000;
 const PREVIEW_SAMPLE_SIZE = 5;
-const TERM_MAX_LEN = 500;
-const DEFINITION_MAX_LEN = 5000;
 const ERRORS_RESPONSE_CAP = 50;
 
 const HEADER_SYNONYMS: Record<keyof CsvFieldMappingDto, string[]> = {
@@ -126,28 +126,35 @@ export class CsvImportService {
         errors.push({ row: displayRow, message: 'definition is required' });
         return;
       }
-      if (term.length > TERM_MAX_LEN) {
+      const card = {
+        term,
+        definition,
+        example: this.optionalCell(row, request.mapping.example),
+        phonetic: this.optionalCell(row, request.mapping.phonetic),
+        hint: this.optionalCell(row, request.mapping.hint),
+      };
+      // Same limits as CreateFlashcardDto — this path skips the ValidationPipe.
+      const limits = {
+        term: textLimits.cardTerm,
+        definition: textLimits.cardDefinition,
+        example: textLimits.cardExample,
+        phonetic: textLimits.cardPhonetic,
+        hint: textLimits.cardHint,
+      };
+      const tooLong = (Object.keys(limits) as (keyof typeof limits)[]).find(
+        (field) => (card[field]?.length ?? 0) > limits[field],
+      );
+      if (tooLong) {
         errors.push({
           row: displayRow,
-          message: `term exceeds ${TERM_MAX_LEN} characters`,
-        });
-        return;
-      }
-      if (definition.length > DEFINITION_MAX_LEN) {
-        errors.push({
-          row: displayRow,
-          message: `definition exceeds ${DEFINITION_MAX_LEN} characters`,
+          message: `${tooLong} exceeds ${limits[tooLong]} characters`,
         });
         return;
       }
 
       toCreate.push({
         studySetId,
-        term,
-        definition,
-        example: this.optionalCell(row, request.mapping.example),
-        phonetic: this.optionalCell(row, request.mapping.phonetic),
-        hint: this.optionalCell(row, request.mapping.hint),
+        ...card,
         orderIndex: baseOrderIndex + toCreate.length,
       });
     });
@@ -258,7 +265,7 @@ export class CsvImportService {
   }
 
   private cell(row: string[], index: number): string {
-    return (row[index] ?? '').trim();
+    return cleanText(row[index] ?? '').trim();
   }
 
   private optionalCell(row: string[], index?: number): string | undefined {

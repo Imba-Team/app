@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { textLimits } from '@/lib/textLimits';
 import { cn } from '@/lib/utils';
 
 interface TermItemProps {
@@ -154,6 +155,7 @@ export default function TermItem({
               id={`edit-term-${term.id}`}
               value={editTermValue}
               onChange={(e) => setEditTermValue(e.target.value)}
+              maxLength={textLimits.cardTerm}
               onKeyDown={handleTermKey}
               rows={3}
               className={EditFieldClass}
@@ -172,6 +174,7 @@ export default function TermItem({
               id={`edit-def-${term.id}`}
               value={editDefValue}
               onChange={(e) => setEditDefValue(e.target.value)}
+              maxLength={textLimits.cardDefinition}
               onKeyDown={handleDefKey}
               rows={3}
               className={EditFieldClass}

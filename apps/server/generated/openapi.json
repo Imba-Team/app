@@ -5150,7 +5150,8 @@
         "properties": {
           "username": {
             "type": "string",
-            "example": "John"
+            "example": "John",
+            "maxLength": 50
           },
           "email": {
             "type": "string",
@@ -5377,15 +5378,18 @@
         "properties": {
           "title": {
             "type": "string",
-            "example": "Advanced Biology"
+            "example": "Advanced Biology",
+            "maxLength": 200
           },
           "description": {
             "type": "string",
-            "example": "Notes and flashcards for bio exams"
+            "example": "Notes and flashcards for bio exams",
+            "maxLength": 2000
           },
           "language": {
             "type": "string",
-            "example": "German"
+            "example": "German",
+            "maxLength": 50
           },
           "isPrivate": {
             "type": "boolean",
@@ -5402,15 +5406,18 @@
         "properties": {
           "title": {
             "type": "string",
-            "example": "Advanced Biology"
+            "example": "Advanced Biology",
+            "maxLength": 200
           },
           "description": {
             "type": "string",
-            "example": "Notes and flashcards for bio exams"
+            "example": "Notes and flashcards for bio exams",
+            "maxLength": 2000
           },
           "language": {
             "type": "string",
-            "example": "German"
+            "example": "German",
+            "maxLength": 50
           },
           "isPrivate": {
             "type": "boolean",
@@ -5590,7 +5597,7 @@
           },
           "highlights": {
             "type": "object",
-            "description": "Highlighted fragments from matched fields, keyed by field name.",
+            "description": "Highlighted fragments from matched fields, keyed by field name. HTML: the stored text is HTML-escaped and matches are wrapped in <em>, so fragments are safe to render as HTML.",
             "example": {
               "title": [
                 "<em>Photo</em>synthesis"
@@ -5752,27 +5759,33 @@
         "properties": {
           "term": {
             "type": "string",
-            "example": "Photosynthesis"
+            "example": "Photosynthesis",
+            "maxLength": 500
           },
           "definition": {
             "type": "string",
-            "example": "The process by which green plants convert sunlight into energy."
+            "example": "The process by which green plants convert sunlight into energy.",
+            "maxLength": 5000
           },
           "example": {
             "type": "string",
-            "example": "Photosynthesis powers most life on Earth."
+            "example": "Photosynthesis powers most life on Earth.",
+            "maxLength": 1000
           },
           "phonetic": {
             "type": "string",
-            "example": "/ˌfoʊtəˈsɪnθəsɪs/"
+            "example": "/ˌfoʊtəˈsɪnθəsɪs/",
+            "maxLength": 200
           },
           "hint": {
             "type": "string",
-            "example": "Starts with \"photo-\""
+            "example": "Starts with \"photo-\"",
+            "maxLength": 500
           },
           "imageUrl": {
             "type": "string",
-            "example": "https://cdn.mimir.app/cards/abc.jpg"
+            "example": "https://cdn.mimir.app/cards/abc.jpg",
+            "description": "An absolute http(s) URL or a storage object name."
           },
           "orderIndex": {
             "type": "number",
@@ -5798,27 +5811,33 @@
         "properties": {
           "term": {
             "type": "string",
-            "example": "Photosynthesis"
+            "example": "Photosynthesis",
+            "maxLength": 500
           },
           "definition": {
             "type": "string",
-            "example": "The process by which green plants convert sunlight into energy."
+            "example": "The process by which green plants convert sunlight into energy.",
+            "maxLength": 5000
           },
           "example": {
             "type": "string",
-            "example": "Photosynthesis powers most life on Earth."
+            "example": "Photosynthesis powers most life on Earth.",
+            "maxLength": 1000
           },
           "phonetic": {
             "type": "string",
-            "example": "/ˌfoʊtəˈsɪnθəsɪs/"
+            "example": "/ˌfoʊtəˈsɪnθəsɪs/",
+            "maxLength": 200
           },
           "hint": {
             "type": "string",
-            "example": "Starts with \"photo-\""
+            "example": "Starts with \"photo-\"",
+            "maxLength": 500
           },
           "imageUrl": {
             "type": "string",
-            "example": "https://cdn.mimir.app/cards/abc.jpg"
+            "example": "https://cdn.mimir.app/cards/abc.jpg",
+            "description": "An absolute http(s) URL or a storage object name."
           },
           "orderIndex": {
             "type": "number",
@@ -5989,7 +6008,8 @@
           },
           "tagName": {
             "type": "string",
-            "example": "JavaScrript"
+            "example": "JavaScript",
+            "maxLength": 50
           }
         },
         "required": [

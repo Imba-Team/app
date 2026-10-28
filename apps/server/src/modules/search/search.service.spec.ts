@@ -54,4 +54,13 @@ describe('SearchService.searchSets', () => {
       { term: { tags: 'bio' } },
     ]);
   });
+
+  it('asks Elasticsearch to HTML-escape highlight fragments', async () => {
+    const { svc, es } = build();
+
+    await svc.searchSets({ q: 'biology' }, 'u-1');
+
+    const args = (es.search.mock.calls[0] as [{ highlight: unknown }])[0];
+    expect(args.highlight).toMatchObject({ encoder: 'html' });
+  });
 });

@@ -1,0 +1,75 @@
+name: migrations
+
+# Guards MIM-54: the Prisma migration history must build a database from
+# scratch and end up exactly matching schema.prisma.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/server/prisma/**'
+      - '.github/workflows/migrations.yml'
+  pull_request:
+    paths:
+      - 'apps/server/prisma/**'
+      - '.github/workflows/migrations.yml'
+
+concurrency:
+  group: migrations-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migrate-from-empty:
+    name: Migrate an empty database
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: mimir
+          POSTGRES_PASSWORD: mimir
+          POSTGRES_DB: mimir
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mimir -d mimir"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://mimir:mimir@localhost:5432/mimir
+      DATABASE_URL_UNPOOLED: postgresql://mimir:mimir@localhost:5432/mimir
+      SHADOW_DATABASE_URL: postgresql://mimir:mimir@localhost:5432/mimir_shadow
+
+    defaults:
+      run:
+        working-directory: apps/server
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --filter @mimir/server
+
+      - name: Apply all migrations to an empty database
+        run: pnpm exec prisma migrate deploy
+
+      - name: Database matches schema.prisma
+        run: pnpm exec prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
+
+      - name: Migration history matches schema.prisma
+        run: |
+          psql "$DATABASE_URL" -c "CREATE DATABASE mimir_shadow"
+          pnpm exec prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --exit-code

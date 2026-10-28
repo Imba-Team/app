@@ -21,9 +21,14 @@ import {
 import { GoogleButton } from "@/components/auth/google-button";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { PasswordInput } from "@/components/auth/password-input";
+import { textLimits } from "@/lib/textLimits";
 
 const registerSchema = z.object({
-  username: z.string().min(2, "Username must be at least 2 characters"),
+  username: z
+    .string()
+    .min(2, "Username must be at least 2 characters")
+    .max(textLimits.displayName, `Username must be at most ${textLimits.displayName} characters`)
+    .regex(/^[^<>]*$/, "Username can't contain < or >"),
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { textLimits } from "@/lib/textLimits";
 import { cn } from "@/lib/utils";
 import {
   useDeleteModule,
@@ -149,6 +150,7 @@ export default function SetEditClient({ id }: Props) {
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              maxLength={textLimits.setTitle}
               className="w-full h-11 px-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 text-base"
             />
           </div>
@@ -160,6 +162,7 @@ export default function SetEditClient({ id }: Props) {
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              maxLength={textLimits.setDescription}
               rows={3}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 text-base leading-relaxed"
             />
@@ -172,6 +175,7 @@ export default function SetEditClient({ id }: Props) {
             <input
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
+              maxLength={textLimits.language}
               placeholder="e.g. Spanish"
               className="w-full h-11 px-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500 text-base"
             />

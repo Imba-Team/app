@@ -495,6 +495,38 @@ describe('AuthService.resolveGoogleUser', () => {
     const body = caught?.getResponse() as { code: string };
     expect(body.code).toBe('GOOGLE_LINK_CONFLICT');
   });
+
+  it.each([
+    ['<script>Eve</script>\u202E', 'scriptEve/script'],
+    ['x'.repeat(80), 'x'.repeat(50)],
+    ['  <>  ', 'new'],
+    [undefined, 'new'],
+  ])(
+    'cleans the Google display name %j for new users',
+    async (displayName, expected) => {
+      const prisma = makePrisma();
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.update.mockResolvedValue({ id: 'u-new' });
+      const create = jest.fn().mockResolvedValue({ id: 'u-new' });
+      const { svc } = buildService({
+        prisma,
+        usersService: {
+          findByEmail: jest.fn().mockResolvedValue(null),
+          create,
+        } as unknown as UsersService,
+      });
+
+      await svc.resolveGoogleUser({
+        providerId: 'gid-new',
+        email: 'new@x.y',
+        displayName,
+      });
+
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({ name: expected }),
+      );
+    },
+  );
 });
 
 describe('AuthService.resetPassword', () => {

@@ -1,16 +1,26 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
+import { textLimits } from 'src/common/text/text-limits';
 
 export class SearchSetsQueryDto {
   @ApiPropertyOptional({ example: 'photosynthesis' })
   @IsString()
   @IsOptional()
+  @MaxLength(textLimits.searchQuery)
   q?: string;
 
   @ApiPropertyOptional({ example: 'English' })
   @IsString()
   @IsOptional()
+  @MaxLength(textLimits.language)
   language?: string;
 
   @ApiPropertyOptional({
@@ -21,6 +31,7 @@ export class SearchSetsQueryDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(textLimits.tagName)
   tag?: string;
 
   @ApiPropertyOptional({

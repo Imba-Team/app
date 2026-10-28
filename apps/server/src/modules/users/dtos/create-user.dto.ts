@@ -6,7 +6,9 @@ import {
   MaxLength,
   IsEnum,
   IsOptional,
+  Matches,
 } from 'class-validator';
+import { noAngleBracketsPattern } from 'src/common/text/text-limits';
 import { Role } from 'src/common/decorators/roles.decorator';
 import { UserStatus } from 'src/common/interfaces/user.interface';
 
@@ -19,6 +21,7 @@ export class CreateUserDto {
   @IsString()
   @MinLength(2)
   @MaxLength(50)
+  @Matches(noAngleBracketsPattern, { message: 'name must not contain < or >' })
   name: string;
 
   @ApiProperty({ example: 'password123' })

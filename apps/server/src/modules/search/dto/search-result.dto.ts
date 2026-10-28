@@ -40,7 +40,7 @@ export class SearchSetHitDto {
 
   @ApiPropertyOptional({
     description:
-      'Highlighted fragments from matched fields, keyed by field name.',
+      'Highlighted fragments from matched fields, keyed by field name. HTML: the stored text is HTML-escaped and matches are wrapped in <em>, so fragments are safe to render as HTML.',
     example: { title: ['<em>Photo</em>synthesis'] },
   })
   highlights?: Record<string, string[]>;

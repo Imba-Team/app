@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import { textLimits } from 'src/common/text/text-limits';
 
 export enum PublicSetSort {
   RECENT = 'recent',
@@ -13,6 +14,7 @@ export class SearchStudySetsDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(textLimits.searchQuery)
   q?: string;
 
   @ApiPropertyOptional({

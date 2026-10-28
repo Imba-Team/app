@@ -6,45 +6,65 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   Min,
 } from 'class-validator';
+import { assetRefPattern, textLimits } from 'src/common/text/text-limits';
 
 export class CreateFlashcardDto {
-  @ApiProperty({ example: 'Photosynthesis' })
+  @ApiProperty({ example: 'Photosynthesis', maxLength: textLimits.cardTerm })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(textLimits.cardTerm)
   term!: string;
 
   @ApiProperty({
     example: 'The process by which green plants convert sunlight into energy.',
+    maxLength: textLimits.cardDefinition,
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(textLimits.cardDefinition)
   definition!: string;
 
   @ApiPropertyOptional({
     example: 'Photosynthesis powers most life on Earth.',
+    maxLength: textLimits.cardExample,
   })
   @IsString()
   @IsOptional()
+  @MaxLength(textLimits.cardExample)
   example?: string;
 
-  @ApiPropertyOptional({ example: '/ˌfoʊtəˈsɪnθəsɪs/' })
+  @ApiPropertyOptional({
+    example: '/ˌfoʊtəˈsɪnθəsɪs/',
+    maxLength: textLimits.cardPhonetic,
+  })
   @IsString()
   @IsOptional()
+  @MaxLength(textLimits.cardPhonetic)
   phonetic?: string;
 
-  @ApiPropertyOptional({ example: 'Starts with "photo-"' })
+  @ApiPropertyOptional({
+    example: 'Starts with "photo-"',
+    maxLength: textLimits.cardHint,
+  })
   @IsString()
   @IsOptional()
+  @MaxLength(textLimits.cardHint)
   hint?: string;
 
   @ApiPropertyOptional({
     example: 'https://cdn.mimir.app/cards/abc.jpg',
+    description: 'An absolute http(s) URL or a storage object name.',
   })
   @IsString()
   @IsOptional()
+  @MaxLength(textLimits.assetRef)
+  @Matches(assetRefPattern, {
+    message: 'imageUrl must be an http(s) URL or a storage object name',
+  })
   imageUrl?: string;
 
   @ApiPropertyOptional({

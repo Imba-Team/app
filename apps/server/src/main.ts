@@ -5,6 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 import { PrismaService } from './common/prisma/prisma.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { CleanTextPipe } from './common/text/clean-text.pipe';
 
 import 'reflect-metadata';
 import helmet from 'helmet';
@@ -74,8 +75,9 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
 
-  // Enable global validation pipe
+  // Clean user text (control/bidi chars, NFC) before validating it.
   app.useGlobalPipes(
+    new CleanTextPipe(),
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
   );
 

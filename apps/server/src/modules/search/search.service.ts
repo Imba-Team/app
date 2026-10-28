@@ -165,7 +165,9 @@ export class SearchService implements OnModuleInit {
         },
       },
       sort: [{ _score: { order: 'desc' } }, { likeCount: { order: 'desc' } }],
-      highlight: { fields: { title: {}, description: {} } },
+      // encoder 'html' escapes the stored text so the only markup in a
+      // fragment is the <em> highlight tags — safe to render as HTML.
+      highlight: { encoder: 'html', fields: { title: {}, description: {} } },
     });
 
     const items: SearchSetHitDto[] = result.hits.hits.map((hit) => {
