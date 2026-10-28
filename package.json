@@ -2,7 +2,7 @@
   "name": "mimir",
   "version": "0.0.0",
   "private": true,
-  "description": "Mimir monorepo — NestJS backend (@mimir/server) + Vite/React frontend (@mimir/web).",
+  "description": "Mimir monorepo — NestJS backend (@mimir/server) + Next.js frontend (@mimir/web).",
   "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": ">=20.10.0",

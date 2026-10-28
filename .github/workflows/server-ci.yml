@@ -1,48 +1,62 @@
-name: ci
+name: server-ci
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
-    branches: [main]
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: server-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   lint-and-test:
-    name: Lint & Unit Test
+    name: Lint, test, build, OpenAPI drift
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # Booting AppModule to generate the OpenAPI spec needs config values,
+      # not live services: nothing connects until a request or job runs.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      MINIO_ROOT_USER: ci
+      MINIO_ROOT_PASSWORD: ci-secret-key
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Version comes from `packageManager` in the root package.json.
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: .nvmrc
           cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma client
-        run: pnpm prisma generate
+        run: pnpm --filter @mimir/server exec prisma generate
 
       - name: Lint
-        run: pnpm run lint
+        run: pnpm --filter @mimir/server lint
 
       - name: Unit tests
-        run: pnpm exec jest --passWithNoTests
+        run: pnpm --filter @mimir/server exec jest
 
       - name: Build
-        run: pnpm run build
+        run: pnpm --filter @mimir/server build
 
-      - name: Verify OpenAPI artifacts are up to date
-        run: pnpm run openapi:check
+      - name: OpenAPI spec and types are up to date
+        run: pnpm --filter @mimir/server openapi:check
+
+      - name: Web copy of the API types matches the server's
+        run: |
+          diff -u apps/server/generated/api-types.ts apps/web/lib/api/generated.ts || {
+            echo "::error::apps/web/lib/api/generated.ts is stale. Run: pnpm --filter @mimir/web generate:api-types"
+            exit 1
+          }

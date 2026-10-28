@@ -4,13 +4,15 @@ Monorepo: [apps/server](apps/server) (NestJS backend, `@mimir/server`) + [apps/w
 
 ## Commands
 
-- `pnpm dev` — server + web in parallel (server on :9090, web on :3000; :9000 is MinIO)
+- `pnpm dev` — server + web in parallel (server on :9090, web on :3000; MinIO on :9002, console :9003). `pnpm dev:server` / `pnpm dev:web` for one side.
 - `pnpm --filter @mimir/server prisma:migrate` — apply migrations (wraps `prisma migrate dev`, loads root `.env`)
 - `pnpm --filter @mimir/server generate` — regenerate Prisma client (needed after fresh install; loads root `.env`)
 - `pnpm --filter @mimir/server openapi` — regenerate OpenAPI spec + types
 - `pnpm --filter @mimir/web generate:api-types` — sync spec into web (calls the server script)
-- `pnpm --filter @mimir/web test` — vitest
-- `pnpm --filter @mimir/web test:e2e` — Playwright. **Kill any :3000 dev server first** (or use `pnpm test:e2e:ui`).
+- `pnpm --filter @mimir/server test` — Jest unit tests (`*.spec.ts` next to the code)
+- `pnpm --filter <pkg> lint` — check only; `pnpm --filter @mimir/server lint:fix` applies fixes
+- `pnpm --filter @mimir/web type-check` — `tsc --noEmit`
+- The web app has no unit-test runner yet. `apps/web/e2e/` holds a Playwright spec but there is no Playwright config or script yet.
 
 ## Code conventions (must follow)
 
@@ -64,33 +66,31 @@ Apply these to all new and edited code. If existing code violates a rule, fix on
 
 ## Other conventions
 
-- **Web auth**: access token lives in memory only; refresh token via HttpOnly cookie. [apps/web/src/lib/api/token-store.test.ts](apps/web/src/lib/api/token-store.test.ts) is the regression guard.
-- **Web OAuth**: browser must hit the real backend origin (VITE_BACKEND_ORIGIN, defaults to `http://localhost:9090`) so it can follow the redirect chain to Google and back.
-- **Playwright**: mock APIs with `page.route(/regex/, ...)` — no MSW browser worker. Match by path only (works whether VITE_API_BASE_URL is the proxy `/api` or the direct backend URL).
+- **Web auth**: both tokens are HttpOnly cookies set by the server — access token `token`, refresh token `refresh_token` (path `/auth/refresh`). The web never sees them; axios sends them via `withCredentials` ([apps/web/lib/axios.ts](apps/web/lib/axios.ts)). The non-HttpOnly `isLoggedIn` cookie is only a UI hint ([apps/web/lib/auth.ts](apps/web/lib/auth.ts)).
+- **Web config**: the API origin is `NEXT_PUBLIC_API_BASE_URL` (default `http://localhost:9090`, read in [apps/web/lib/env.ts](apps/web/lib/env.ts)); allowed remote image hosts are `NEXT_PUBLIC_IMAGE_HOSTS` ([apps/web/next.config.ts](apps/web/next.config.ts)).
+- **Web OAuth**: the browser must hit the real backend origin (`${NEXT_PUBLIC_API_BASE_URL}/auth/google`) so it can follow the redirect chain to Google and back.
+- **Playwright**: mock APIs with `page.route(/regex/, ...)` — no MSW browser worker. Match by path only (works whichever origin `NEXT_PUBLIC_API_BASE_URL` points at). Set the `isLoggedIn=true` cookie to render signed-in pages.
+- **Search index**: the Elasticsearch set document embeds title, tags, owner username, card count and save count. Any write that changes one of those must call `SearchSyncService.enqueueSync(setId)` (one deduplicated, ordered job per set — never add search-sync jobs with a fixed `jobId`).
+- **User text**: a global `CleanTextPipe` strips control/bidi characters from request bodies and queries; HTML is deliberately *not* stripped (cards contain `List<String>`), so escape at any sink that renders HTML. Length limits live in [apps/server/src/common/text/text-limits.ts](apps/server/src/common/text/text-limits.ts) and are mirrored in [apps/web/lib/textLimits.ts](apps/web/lib/textLimits.ts).
 
 ## Gotchas
 
-- **Native macOS Postgres** intercepts `localhost:5432` — the mimir docker container gets shadowed. See [memory/env_postgres_conflict.md](.). Use a different port or stop native PG before `prisma db push`.
+- **Native macOS Postgres** intercepts `localhost:5432` — the mimir docker container gets shadowed. Use a different port or stop native PG before `prisma db push`.
+- **Migrations**: never edit a migration that has been applied anywhere. The `migrations` CI workflow builds an empty database from the full history and fails if it differs from `schema.prisma` — generate new migrations with `prisma migrate diff` so they match exactly.
 - **JWT type imports**: `@types/jsonwebtoken@9.0.10+` requires `StringValue` from `ms` for `signOptions.expiresIn`. Only `@types/ms@2.1.0+` provides it (through the `ms` namespace).
 - **Backend register endpoint** does not accept `displayName` — only `email`, `username`, `password`. The user's display name is derived from `username` and can be updated via `PATCH /users/me` later.
 - **useMutation + useEffect**: don't put the mutation *object* in the deps array — it changes on every state transition. Destructure `mutate` (stable) and depend on that, or you'll race with React's dev-mode double-invoke.
 
 ## Layout
 
-- [apps/server](apps/server) — NestJS. Modules under `src/modules/{auth,users,study-sets,srs,...}`.
-- [apps/web](apps/web) — Vite + React 18. Routes in `src/routes/`, feature UI in `src/features/`, shared UI kit in `src/components/ui/` (shadcn/Radix), API layer in `src/lib/api/`, i18n in `src/lib/i18n/`.
-- [docs/](docs/) — project-wide TDD, roadmap, requirements. `Mimir_TDD_v1.md` in `docs/` is the canonical architecture doc (the copy under `apps/web/` will drift).
+- [apps/server](apps/server) — NestJS 11 + Prisma 6 (Postgres), Redis, BullMQ, Elasticsearch, MinIO. Modules under `src/modules/<feature>/`; shared infrastructure under `src/common/` (queue, redis, storage, text, time, …). Schema and migrations in `prisma/`.
+- [apps/web](apps/web) — Next.js 16 App Router + React 19.
+  - `app/` — routes: `(auth)/login|register`, `auth/*` (verify email, forgot/reset password, Google callback), `dashboard`, `library`, `library/folders/[id]`, `discover`, `modules/[id]` (+ `flashcards`, `learn`, `write`, `test`, `test-history`, `sessions`), `sets/[id]/edit`, `srs`, `progress`, `account`. Route-private components live in `_components/` next to the route.
+  - `components/` — shared components; `components/ui/` is the shadcn kit.
+  - `lib/` — `api.ts` + `api/` (axios client, generated OpenAPI types), `hooks/` (TanStack Query), `env.ts`, `auth.ts`; `contexts/` for React context.
+- [docs/](docs/) — `Mimir_TDD_v1.md` (canonical architecture), `Mimir_Roadmap_v2.md` (roadmap + status), `Mimir_SRS.md` (original requirements; the code wins where they differ), plus auth/CI/OpenAPI/monitoring notes.
 - [monitoring/](monitoring/) — Prometheus + Grafana stack (opt-in via `docker-compose.monitoring.yml`).
 
-## Deferred — Sprint 1b (auth completion, needs backend work first)
+## Planning
 
-- **Apple OAuth** — backend `AppleStrategy` in `apps/server/src/modules/auth/` missing; frontend button + `/auth/callback/apple` route already wired.
-- **Account lockout UI** — `LoginAttemptsService` exists server-side, but no endpoint surfaces the lock state. Needs either `retryAfter` on 429 login responses or a `GET /auth/lockout-status?email=...` endpoint.
-- **Multi-device sessions list + revoke** — no `Session` model. Needs Prisma table, `GET /auth/sessions`, `DELETE /auth/sessions/:id`.
-- **Timezone + preferredLanguage on profile** — Prisma User model + `UpdateMyProfileDto` need the columns; then wire into `apps/web/src/features/settings/profile-section.tsx`.
-- **Data export** — needs `POST /users/me/export` + `GET /users/me/export/:jobId`, BullMQ job, upload to storage, download URL.
-
-## Current sprint
-
-- **Frontend**: Sprint 2 — Library (Sets + Folders CRUD).
-- **Backend**: Sprint 7 (SRS engine landed).
+The backlog lives in Linear (team **Mimir**, key `MIM`), grouped into ordered projects: Stability & quality → Library & set editing → Notifications & reminders → Sharing & community → Account & auth → Later / platform. "What's next" = the High-priority issues in the top unfinished project. AI and media work (MIM-12/13/14/31/35) is postponed in the Backlog state. Still-missing auth pieces are tracked there too (Apple sign-in MIM-23, data export MIM-26).

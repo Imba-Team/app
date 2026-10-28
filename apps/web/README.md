@@ -1,45 +1,45 @@
-## Mimir
+## Mimir web (`@mimir/web`)
 
-This app is a Quizlet-inspired study tool. The app lets you create and manage study modules, add terms, and practice with flashcards, quizzes, tests, and a learn flow. It connects to the hosted API at `https://imba-server.up.railway.app` using cookie-based login. The website is deployed at `https://imba-learn.vercel.app`
+The Mimir frontend: create and organise study sets, and study them with flashcards, Learn, Write, Test and spaced-repetition review. It talks to the NestJS API in [`apps/server`](../server) using cookie-based auth.
 
-### What You Can Do
+### What you can do
 
-- Sign up and log in.
-- Create your own modules with titles, descriptions, and privacy toggles.
-- Add, edit, star, and delete terms inside a module.
-- Study in multiple modes: flashcards, quiz, and test.
-- Browse your dashboard for personal modules and a community tab for shared sets.
-- Update account details (profile info, password) or delete your account.
+- Sign up / log in (email + password or Google), verify email, reset password.
+- Create study sets (public or private), add, edit, star and import cards (paste or CSV).
+- Organise sets into folders; save other people's public sets to your library.
+- Study with Flashcards, Learn (with matching warm-ups), Write and Test; review due cards on `/srs`.
+- Track streaks, activity, mastery and retention on `/progress`; browse public sets on `/discover`.
+- Comment on sets; manage profile, preferences, sessions and account in `/account`.
 
-### Project Goal
+### Quick start
 
-Provide a focused, modern reimagining of Quizlet: fast navigation, clear UI, and practice modes that make repetition and recall easy.
+Run from the repo root (pnpm workspace):
 
-### Quick Start
+```bash
+pnpm install
+pnpm dev:web          # next dev on http://localhost:3000 (WEB_PORT)
+# or `pnpm dev` to run the API and web together
+```
 
-- Install deps: `npm install`
-- Run dev server: `npm run dev`
-- App runs at `http://localhost:3000`
+The API origin comes from `NEXT_PUBLIC_API_BASE_URL` (default `http://localhost:9090`, see [`lib/env.ts`](lib/env.ts)). Requests are sent with credentials, so keep cookies enabled.
 
-The API base URL lives in `lib/axios.ts`. Change it if you point to a different backend; keep cookies enabled so login works.
+Useful scripts: `pnpm --filter @mimir/web lint`, `type-check`, `build`, and `generate:api-types` (regenerates the OpenAPI types from the server).
 
-### A Peek at the Stack
+### Stack
 
-- Built with Next.js App Router, React, and TypeScript.
-- Styling with Tailwind CSS and Radix UI building blocks.
-- Forms and validation with React Hook Form + Zod.
-- Data fetching with TanStack Query and Axios (requests include credentials for auth).
+- Next.js 16 (App Router), React 19, TypeScript.
+- Tailwind CSS v4 with shadcn/ui (Radix) components and lucide-react icons.
+- Forms with React Hook Form + Zod; data fetching with TanStack Query over Axios.
+- API types generated from the server's OpenAPI spec (`lib/api/generated.ts`).
 
-### Structure (simple view)
+### Structure
 
-- `app/` – routes for auth, dashboard, modules, and study modes.
-- `components/` – shared UI, module cards, dialogs, forms, settings pieces.
-- `contexts/` – auth context.
-- `lib/` – API client, REST helpers, auth utilities, hooks, providers.
+- `app/` – routes (auth, dashboard, library, discover, modules and study modes, srs, progress, account); route-private components in `_components/`.
+- `components/` – shared components; `components/ui/` is the shadcn kit.
+- `contexts/` – React contexts (auth, create-module dialog).
+- `lib/` – API client and types, TanStack Query hooks, auth helpers, env.
 - `public/` – static assets.
 
 ### Deployment
 
-1. `npm run build`
-2. `npm run start` in production mode.
-
+`pnpm --filter @mimir/web build`, then `pnpm --filter @mimir/web start`. The hosting target for the web app hasn't been chosen yet (the API deploys to Render via [`render.yaml`](../../render.yaml)).

@@ -27,19 +27,19 @@ const features = [
   {
     icon: FolderTree,
     title: 'Your library, your way',
-    body: 'Folders, tags and starred cards, plus bulk import with images and language pairs.',
+    body: 'Folders, starred cards and the sets you save from others, plus bulk import by pasting your list.',
     isWide: true,
   },
   {
     icon: Users,
     title: 'Study together',
-    body: 'Invite classmates to your sets and leave comments for each other.',
-    badge: 'Coming soon',
+    body: 'Leave comments on the sets you study. Inviting classmates to edit together is next.',
+    badge: 'Invites coming soon',
   },
   {
     icon: Lock,
-    title: 'Private by default',
-    body: 'Every set is Private, Unlisted or Public. You decide who sees what you study.',
+    title: 'You choose who sees it',
+    body: 'Every set is public or private. Share it on Discover or keep it to yourself.',
     isWide: true,
   },
 ];

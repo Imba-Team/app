@@ -1,17 +1,17 @@
-name: CI
+name: web-ci
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: web-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   verify:
-    name: Lint, type-check, test, build
+    name: Lint, type-check, build
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -19,6 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Version comes from `packageManager` in the root package.json.
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
@@ -30,47 +31,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Format check
-        run: pnpm format:check
 
       - name: Lint
-        run: pnpm lint
+        run: pnpm --filter @mimir/web lint
 
       - name: Type check
-        run: pnpm type-check
-
-      - name: Unit tests
-        run: pnpm test
+        run: pnpm --filter @mimir/web type-check
 
       - name: Build
-        run: pnpm build
-
-  api-types-drift:
-    name: OpenAPI types drift check
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    # Runs only when a repo variable BACKEND_STAGING_URL is set.
-    # Set it under Settings → Secrets and variables → Actions → Variables to enable.
-    if: ${{ vars.BACKEND_STAGING_URL != '' }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Check generated types match backend spec
-        env:
-          BACKEND_STAGING_URL: ${{ vars.BACKEND_STAGING_URL }}
-        run: pnpm generate:api-types:check
+        run: pnpm --filter @mimir/web build

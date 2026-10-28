@@ -28,15 +28,15 @@ const faqItems: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: 'Is my data private?',
-    a: 'Yes. Every set is Private, Unlisted or Public, and you choose. Your password is stored hashed, and your login session lives in a secure cookie.',
+    a: 'Yes. Every set is public or private, and you choose. Your password is stored hashed, and your login session lives in secure cookies.',
   },
   {
     q: 'Can I study with classmates?',
-    a: "Collaboration is coming soon — you'll be able to invite editors and viewers and leave comments on sets. Today, public sets are discoverable through Discover.",
+    a: "You can already comment on the sets you study, and public sets are discoverable through Discover. Inviting classmates as editors or viewers is coming soon.",
   },
   {
     q: 'Is Mimir free?',
-    a: 'The core study experience is free while we build out the platform. Advanced features like AI generation will roll out over time.',
+    a: 'The core study experience is free while we build out the platform. AI-assisted features are on our roadmap for later.',
   },
 ];
 

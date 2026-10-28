@@ -1,6 +1,6 @@
 # Mimir — Development Roadmap v2
 
-> **Version:** 2.0.0 | **Supersedes:** [Mimir_Roadmap_v1.md](Mimir_Roadmap_v1.md) as the current execution plan
+> **Version:** 2.0.0 | **Supersedes:** Roadmap v1 (removed; see git history) as the current execution plan
 > **Baseline:** State of `main` as of the current gap review (see companion analysis)
 > **Reference architecture:** [Mimir_TDD_v1.md](Mimir_TDD_v1.md)
 
@@ -8,21 +8,41 @@ This roadmap starts from what is **already shipped** and sequences the remaining
 
 ---
 
-## 1. Baseline — what is already in place
+## 0. Status — 2026-10-28
+
+The live backlog is in Linear (team **Mimir**, key `MIM`), grouped into ordered projects: Stability & quality → Library & set editing → Notifications & reminders → Sharing & community → Account & auth → Later / platform. This section records where each sprint below stands; the sections after it are the original plan, kept for context.
+
+| Sprint | Status | Notes |
+|---|---|---|
+| 1 — SRS live | ✅ Done, except reminder delivery | `/srs` queue, review, forecast, Learn→SRS graduation, `srs-reminders` scheduler. The reminder job only logs until notifications exist (MIM-43, blocked by MIM-16). |
+| 2 — Library & Discover | ✅ Mostly done | `/library`, `/library/folders/[id]`, `/discover`, `/sets/[id]/edit`. Public sets come from `GET /study-sets/public` and `GET /search/sets` (not `/sets/public`). No counter columns: card/save counts are computed when the search document is rebuilt, which every relevant write now triggers (MIM-45). Open: editor completion (MIM-44), tag editing (MIM-37), Discover filters/sort (MIM-50), Unlisted (MIM-32). |
+| 3 — Write mode | ✅ Done | `/modules/[id]/write` (MIM-19). Matching ships as a warm-up step inside Learn (MIM-20) instead of a standalone Match mode. |
+| 4 — Auth + i18n + profile | 🟡 Partly done | Done: RS256 keys, `displayName`/`timezone`/`preferredLanguage`, sessions list + revoke (pulled in from Sprint 12), login lockout with `retryAfterSeconds`. Open: Apple sign-in (MIM-23), log out everywhere (MIM-25), i18n (MIM-27). |
+| 5–6 — AI + set export | ⏸ AI postponed | AI generation and AI study modes (MIM-12/13/14) are parked in Backlog. Set export (MIM-21) not started. |
+| 7 — Notifications | ⬜ Not started | MIM-16, then MIM-43. |
+| 8 — Classroom | ⬜ Not started | MIM-15 (after collaboration, MIM-18). |
+| 9 — Analytics | 🟡 Partly done | `/progress` (streaks, activity, mastery history, retention), dashboard stats strip and all-time session totals (MIM-17/55/56/57) — built on Postgres + nightly snapshots, not ClickHouse. |
+| 10 — Hardening | 🟡 In progress | Done: comments UI (MIM-36), migration baseline + CI check (MIM-54), input hygiene (MIM-49), search count sync (MIM-45). Open: dependency health checks (MIM-48). |
+| 11 — Polish A | ⬜ Mostly open | Mail already supports Resend, SendGrid and SMTP. Open: set versions (MIM-28), user search (MIM-29). |
+| 12 — Polish B | 🟡 Partly done | Sessions list + revoke done. Open: data export (MIM-26). |
+
+---
+
+## 1. Baseline — what was in place when this plan was written
 
 **Backend ([apps/server](../apps/server))**
 - Auth core: register / login / refresh rotation / verify / reset / magic link / Google OAuth ([auth.controller.ts](../apps/server/src/modules/auth/auth.controller.ts))
-- Users, Study Sets, Folders, Tags, Favourites, Comments, Collaborators
+- Users, Study Sets, Folders, Tags, Favourites, Comments; collaborators as a data model only (no endpoints or UI yet — MIM-18)
 - Card import (CSV / text) via [set-flashcards.controller.ts](../apps/server/src/modules/flashcard/set-flashcards.controller.ts)
 - Learning sessions end-to-end: `applyAttempt`, write evaluator with Levenshtein, per-set progress ([learning/](../apps/server/src/modules/learning/))
-- SM-2 algorithm + unit tests ([sm2.ts](../apps/server/src/modules/srs/domain/sm2.ts)) — algorithm only, no HTTP yet
+- SM-2 algorithm + unit tests ([sm2.ts](../apps/server/src/modules/srs/domain/sm2.ts)) — HTTP surface added in Sprint 1
 - Elasticsearch sync for sets, `GET /search/sets`
 - BullMQ queues: `mail`, `search-sync`
 - Monitoring stack: Prometheus + Grafana + Loki + Promtail ([monitoring/](../monitoring/))
 
 **Web ([apps/web](../apps/web))** — Next.js App Router
 - Routes: `/`, `/dashboard`, `/account`, `/login`, `/register`, `/modules`, `/modules/new`, `/modules/[id]`, `/modules/[id]/learn`, `/modules/[id]/flashcards`, `/modules/[id]/test`, `/modules/[id]/sessions`
-- Axios client with refresh interceptor, in-memory access token, HttpOnly refresh cookie
+- Axios client with refresh interceptor; access and refresh tokens are both HttpOnly cookies (`token`, `refresh_token`)
 
 **Architectural divergences from TDD v1 (accepted as-is)**
 - Single NestJS app instead of 9-microservice split (TDD §3.2). Module boundaries preserved inside the monolith.
@@ -30,7 +50,7 @@ This roadmap starts from what is **already shipped** and sequences the remaining
 
 ---
 
-## 2. Gap inventory (rolled into sprints below)
+## 2. Gap inventory (rolled into sprints below; see §0 for current status)
 
 **MVP-blocking**
 1. AI module (flashcard generation, Fill-Blank, Guess Word)
@@ -40,18 +60,18 @@ This roadmap starts from what is **already shipped** and sequences the remaining
 5. Set export (CSV / PDF / Anki)
 6. Study-mode UIs: Write, Match, AI Fill-Blank, AI Guess Word
 7. Web routes: `/library`, `/library/folders/[id]`, `/discover`, `/classroom`, `/classroom/[id]`, `/progress`, `/profile/[username]`, `/sets/[id]/edit`
-8. i18n plumbing (confirm/repair — CLAUDE.md claims it exists, code does not)
-9. Apple OAuth, RS256 JWT keypair
-10. User profile fields: `displayName`, `preferredLanguage`, `timezone`
+8. i18n plumbing (confirmed missing — MIM-27)
+9. Apple OAuth (open — MIM-23), RS256 JWT keypair (✅ done)
+10. User profile fields: `displayName`, `preferredLanguage`, `timezone` (✅ done)
 
 **Polish / edge**
 11. SetVersion model + versions module
 12. SendGrid provider
 13. ClickHouse analytics pipeline
 14. User autocomplete search index (`mimir_users`, edge-ngram)
-15. Multi-device sessions list + revoke
+15. Multi-device sessions list + revoke (✅ done)
 16. Data export endpoints (Sprint 1b deferred)
-17. StudySet counter columns (`cardCount`, `viewCount`, `likeCount`)
+17. StudySet counter columns (`cardCount`, `viewCount`, `likeCount`) — only `viewCount` became a column; card/save counts are kept fresh in the search index instead (MIM-45)
 18. Flashcard `synonyms`, `translations`
 19. BullMQ queues: `push-notification`, `srs-reminders`, `set-export`, `analytics-events`
 20. Search: `mimir_users` index + autocomplete endpoint
@@ -244,7 +264,7 @@ Two-week sprints. Each sprint lists **Backend**, **Web**, **Exit criteria**. Own
 
 ### Sprint 12 — Post-GA polish B (weeks 23–24)
 
-- Multi-device sessions list + revoke (Sprint 1b deferred).
+- Multi-device sessions list + revoke (Sprint 1b deferred) — ✅ shipped early.
 - Data export endpoints + BullMQ job.
 - Additional locales: fill out `es`, `de`, `fr`.
 - Backlog cleanup: any `mimir_users` gaps, remaining StudySet fields (`languageFrom/To`, `category`, `isArchived`, `aiGenerated`).

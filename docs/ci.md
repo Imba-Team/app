@@ -1,247 +1,72 @@
 # GitHub Actions CI
 
-This document describes the continuous integration pipelines for `mimir-server`, what each job does, and how to debug failures.
+What each workflow checks, how to reproduce a failure locally, and how to add a check.
 
-> Audience: anyone whose PR is being checked, or anyone tuning the pipeline.
+All workflows use pnpm from the root `packageManager` field and Node from [`.nvmrc`](../.nvmrc). Each has a `concurrency` group with `cancel-in-progress: true`, so a new push cancels the previous run for the same ref.
 
----
-
-## 1. Workflows at a glance
-
-Two workflows live in [`.github/workflows/`](../.github/workflows/):
+## Workflows at a glance
 
 | Workflow | File | Triggers | What it gates |
 |---|---|---|---|
-| **ci** | [`ci.yml`](../.github/workflows/ci.yml) | push to `main`, all PRs against `main` | code quality + contract integrity |
-| **docker-build** | [`docker.yml`](../.github/workflows/docker.yml) | push to `main`, all PRs against `main` | image builds for every logical service |
+| **server-ci** | [`server-ci.yml`](../.github/workflows/server-ci.yml) | push to `main`/`dev`, every PR | server lint, unit tests, build, OpenAPI drift |
+| **web-ci** | [`web-ci.yml`](../.github/workflows/web-ci.yml) | push to `main`/`dev`, every PR | web lint, type-check, production build |
+| **migrations** | [`migrations.yml`](../.github/workflows/migrations.yml) | changes under `apps/server/prisma/` | the migration history builds an empty DB that matches `schema.prisma` |
+| **docker-build** | [`docker.yml`](../.github/workflows/docker.yml) | push/PR to `main` | per-service Docker images (legacy — production deploys natively on Render, see below) |
 
-Both workflows use the `concurrency` group `${ workflow-name }-${ ref }` with `cancel-in-progress: true`, so pushing a new commit to a PR cancels the previous run.
+## server-ci
 
----
+| Step | Command | Protects against |
+|---|---|---|
+| Prisma client | `pnpm --filter @mimir/server exec prisma generate` | code compiled against a stale client |
+| Lint | `pnpm --filter @mimir/server lint` | lint **errors** (warnings don't fail; `lint` never auto-fixes — use `lint:fix` locally) |
+| Unit tests | `pnpm --filter @mimir/server exec jest` | behaviour regressions |
+| Build | `pnpm --filter @mimir/server build` | type errors, Nest compile errors |
+| OpenAPI | `pnpm --filter @mimir/server openapi:check` | controllers/DTOs changed without regenerating `generated/` |
+| Web types | `diff apps/server/generated/api-types.ts apps/web/lib/api/generated.ts` | the web app using stale API types |
 
-## 2. `ci` workflow
+`openapi:check` boots `AppModule` to build the spec. It needs config values (a `DATABASE_URL` and MinIO credentials, set as dummy values in the workflow) but no running services — nothing connects until a request or job runs.
 
-### 2.1 Steps
+Fix an OpenAPI failure with `pnpm --filter @mimir/server openapi && pnpm --filter @mimir/web generate:api-types` and commit the regenerated files.
 
-```yaml
-jobs:
-  lint-and-test:
-    runs-on: ubuntu-latest
-    steps:
-      - Checkout                          # actions/checkout@v4
-      - Setup pnpm                        # pnpm/action-setup@v4   (v9)
-      - Setup Node.js                     # actions/setup-node@v4  (v20, pnpm cache)
-      - Install dependencies              # pnpm install --frozen-lockfile
-      - Generate Prisma client            # pnpm prisma generate
-      - Lint                              # pnpm run lint
-      - Unit tests                        # pnpm exec jest --passWithNoTests
-      - Build                             # pnpm run build
-      - Verify OpenAPI artifacts          # pnpm run openapi:check
-```
+## web-ci
 
-### 2.2 What each step protects
+`pnpm --filter @mimir/web lint`, `type-check` (`tsc --noEmit`) and `build` (`next build`). There is no web unit-test runner yet, and the web app isn't prettier-clean yet, so there is no format check.
 
-| Step | Failure means |
-|---|---|
-| `pnpm install --frozen-lockfile` | `pnpm-lock.yaml` is out of sync with `package.json`. Run `pnpm install` locally and commit. |
-| `pnpm prisma generate` | Prisma schema is invalid. Run `pnpm push` or `pnpm prisma generate` locally. |
-| `pnpm run lint` | ESLint errors (warnings don't fail). Run `pnpm run lint` locally — it auto-fixes most. |
-| `pnpm exec jest --passWithNoTests` | A unit test failed. (Suite is currently empty — `--passWithNoTests` keeps CI green until tests are added.) |
-| `pnpm run build` | TypeScript compile error or NestJS metadata problem. |
-| `pnpm run openapi:check` | You changed a controller/DTO but did not commit the regenerated `generated/openapi.json` and `generated/api-types.ts`. Run `pnpm run openapi` and commit the diff. See [openapi.md](./openapi.md). |
+## migrations
 
-### 2.3 Caching
+Starts a Postgres 16 service container, then:
 
-`actions/setup-node@v4` with `cache: pnpm` caches `~/.local/share/pnpm/store` keyed on `pnpm-lock.yaml`. Average cold install: ~30 s. Warm install: ~5 s.
+1. `prisma migrate deploy` on the empty database — every migration must apply from scratch.
+2. `prisma migrate diff --from-url … --to-schema-datamodel … --exit-code` — the resulting database must equal `schema.prisma`.
+3. The same diff from the migration history (via a shadow database) — catches a schema edit without a migration.
 
-### 2.4 Local reproduction
+Never edit an applied migration; add a new one generated with `prisma migrate diff`.
 
-The exact CI flow can be reproduced locally:
+## docker-build
+
+Builds the root [`Dockerfile`](../Dockerfile) once per logical service name (`SERVICE_NAME` build-arg labels metrics and logs) and checks the image exists. It predates the Render deployment, which builds natively from [`render.yaml`](../render.yaml) — whether to keep it is an open question in Linear.
+
+## Reproducing a failure locally
+
+Run the failing step's command from the repo root with the same Node major version as `.nvmrc`. For example:
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm prisma generate
-pnpm run lint
-pnpm exec jest --passWithNoTests
-pnpm run build
-pnpm run openapi:check
+pnpm --filter @mimir/server lint
+pnpm --filter @mimir/server exec jest
+pnpm --filter @mimir/server openapi:check
+pnpm --filter @mimir/web type-check
+pnpm --filter @mimir/web build
 ```
 
----
+For `migrations`, point `DATABASE_URL` and `DATABASE_URL_UNPOOLED` at an empty throwaway Postgres (not your dev DB) and run the three commands from the workflow in `apps/server`.
 
-## 3. `docker-build` workflow
+## Adding a check
 
-### 3.1 What it does
+- Call a package script through `pnpm --filter <pkg> <script>` so the same command works locally.
+- Put cheap checks (lint) before slow ones (build).
+- Don't use `continue-on-error` to hide a real failure — fix it or open an issue.
 
-Builds a Docker image **once per logical service**. Even though the codebase is a single NestJS app today (see roadmap §13.1), the workflow already tags 9 distinct images so the per-service deployment story is ready when the monolith is split.
+## Branch protection (recommended)
 
-```yaml
-strategy:
-  fail-fast: false
-  matrix:
-    service:
-      - auth
-      - study
-      - learning
-      - srs
-      - ai
-      - classroom
-      - search
-      - notification
-      - analytics
-```
-
-Each matrix job:
-
-```yaml
-- Checkout
-- Set up Docker Buildx                    # docker/setup-buildx-action@v3
-- Build image                             # docker/build-push-action@v6
-    build-args: SERVICE_NAME=${{ matrix.service }}
-    tags:       mimir/${{ matrix.service }}:ci-${{ github.sha }}
-    cache-from: type=gha,scope=${{ matrix.service }}
-    cache-to:   type=gha,scope=${{ matrix.service }},mode=max
-- Smoke-test container                    # image inspect
-```
-
-### 3.2 The `SERVICE_NAME` build-arg
-
-[`Dockerfile`](../Dockerfile) accepts a `SERVICE_NAME` build-arg, sets it as a runtime env var, and the app uses it to:
-
-- Label every Prometheus metric with `service="<svc>"`
-- Tag every JSON log line with `"service": "<svc>"`
-- Drive the future per-service routing once the monolith is split
-
-Today, all 9 images run the same code. Tomorrow, each one will be replaced by a tighter image that only contains the modules it needs — and the CI workflow won't change.
-
-### 3.3 Caching
-
-GitHub Actions cache (`type=gha`) with a per-service scope. Each service caches its own intermediate layers; the matrix builds run in parallel without thrashing the cache.
-
-### 3.4 The smoke test
-
-```bash
-docker image inspect mimir/<svc>:ci-<sha> > /dev/null
-```
-
-We don't start the container (no Postgres/Redis available in the CI runner without a service container). The inspect is sufficient to prove the image was produced and is valid. A future improvement (see §6) is to spin up Postgres + Redis as workflow `services` and run a real `curl /health`.
-
----
-
-## 4. Branch protection (recommended)
-
-GitHub repository → Settings → Branches → Branch protection rules → `main`:
-
-| Setting | Value | Why |
-|---|---|---|
-| Require status checks to pass | ✓ | Blocks merge until CI is green |
-| Required checks | `ci / lint-and-test`, `docker-build / Build *` (or just the matrix wildcard) | Forces every PR through the full pipeline |
-| Require branches to be up to date | ✓ | Prevents "passes on stale base" surprises |
-| Require linear history | optional | Keeps `main` rebase-friendly |
-| Require PR review | ≥ 1 | Code review hygiene |
-| Restrict force pushes | ✓ | Protects history |
-| Restrict deletions | ✓ | Protects branch |
-
----
-
-## 5. Secrets & permissions
-
-Currently none of the workflows need secrets — they build and test without external services. When the codebase grows:
-
-| When you add | Add secret | Used in |
-|---|---|---|
-| Image push to a registry | `REGISTRY_TOKEN` + login step | `docker.yml` |
-| Coverage upload (Codecov etc.) | `CODECOV_TOKEN` | `ci.yml` |
-| Deploy to staging | cloud creds | new `deploy.yml` |
-| Anthropic API live test | `ANTHROPIC_API_KEY` | new `e2e.yml` |
-
-Workflow permissions default to read-only (`contents: read`). The minimum-privilege principle: don't widen permissions until a step truly needs them.
-
----
-
-## 6. Roadmap improvements
-
-The current pipeline is the Sprint 1 deliverable. Items to add in later sprints:
-
-### Sprint 2
-- Real **unit test suite** for Auth + JWT. Drop `--passWithNoTests`.
-- **Coverage report** uploaded as artifact (or to Codecov).
-
-### Sprint 3–4
-- **Integration tests** using GitHub Actions service containers for Postgres + Redis:
-
-```yaml
-services:
-  postgres:
-    image: postgres:16-alpine
-    env: { POSTGRES_PASSWORD: mimir }
-    ports: ['5432:5432']
-    options: --health-cmd pg_isready --health-interval 10s
-  redis:
-    image: redis:7-alpine
-    ports: ['6379:6379']
-```
-
-### Sprint 5+
-- **E2E suite** (Playwright/Supertest) against the built Docker image.
-- **Smoke-test** running the Dockerfile image with a real Postgres `services` container — full `curl /health` and `/services/<svc>/health` round-trip.
-- **Image push** to GHCR on every `main` push, tagged `latest` + commit SHA.
-
-### Sprint 11+
-- **Security scanning**: `trivy` / `grype` on the built image, `npm audit --prod` step.
-- **License audit**: `license-checker` (fail on copyleft).
-- **CodeQL** static analysis (free for public, paid for private).
-
-### Sprint 12
-- **Performance gate**: k6 load test against the staging deploy; fail PR if p95 regresses > 20%.
-- **Deploy workflow** to staging on every `main` push, behind a manual `workflow_dispatch` for production.
-
----
-
-## 7. Debugging a failing run
-
-1. **Click the failing step in the Actions tab**. The first error in red is usually the root cause; subsequent failures are knock-on.
-2. **Reproduce locally** with the exact commands from §2.4. Match Node version (`20.x`) and pnpm version (`9.x`).
-3. **Inspect the cache** if installs are flaky: re-run with the "Re-run all jobs" → "Enable debug logging" option. Cache hits/misses appear in the log.
-4. **Common false positives**:
-   - Lint warnings vs errors — only errors fail CI; warnings are informational.
-   - `openapi:check` failure on a PR that didn't touch controllers → another PR landed on `main` and changed `generated/`; rebase.
-   - Docker matrix flake on one service → re-run only that job (Actions → re-run failed jobs).
-
----
-
-## 8. File reference
-
-| File | Purpose |
-|---|---|
-| [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) | Lint + test + build + OpenAPI check |
-| [`.github/workflows/docker.yml`](../.github/workflows/docker.yml) | Per-service Docker build matrix |
-| [`Dockerfile`](../Dockerfile) | Multi-stage build with `SERVICE_NAME` arg |
-| [`.dockerignore`](../.dockerignore) | Excludes `node_modules`, `dist`, `generated`, `monitoring`, etc. |
-| [`package.json`](../package.json) | Defines every script CI runs |
-| [`pnpm-lock.yaml`](../pnpm-lock.yaml) | Frozen dependency tree — must be committed |
-
----
-
-## 9. Adding a new check
-
-```yaml
-# .github/workflows/ci.yml
-- name: Type-check (no emit)
-  run: pnpm exec tsc --noEmit -p tsconfig.json
-```
-
-Rules of thumb:
-
-- Add the step **after** the cheapest checks (lint) and **before** the slow ones (Docker)
-- Make the failure message self-explanatory (`pnpm run X` should reproduce it locally)
-- Don't `continue-on-error: true` to dodge a real failure — add it to the matrix-managed list of known issues instead and open an issue
-
----
-
-## 10. References
-
-- [GitHub Actions docs](https://docs.github.com/actions)
-- [`docker/build-push-action`](https://github.com/docker/build-push-action)
-- [Concurrency control](https://docs.github.com/en/actions/using-jobs/using-concurrency)
-- [Cache hit/miss debugging](https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows)
+On `main` (and `dev` if you merge through PRs): require `server-ci`, `web-ci` and, when present on the PR, `migrations` to pass; require branches to be up to date; block force-pushes and deletions.

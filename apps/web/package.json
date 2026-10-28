@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "@mimir/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "dotenv -e ../../.env -- sh -c 'next start -p ${WEB_PORT:-3000}'",
     "lint": "eslint --format stylish",
+    "type-check": "tsc --noEmit",
     "generate:api-types": "pnpm --filter @mimir/server openapi && cp ../server/generated/api-types.ts lib/api/generated.ts && echo '✓ api-types synced to apps/web/lib/api/generated.ts'"
   },
   "type": "module",

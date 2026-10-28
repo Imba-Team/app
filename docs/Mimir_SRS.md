@@ -1,6 +1,24 @@
 # Software Requirements Specification
 
-## FlashLearn — Word Learning Application
+## Mimir — Word Learning Application
+
+> **Status: original requirements, not a live API reference.** This spec was written before implementation (under the working name "FlashLearn"). Where it disagrees with the code, the code wins: the live API is the Swagger UI at `/api` and [`apps/server/generated/openapi.json`](../apps/server/generated/openapi.json); architecture is in [Mimir_TDD_v1.md](Mimir_TDD_v1.md); current status and backlog are in [Mimir_Roadmap_v2.md](Mimir_Roadmap_v2.md) §0 and Linear.
+>
+> **Known deviations (as of 2026-10-28):**
+>
+> | Spec says | Implementation |
+> |---|---|
+> | Session cookie; `POST /auth/logout` "destroys session" | JWT in HttpOnly cookies: access `token` + rotating `refresh_token` (`POST /auth/refresh`); sessions listed/revoked via `GET`/`DELETE /auth/sessions/:id` |
+> | `GET /auth/me` | `GET /users/me` |
+> | `PATCH /users/me/password` | `PATCH /users/me/change-password` |
+> | `POST`/`DELETE /upload/avatar` | `PATCH`/`DELETE /users/me/profile-picture` (multipart) |
+> | `POST /upload/flashcard-image` | Not implemented; cards carry an optional `imageUrl` (http(s) URL or storage key), not yet shown in the web app |
+> | Study sets and cards addressed by `:slug` (e.g. `/study-sets/:slug/flashcards`) | Addressed by id: `/study-sets/:id`, `/study-sets/:setId/cards`, `/flashcards/:id` |
+> | SM-2 review: `POST /flashcards/:id/review` with `{ quality: 0–5 }`, state in `FlashcardUserState` | `POST /srs/cards/:id/review` with `{ rating: AGAIN \| HARD \| GOOD \| EASY, attemptId }`, state in `SrsCard`; Learn and Test answers also feed SM-2 |
+> | Due queue: `GET /study-sets/:slug/due-cards` | `GET /srs/queue/today` (all sets), `GET /sets/:setId/due-queue` (one set), `GET /srs/forecast` |
+> | `PATCH /study-sets/:slug/flashcards/reorder` | Not implemented yet (MIM-30) |
+> | Visibility PUBLIC / UNLISTED / PRIVATE | Only public/private can be set today (MIM-32) |
+> | Password minimum 8 characters | Same for register, reset and change password (8, no maximum) |
 
 | Field | Value |
 |---|---|
@@ -97,7 +115,7 @@
 
 ### 1.1 Purpose
 
-This Software Requirements Specification (SRS) defines the complete functional and non-functional requirements for the **FlashLearn** backend application — a word learning platform inspired by Quizlet. The document is intended for the engineering team implementing the system and serves as the authoritative reference for API behavior, data modeling, business logic, and system constraints.
+This Software Requirements Specification (SRS) defines the complete functional and non-functional requirements for the **Mimir** (originally "FlashLearn") backend application — a word learning platform inspired by Quizlet. The document is intended for the engineering team implementing the system and served as the original reference for API behavior, data modeling, business logic, and system constraints (see the status note at the top for where the implementation differs).
 
 ### 1.2 Scope
 
@@ -154,7 +172,7 @@ The remainder of this document is structured as follows: Section 2 gives a high-
 
 ### 2.1 Product Perspective
 
-FlashLearn is a standalone REST API backend. It communicates with a decoupled frontend client over HTTP/HTTPS. The system interacts with the following external systems:
+Mimir is a standalone REST API backend. It communicates with a decoupled frontend client over HTTP/HTTPS. The system interacts with the following external systems:
 
 - **PostgreSQL** — primary relational data store
 - **Redis** — distributed session store
@@ -1770,4 +1788,4 @@ The following features are planned for subsequent versions and are **explicitly 
 
 ---
 
-*End of SRS — FlashLearn v1.0*
+*End of SRS — Mimir (originally FlashLearn) v1.0*

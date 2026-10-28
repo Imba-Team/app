@@ -35,7 +35,8 @@ export default function VerifyEmailPage() {
   const verifyMutation = useVerifyEmail();
   const resendMutation = useResendVerification();
 
-  const [status, setStatus] = useState<Status>('loading');
+  // No token in the link means there is nothing to verify.
+  const [status, setStatus] = useState<Status>(token ? 'loading' : 'error');
   const [resendSent, setResendSent] = useState(false);
 
   const form = useForm<ResendFormValues>({
@@ -44,10 +45,7 @@ export default function VerifyEmailPage() {
   });
 
   useEffect(() => {
-    if (!token) {
-      setStatus('error');
-      return;
-    }
+    if (!token) return;
     verifyMutation.mutate(token, {
       onSuccess: () => setStatus('success'),
       onError: () => setStatus('error'),

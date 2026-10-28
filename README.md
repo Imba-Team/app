@@ -7,17 +7,17 @@ Monorepo for the Mimir language-learning platform.
 ```
 apps/
   server/    NestJS backend — API, SRS engine, auth, learning services (@mimir/server)
-  web/       Vite + React 18 SPA frontend (@mimir/web)
+  web/       Next.js 16 (App Router) + React 19 frontend (@mimir/web)
 docs/        Project-wide documentation
 monitoring/  Prometheus + Grafana stack for local observability
-.github/     CI workflows (server-ci.yml, web-ci.yml, docker.yml)
+.github/     CI workflows (server-ci.yml, web-ci.yml, migrations.yml, docker.yml)
 docker-compose.yml              Postgres + Redis + ancillary services for local dev
 docker-compose.monitoring.yml   Optional monitoring stack
 ```
 
 ## Prerequisites
 
-- Node.js >= 20.10
+- Node.js 22 (see `.nvmrc`; >= 20.10 works)
 - pnpm >= 9 (pinned to 10.33.0 via `packageManager`)
 - Docker (for Postgres, Redis)
 
@@ -26,7 +26,7 @@ docker-compose.monitoring.yml   Optional monitoring stack
 ```bash
 pnpm install                       # installs both apps at the workspace root
 docker compose up -d               # start postgres, redis, etc.
-pnpm --filter @mimir/server exec prisma migrate dev
+pnpm --filter @mimir/server prisma:migrate   # loads the root .env
 pnpm dev                           # runs server + web in parallel
 ```
 
@@ -34,7 +34,7 @@ Run one app at a time:
 
 ```bash
 pnpm dev:server                    # nest start --watch
-pnpm dev:web                       # vite dev server
+pnpm dev:web                       # next dev on :3000
 ```
 
 Per-app details live in [apps/server/README.md](apps/server/README.md) and [apps/web/README.md](apps/web/README.md).

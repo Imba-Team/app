@@ -135,6 +135,8 @@ function printStartupBanner({ apiPort, webPort, env }: BannerConfig): void {
   const title = 'Mimir API — ready';
   const labelWidth = Math.max(...rows.map(([k]) => k.length));
 
+  // Matching the ESC byte is the point: it strips our own colour codes.
+  // eslint-disable-next-line no-control-regex
   const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
   const visibleLen = (s: string) => stripAnsi(s).length;
 
